@@ -97,9 +97,11 @@ namespace bmp {
             BMPPIXDATAORDERING   get_pixelorder(_In_ const BITMAPINFOHEADER& infh) noexcept;
 
         public:
-            void serialize(_In_ const std::wstring& path);
             bmp(void) = default;
             [[nodiscard]] bmp(_In_ const std::wstring& path);
+
+            void serialize(_In_ const std::wstring& path);
+            void info(void) noexcept;
 
     }; // class bmp
 
@@ -109,32 +111,7 @@ namespace bmp {
 
 /*
 static inline void print_bmp_info(_In_ const BMP* const restrict image) {
-    wprintf_s(
-        L"Start marker: 424D\nFile size %Lf MiBs\nPixel data start offset: %d\n",
-        ((long double) image->fhead.FSIZE) / (1024 * 1024U),
-        image->fhead.PIXELDATASTART
-    );
-    wprintf_s(
-        L"BITMAPINFOHEADER size: %u\nImage width: %u\nImage height: %u\nNumber of planes: %hu\n"
-        L"Number of bits per pixel: %hu\nImage size: %u\nResolution PPM(X): %u\nResolution PPM(Y): %u\nNumber of used colormap entries:
-%u\n" L"Number of important colors: %u\n", image->infhead.HEADERSIZE, image->infhead.WIDTH, image->infhead.HEIGHT, image->infhead.NPLANES,
-        image->infhead.NBITSPERPIXEL,
-        image->infhead.IMAGESIZE,
-        image->infhead.RESPPMX,
-        image->infhead.RESPPMY,
-        image->infhead.NCMAPENTRIES,
-        image->infhead.NIMPCOLORS
-    );
-    switch (image->infhead.CMPTYPE) {
-        case RGB       : _putws(L"BITMAPINFOHEADER.CMPTYPE: RGB"); break;
-        case RLE4      : _putws(L"BITMAPINFOHEADER.CMPTYPE: RLE4"); break;
-        case RLE8      : _putws(L"BITMAPINFOHEADER.CMPTYPE: RLE8"); break;
-        case BITFIELDS : _putws(L"BITMAPINFOHEADER.CMPTYPE: BITFIELDS"); break;
-    }
 
-    wprintf_s(L"%s BMP file\n", is_compressed(image->infhead) ? L"Compressed" : L"Uncompressed");
-    wprintf_s(L"BMP pixel ordering: %s\n", get_pixel_order(image->infhead) ? L"BOTTOMUP" : L"TOPDOWN");
-    return;
 }
 
 // en enum to specify the RGB -> BW conversion method.

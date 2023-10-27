@@ -2,27 +2,27 @@
 
 [[nodiscard]] std::vector<uint8_t> bmp::open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes) {
     *nread_bytes = 0;
-    HANDLE               handle { CreateFileW(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
+    HANDLE               handle { ::CreateFileW(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
     std::vector<uint8_t> buff {};
 
     if (handle == INVALID_HANDLE_VALUE)
-        throw std::runtime_error(std::format("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        throw std::runtime_error(std::format("Error {:4d} in CreateFileW [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
 
     LARGE_INTEGER size;
-    if (!GetFileSizeEx(handle, &size)) {
-        CloseHandle(handle);
-        throw std::runtime_error(std::format("Error {:4d} in GetFileSizeEx [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+    if (!::GetFileSizeEx(handle, &size)) {
+        ::CloseHandle(handle);
+        throw std::runtime_error(std::format("Error {:4d} in GetFileSizeEx [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
 
     buff.resize(size.QuadPart);
     // allocation errors will be automatically handled by the C++ runtime.
 
-    if (!ReadFile(handle, buff.data(), size.QuadPart, reinterpret_cast<LPDWORD>(nread_bytes), nullptr)) {
-        CloseHandle(handle);
-        throw std::runtime_error(std::format("Error {:4d} in ReadFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+    if (!::ReadFile(handle, buff.data(), size.QuadPart, reinterpret_cast<LPDWORD>(nread_bytes), nullptr)) {
+        ::CloseHandle(handle);
+        throw std::runtime_error(std::format("Error {:4d} in ReadFile [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
 
-    CloseHandle(handle);
+    ::CloseHandle(handle);
     return buff;
 }
 
@@ -79,11 +79,11 @@ bmp::BMPPIXDATAORDERING bmp::bmp::get_pixelorder(_In_ const BITMAPINFOHEADER& in
 }
 
 void bmp::bmp::serialize(_In_ const std::wstring& path) {
-    HANDLE handle { CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
+    HANDLE handle { ::CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
 
     if (handle == INVALID_HANDLE_VALUE) {
-        CloseHandle(handle);
-        throw std::runtime_error(std::format("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        ::CloseHandle(handle);
+        throw std::runtime_error(std::format("Error {:4d} in CreateFileW [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
 
     DWORD                   nbytes {};
@@ -91,22 +91,22 @@ void bmp::bmp::serialize(_In_ const std::wstring& path) {
     std::memcpy(tmp.data(), &fh, sizeof(BITMAPFILEHEADER));
     std::memcpy(tmp.data() + 14, &infh, sizeof(BITMAPINFOHEADER));
 
-    if (!WriteFile(handle, tmp.data(), 54, &nbytes, nullptr)) {
-        CloseHandle(handle);
-        throw std::runtime_error(std::format("Error {:4d} in WriteFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+    if (!::WriteFile(handle, tmp.data(), 54, &nbytes, nullptr)) {
+        ::CloseHandle(handle);
+        throw std::runtime_error(std::format("Error {:4d} in WriteFile [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
-    CloseHandle(handle);
+    ::CloseHandle(handle);
 
-    handle = CreateFileW(path.c_str(), FILE_APPEND_DATA, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    handle = ::CreateFileW(path.c_str(), FILE_APPEND_DATA, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle == INVALID_HANDLE_VALUE)
-        throw std::runtime_error(std::format("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        throw std::runtime_error(std::format("Error {:4d} in CreateFileW [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
 
-    if (!WriteFile(handle, pixels.data(), pixels.size() * sizeof(RGBQUAD), &nbytes, nullptr)) {
-        CloseHandle(handle);
-        throw std::runtime_error(std::format("Error {:4d} in WriteFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+    if (!::WriteFile(handle, pixels.data(), pixels.size() * sizeof(RGBQUAD), &nbytes, nullptr)) {
+        ::CloseHandle(handle);
+        throw std::runtime_error(std::format("Error {:4d} in WriteFile [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
 
-    CloseHandle(handle);
+    ::CloseHandle(handle);
     return;
 }
 
@@ -118,4 +118,33 @@ void bmp::bmp::serialize(_In_ const std::wstring& path) {
         npixels = (size - 54) / 4;
         for (auto it = fbuff.begin() + 54; it != fbuff.cend(); it += 4) pixels.push_back(RGBQUAD { *it, *(it + 1), *(it + 2), *(it + 3) });
     } catch (const std::exception& excpt) { throw std::exception(excpt); }
+}
+
+void bmp::bmp::info(void) noexcept {
+    ::wprintf_s(
+        L"Start marker: 424D\nFile size %Lf MiBs\nPixel data start offset: %d\n",
+        ((long double) image->fhead.FSIZE) / (1024 * 1024U),
+        image->fhead.PIXELDATASTART
+    );
+    ::wprintf_s(
+        L"BITMAPINFOHEADER size: %u\nImage width: %u\nImage height: %u\nNumber of planes: %hu\n"
+        L"Number of bits per pixel: %hu\nImage size: %u\nResolution PPM(X): %u\nResolution PPM(Y): %u\nNumber of used colormap entries: % u\n " L" Number of important colors
+        : % u\n ", image->infhead.HEADERSIZE, image->infhead.WIDTH, image->infhead.HEIGHT, image->infhead.NPLANES,
+              image->infhead.NBITSPERPIXEL,
+          image->infhead.IMAGESIZE,
+          image->infhead.RESPPMX,
+          image->infhead.RESPPMY,
+          image->infhead.NCMAPENTRIES,
+          image->infhead.NIMPCOLORS
+    );
+    switch (image->infhead.CMPTYPE) {
+        case RGB       : _putws(L"BITMAPINFOHEADER.CMPTYPE: RGB"); break;
+        case RLE4      : _putws(L"BITMAPINFOHEADER.CMPTYPE: RLE4"); break;
+        case RLE8      : _putws(L"BITMAPINFOHEADER.CMPTYPE: RLE8"); break;
+        case BITFIELDS : _putws(L"BITMAPINFOHEADER.CMPTYPE: BITFIELDS"); break;
+    }
+
+    ::wprintf_s(L"%s BMP file\n", is_compressed(image->infhead) ? L"Compressed" : L"Uncompressed");
+    ::wprintf_s(L"BMP pixel ordering: %s\n", get_pixel_order(image->infhead) ? L"BOTTOMUP" : L"TOPDOWN");
+    return;
 }
