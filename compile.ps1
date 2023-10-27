@@ -21,6 +21,7 @@ $cflags = @(
     "/diagnostics:caret",
     "/DNDEBUG",
     "/D_NDEBUG",
+    "/EHac",
     "/F0x10485100",
     "/favor:INTEL64",
     "/fp:strict",

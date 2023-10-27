@@ -31,7 +31,7 @@ namespace bmp {
 
     #pragma pack(push, 1)
     struct BITMAPFILEHEADER {
-            std::array<uint8_t, 2> SOI {};      // BM
+            std::array<uint8_t, 2> SOI {};      // 'B', 'M'
             uint32_t               FSIZE {};
             uint32_t               RESERVED {}; // this is actually two consecutive 16 bit elements, but who cares :)
             uint32_t               PIXELDATASTART {};
@@ -81,6 +81,8 @@ namespace bmp {
             uint8_t RED {};
     };
 
+    enum class BMPPIXDATAORDERING { TOPDOWN, BOTTOMUP };
+
     class bmp {
         private:
             size_t               size {};
@@ -90,106 +92,22 @@ namespace bmp {
             std::vector<RGBQUAD> pixels {};
 
             BITMAPFILEHEADER     parse_fileheader(_In_ const std::vector<uint8_t>& imstream);
+            COMPRESSIONKIND      get_compressionkind(_In_ const uint32_t cmpkind) noexcept;
             BITMAPINFOHEADER     parse_infoheader(_In_ const std::vector<uint8_t>& imstream);
+            BMPPIXDATAORDERING   get_pixelorder(_In_ const BITMAPINFOHEADER& infh) noexcept;
+
+        public:
+            void serialize(_In_ const std::wstring& path);
+            bmp(void) = default;
+            [[nodiscard]] bmp(_In_ const std::wstring& path);
 
     }; // class bmp
 
-    std::vector<uint8_t> open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
-}
+    [[nodiscard]] std::vector<uint8_t> open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
 
-static __forceinline COMPRESSIONKIND __stdcall get_bmp_compression_kind(_In_ const uint32_t cmpkind) {
-    switch (cmpkind) {
-        case 0 : return RGB;
-        case 1 : return RLE8;
-        case 2 : return RLE4;
-        case 3 : return BITFIELDS;
-    }
-    return -1;
-}
+} // namespace bmp
 
-typedef enum { TOPDOWN, BOTTOMUP } BMPPIXDATAORDERING;
-
-static __forceinline BMPPIXDATAORDERING __stdcall get_pixel_order(_In_ const __BITMAPINFOHEADER bmpinfh) {
-    if (bmpinfh.HEIGHT >= 0) return BOTTOMUP;
-    return TOPDOWN;
-}
-
-static inline BMP new_bmp(_In_ wchar_t* file_name) {
-    BMP image = {
-        .fsize = 0, .npixels = 0, .fhead = { 0, 0, 0, 0 },
-                .infhead = { 0, 0, 0, 0, 0, RGB, 0, 0, 0, 0, 0 },
-                .pixel_buffer = nullptr
-    };
-
-    uint8_t* buffer = open_image(file_name, &image.fsize);
-    if (!buffer) {
-        // open_image will print the error messages, so no need to do that here.
-        wprintf_s(L"Error in %s (%s, %d), open_image returned nullptr\n", __FUNCTIONW__, __FILEW__, __LINE__);
-        return (BMP) {
-            .fsize = 0, .npixels = 0, .fhead = { 0, 0, 0, 0 },
-                    .infhead = { 0, 0, 0, 0, 0, RGB, 0, 0, 0, 0, 0 },
-                    .pixel_buffer = nullptr
-        };
-    }
-
-    image.fhead   = parse_bitmapfile_header(buffer, image.fsize);
-    image.infhead = parse_bitmapinfo_header(buffer, image.fsize);
-    assert(!((image.fsize - 54) % 4)); // Make sure that the number of bytes in the pixel buffer is divisible by 4 without remainders.
-
-    image.npixels      = (image.fsize - 54) / 4;
-    image.pixel_buffer = malloc(image.fsize - 54);
-    if (!image.pixel_buffer) {         // If malloc failed,
-        wprintf_s(L"Error in %s (%s, %d), malloc returned nullptr\n", __FUNCTIONW__, __FILEW__, __LINE__);
-        free(buffer);
-        return (BMP) {
-            .fsize = 0, .npixels = 0, .fhead = { 0, 0, 0, 0 },
-                    .infhead = { 0, 0, 0, 0, 0, RGB, 0, 0, 0, 0, 0 },
-                    .pixel_buffer = nullptr
-        };
-    }
-
-    // memcyp_s will throw an invalid parameter exception when it finds that the destination size is less than source size!
-    // be careful.
-    memcpy_s((uint8_t*) image.pixel_buffer, image.fsize - 54, buffer + 54, image.fsize - 54);
-    free(buffer);
-    return image; // caller needs to free the image.pixel_buffer
-}
-
-static inline bool serialize_bmp(_In_ const BMP* const restrict image, _In_ const wchar_t* restrict file_name) {
-    HANDLE hfile = CreateFileW(file_name, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-    if (hfile == INVALID_HANDLE_VALUE) {
-        fwprintf_s(stderr, L"Error %lu in CreateFileW\n", GetLastError());
-        return false;
-    }
-
-    uint32_t nbyteswritten = 0;
-    uint8_t  tmp[54]       = { 0 };
-    memcpy_s(tmp, 54, &image->fhead, 14);
-    memcpy_s(tmp + 14, 40, &image->infhead, 40);
-
-    if (!WriteFile(hfile, tmp, 54, &nbyteswritten, nullptr)) {
-        fwprintf_s(stderr, L"Error %lu in WriteFile\n", GetLastError());
-        CloseHandle(hfile);
-        return false;
-    }
-    CloseHandle(hfile);
-
-    hfile = CreateFileW(file_name, FILE_APPEND_DATA, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (hfile == INVALID_HANDLE_VALUE) {
-        fwprintf_s(stderr, L"Error %lu in CreateFileW\n", GetLastError());
-        return false;
-    }
-    if (!WriteFile(hfile, image->pixel_buffer, image->fsize - 54, &nbyteswritten, nullptr)) {
-        fwprintf_s(stderr, L"Error %lu in WriteFile\n", GetLastError());
-        CloseHandle(hfile);
-        return false;
-    }
-
-    CloseHandle(hfile);
-    return true;
-}
-
+/*
 static inline void print_bmp_info(_In_ const BMP* const restrict image) {
     wprintf_s(
         L"Start marker: 424D\nFile size %Lf MiBs\nPixel data start offset: %d\n",
@@ -198,12 +116,8 @@ static inline void print_bmp_info(_In_ const BMP* const restrict image) {
     );
     wprintf_s(
         L"BITMAPINFOHEADER size: %u\nImage width: %u\nImage height: %u\nNumber of planes: %hu\n"
-        L"Number of bits per pixel: %hu\nImage size: %u\nResolution PPM(X): %u\nResolution PPM(Y): %u\nNumber of used colormap entries: %u\n"
-        L"Number of important colors: %u\n",
-        image->infhead.HEADERSIZE,
-        image->infhead.WIDTH,
-        image->infhead.HEIGHT,
-        image->infhead.NPLANES,
+        L"Number of bits per pixel: %hu\nImage size: %u\nResolution PPM(X): %u\nResolution PPM(Y): %u\nNumber of used colormap entries:
+%u\n" L"Number of important colors: %u\n", image->infhead.HEADERSIZE, image->infhead.WIDTH, image->infhead.HEIGHT, image->infhead.NPLANES,
         image->infhead.NBITSPERPIXEL,
         image->infhead.IMAGESIZE,
         image->infhead.RESPPMX,
@@ -326,7 +240,5 @@ static inline BMP remove_color(_In_ const BMP* image, _In_ const RMCOLOURKIND rm
     }
     return local;
 }
-
-} // namespace bmp
-
+*/
 #endif // !__BMP_H_
