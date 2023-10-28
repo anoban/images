@@ -85,27 +85,27 @@ namespace bmp {
 
     class bmp {
         private:
-            size_t               size {};
-            size_t               npixels {};
-            BITMAPFILEHEADER     fh {};
-            BITMAPINFOHEADER     infh {};
-            std::vector<RGBQUAD> pixels {};
+            size_t                                              size {};
+            size_t                                              npixels {};
+            BITMAPFILEHEADER                                    fh {};
+            BITMAPINFOHEADER                                    infh {};
+            std::vector<RGBQUAD>                                pixels {};
 
-            BITMAPFILEHEADER     parse_fileheader(_In_ const std::vector<uint8_t>& imstream);
-            COMPRESSIONKIND      get_compressionkind(_In_ const uint32_t cmpkind) noexcept;
-            BITMAPINFOHEADER     parse_infoheader(_In_ const std::vector<uint8_t>& imstream);
-            BMPPIXDATAORDERING   get_pixelorder(_In_ const BITMAPINFOHEADER& infh) noexcept;
+            [[msvc::forceinline, nodiscard]] BITMAPFILEHEADER   parse_fileheader(_In_ const std::vector<uint8_t>& imstream);
+            [[msvc::forceinline, nodiscard]] COMPRESSIONKIND    get_compressionkind(_In_ const uint32_t cmpkind) noexcept;
+            [[msvc::forceinline, nodiscard]] BITMAPINFOHEADER   parse_infoheader(_In_ const std::vector<uint8_t>& imstream);
+            [[msvc::forceinline, nodiscard]] BMPPIXDATAORDERING get_pixelorder(_In_ const BITMAPINFOHEADER& infh) noexcept;
 
         public:
             bmp(void) = default;
-            [[nodiscard]] bmp(_In_ const std::wstring& path);
+            [[msvc::forceinline, nodiscard]] bmp(_In_ const std::wstring& path);
 
-            void serialize(_In_ const std::wstring& path);
-            void info(void) noexcept;
+            [[msvc::forceinline]] void                serialize(_In_ const std::wstring& path);
+            [[msvc::forceinline, msvc::flatten]] void info(void) noexcept;
 
     }; // class bmp
 
-    [[nodiscard]] std::vector<uint8_t> open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
+    [[msvc::forceinline, nodiscard]] std::vector<uint8_t> open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
 
 } // namespace bmp
 
