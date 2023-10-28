@@ -26,6 +26,20 @@
     return buff;
 }
 
+[[msvc::forceinline, nodiscard]] std::vector<std::wstring> bmp::remove_ext(
+    _In_count_(size) wchar_t* const fnames[], _In_ const size_t length, _In_ const wchar_t* const extension
+) noexcept {
+    std::vector<std::wstring> trimmed {};
+    for (size_t i = 1; i < length; ++i) {
+        std::wstring tmp { fnames[i] };
+        // if the string contains multiple instances of the extension, all the characters following the first instance will be erased
+        // e.g. "dell_alienware_hd.bmp.bwhite.bmp" will become dell_alienware_hd is the extension is ".bmp"
+        size_t       pos {};
+        if ((pos = tmp.find(extension)) != std::wstring::npos) trimmed.push_back(std::move(tmp.substr(0, pos)));
+    }
+    return trimmed;
+}
+
 [[msvc::forceinline, nodiscard]] bmp::BITMAPFILEHEADER bmp::bmp::parse_fileheader(_In_ const std::vector<uint8_t>& imstream) {
     static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
     assert(imstream.size() >= sizeof(BITMAPFILEHEADER));

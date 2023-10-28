@@ -47,10 +47,4 @@ $cflags = @(
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan
 cl.exe $cfiles $cflags    
 
-# If cl.exe returned 0, (i.e if the compilation succeeded,)
-
-if ($? -eq $True){
-    foreach($file in $cfiles){
-        Remove-Item $file.Replace(".cpp", ".obj") -Force
-    }    
-}
+Get-ChildItem *.obj -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}

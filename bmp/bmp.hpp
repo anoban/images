@@ -8,6 +8,7 @@
     #include <cstdint>
     #include <format>
     #include <limits>
+    #include <optional>
     #include <stdexcept>
     #include <string>
     #include <vector>
@@ -105,7 +106,11 @@ namespace bmp {
 
     }; // class bmp
 
-    [[msvc::forceinline, nodiscard]] std::vector<uint8_t> open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
+    [[msvc::forceinline, nodiscard]] std::vector<uint8_t>      open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
+    // expects argv to be passed as fnames (without any preprocessing) i.e do not remove the first element in argv.
+    [[msvc::forceinline, nodiscard]] std::vector<std::wstring> remove_ext(
+        _In_count_(size) wchar_t* const fnames[], _In_ const size_t length, _In_ const wchar_t* const extension
+    ) noexcept;
 
 } // namespace bmp
 
