@@ -3,6 +3,7 @@
 #ifndef __BMP_H_
     #define __BMP_H_
 
+    #include <algorithm>
     #include <array>
     #include <cassert>
     #include <cstdint>
@@ -84,6 +85,8 @@ namespace bmp {
 
     enum class BMPPIXDATAORDERING { TOPDOWN, BOTTOMUP };
 
+    enum class TOBWKIND : uint32_t { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
+
     class bmp {
         private:
             size_t                                              size {};
@@ -101,8 +104,11 @@ namespace bmp {
             bmp(void) = default;
             [[msvc::forceinline, nodiscard]] bmp(_In_ const std::wstring& path);
 
-            [[msvc::forceinline]] void                serialize(_In_ const std::wstring& path);
-            [[msvc::forceinline, msvc::flatten]] void info(void) noexcept;
+            [[msvc::forceinline]] void                          serialize(_In_ const std::wstring& path);
+            [[msvc::forceinline, msvc::flatten]] void           info(void) noexcept;
+            [[msvc::forceinline, nodiscard]] std::optional<bmp> tobwhite(
+                _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace
+            ) noexcept;
 
     }; // class bmp
 
@@ -115,9 +121,6 @@ namespace bmp {
 } // namespace bmp
 
 /*
-static inline void print_bmp_info(_In_ const BMP* const restrict image) {
-
-}
 
 // en enum to specify the RGB -> BW conversion method.
 // AVERAGE takes the mean of R, G and B values.

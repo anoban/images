@@ -177,3 +177,46 @@
 
     return;
 }
+
+[[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::tobwhite(
+    _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace = false
+) noexcept {
+    bmp* imptr { nullptr };
+    bmp  copy {};
+    if (inplace) {
+        imptr = this;
+    } else {
+        copy  = *this; // copy the bmp instance
+        imptr = &copy;
+    }
+
+    switch (cnvrsnkind) {
+        case TOBWKIND::AVERAGE :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
+                pix.BLUE = pix.GREEN = pix.RED = avg;
+            });
+            break;
+
+        case TOBWKIND::WEIGHTED_AVERAGE :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
+                pix.BLUE = pix.GREEN = pix.RED = avg;
+            });
+            break;
+
+        case TOBWKIND::AVERAGE :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
+                pix.BLUE = pix.GREEN = pix.RED = avg;
+            });
+            break;
+
+        case TOBWKIND::AVERAGE :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
+                pix.BLUE = pix.GREEN = pix.RED = avg;
+            });
+            break;
+    }
+}
