@@ -1,6 +1,6 @@
 #include "bmp.hpp"
 
-[[msvc::forceinline, nodiscard]] std::vector<uint8_t> bmp::open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes) {
+std::vector<uint8_t> bmp::open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes) {
     *nread_bytes = 0;
     HANDLE               handle { ::CreateFileW(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
     std::vector<uint8_t> buff {};
@@ -26,7 +26,7 @@
     return buff;
 }
 
-[[msvc::forceinline, nodiscard]] std::vector<std::wstring> bmp::remove_ext(
+std::vector<std::wstring> bmp::remove_ext(
     _In_count_(size) wchar_t* const fnames[], _In_ const size_t length, _In_ const wchar_t* const extension
 ) noexcept {
     std::vector<std::wstring> trimmed {};
@@ -40,7 +40,7 @@
     return trimmed;
 }
 
-[[msvc::forceinline, nodiscard]] bmp::BITMAPFILEHEADER bmp::bmp::parse_fileheader(_In_ const std::vector<uint8_t>& imstream) {
+bmp::BITMAPFILEHEADER bmp::bmp::parse_fileheader(_In_ const std::vector<uint8_t>& imstream) {
     static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
     assert(imstream.size() >= sizeof(BITMAPFILEHEADER));
 
@@ -56,7 +56,7 @@
     return header;
 }
 
-[[msvc::forceinline, nodiscard]] bmp::COMPRESSIONKIND bmp::bmp::get_compressionkind(_In_ const uint32_t cmpkind) noexcept {
+bmp::COMPRESSIONKIND bmp::bmp::get_compressionkind(_In_ const uint32_t cmpkind) noexcept {
     switch (cmpkind) {
         [[likely]] case 0 :
             return COMPRESSIONKIND::RGB;
@@ -67,7 +67,7 @@
     return COMPRESSIONKIND::UNKNOWN;
 }
 
-[[msvc::forceinline, nodiscard]] bmp::BITMAPINFOHEADER bmp::bmp::parse_infoheader(_In_ const std::vector<uint8_t>& imstream) {
+bmp::BITMAPINFOHEADER bmp::bmp::parse_infoheader(_In_ const std::vector<uint8_t>& imstream) {
     static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "Error: BITMAPINFOHEADER must be 40 bytes in size");
     assert(imstream.size() >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
 
@@ -89,11 +89,11 @@
     return header;
 }
 
-[[msvc::forceinline, nodiscard]] bmp::BMPPIXDATAORDERING bmp::bmp::get_pixelorder(_In_ const BITMAPINFOHEADER& header) noexcept {
+bmp::BMPPIXDATAORDERING bmp::bmp::get_pixelorder(_In_ const BITMAPINFOHEADER& header) noexcept {
     return (header.HEIGHT >= 0) ? BMPPIXDATAORDERING::BOTTOMUP : BMPPIXDATAORDERING::TOPDOWN;
 }
 
-[[msvc::forceinline]] void bmp::bmp::serialize(_In_ const std::wstring& path) {
+void bmp::bmp::serialize(_In_ const std::wstring& path) {
     HANDLE handle { ::CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
 
     if (handle == INVALID_HANDLE_VALUE) {
@@ -127,7 +127,7 @@
     return;
 }
 
-[[msvc::forceinline, nodiscard]] bmp::bmp::bmp(_In_ const std::wstring& path) {
+bmp::bmp::bmp(_In_ const std::wstring& path) {
     try {
         [[msvc::forceinline_calls]] auto fbuff { open(path, &size) };
         [[msvc::forceinline_calls]] fh   = parse_fileheader(fbuff);
@@ -138,7 +138,10 @@
     } catch (const std::exception& excpt) { throw std::exception(excpt); }
 }
 
-[[msvc::forceinline]] void bmp::bmp::info(void) noexcept {
+bmp::bmp::bmp(_In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff) noexcept :
+    fh { headf }, infh { headinf }, pixels { pbuff } { }
+
+void bmp::bmp::info(void) noexcept {
     ::wprintf_s(
         L"File size %Lf MiBs\nPixel data start offset: %d\n"
         L"BITMAPINFOHEADER size: %u\nImage width: %u\nImage height: %u\nNumber of planes: %hu\n"
@@ -178,16 +181,14 @@
     return;
 }
 
-[[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::tobwhite(
-    _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace
-) noexcept {
+std::optional<bmp::bmp> bmp::bmp::tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) noexcept {
     bmp* imptr { nullptr };
     bmp  copy {};
-    if (inplace) {
+    if (inplace)
         imptr = this;
-    } else {
-        copy  = *this; // copy the bmp instance
-        imptr = &copy;
+    else {
+        [[likely]] copy = *this; // copy the bmp instance
+        imptr           = &copy;
     }
 
     switch (cnvrsnkind) {
@@ -218,18 +219,18 @@
 
     if (inplace)
         return std::nullopt;
-    else
+    else [[likely]]
         return copy;
 }
 
-[[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::tonegative(_In_opt_ const bool inplace) noexcept {
+std::optional<bmp::bmp> bmp::bmp::tonegative(_In_opt_ const bool inplace) noexcept {
     bmp* imptr { nullptr };
     bmp  copy {};
     if (inplace) {
         imptr = this;
     } else {
-        copy  = *this;
-        imptr = &copy;
+        [[likely]] copy = *this;
+        imptr           = &copy;
     }
 
     std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
@@ -240,20 +241,18 @@
 
     if (inplace)
         return std::nullopt;
-    else
+    else [[likely]]
         return copy;
 }
 
-[[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::remove_clr(
-    _In_ const RGBCOMB kind, _In_opt_ const bool inplace
-) noexcept {
+std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace) noexcept {
     bmp* imptr { nullptr };
     bmp  copy {};
     if (inplace) {
         imptr = this;
     } else {
-        copy  = *this;
-        imptr = &copy;
+        [[likely]] copy = *this;
+        imptr           = &copy;
     }
 
     switch (kind) {
@@ -272,6 +271,31 @@
     }
     if (inplace)
         return std::nullopt;
-    else
+    else [[likely]]
         return copy;
+}
+
+static constexpr bmp::bmp gradient(_In_ const int32_t heightpx = 1080, _In_ const uint32_t widthpx = 1080) noexcept {
+    assert(heightpx >= 255 && widthpx >= 255);
+    const bmp::BITMAPFILEHEADER file { .SOI { std::array<uint8_t, 2> { 'B', 'M' } },
+                                       .FSIZE = static_cast<uint32_t>(
+                                           sizeof(bmp::BITMAPFILEHEADER) + sizeof(bmp::BITMAPINFOHEADER) +
+                                           sizeof(bmp::RGBQUAD) * heightpx * widthpx
+                                       ),
+                                       .PIXELDATASTART = 54 };
+    const bmp::BITMAPINFOHEADER info { .HEADERSIZE    = 40,
+                                       .WIDTH         = widthpx,
+                                       .HEIGHT        = heightpx,
+                                       .NPLANES       = 1,
+                                       .NBITSPERPIXEL = 32,
+                                       .CMPTYPE       = bmp::COMPRESSIONKIND::RGB,
+                                       .IMAGESIZE     = 0,
+                                       .RESPPMX       = 0,
+                                       .RESPPMY       = 0,
+                                       .NCMAPENTRIES  = 0,
+                                       .NIMPCOLORS    = 0 };
+    std::vector<bmp::RGBQUAD>   pixels {};
+    pixels.reserve(widthpx * heightpx);
+
+    // the idea to create a colour gradient =>
 }

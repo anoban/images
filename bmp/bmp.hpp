@@ -105,6 +105,9 @@ namespace bmp {
         public:
             bmp(void) = default;
             [[msvc::forceinline, nodiscard]] bmp(_In_ const std::wstring& path);
+            [[msvc::forceinline, nodiscard]] bmp(
+                _In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff
+            ) noexcept;
 
             [[msvc::forceinline]] void                          serialize(_In_ const std::wstring& path);
             [[msvc::forceinline, msvc::flatten]] void           info(void) noexcept;
@@ -114,6 +117,9 @@ namespace bmp {
             [[msvc::forceinline, nodiscard]] std::optional<bmp> tonegative(_In_opt_ const bool inplace = false) noexcept;
             [[msvc::forceinline, nodiscard]] std::optional<bmp> remove_clr(
                 _In_ const RGBCOMB kind, _In_opt_ const bool inplace = false
+            ) noexcept;
+            [[msvc::forceinline, nodiscard]] static constexpr bmp gradient(
+                _In_ const size_t heightpx = 1080, _In_ const size_t widthpx = 1080
             ) noexcept;
 
     }; // class bmp
