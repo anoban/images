@@ -37,6 +37,10 @@ namespace bmp {
             uint32_t               FSIZE {};
             uint32_t               RESERVED {}; // this is actually two consecutive 16 bit elements, but who cares :)
             uint32_t               PIXELDATASTART {};
+
+            constexpr BITMAPFILEHEADER(
+                _In_ const std::array<uint8_t, 2>& label, _In_ const uint32_t fsize, _In_ const uint32_t res, _In_ const uint32_t pixoffset
+            ) noexcept;
     };
     #pragma pack(pop)
 
@@ -105,7 +109,7 @@ namespace bmp {
         public:
             bmp(void) = default;
             [[msvc::forceinline, nodiscard]] bmp(_In_ const std::wstring& path);
-            [[msvc::forceinline, nodiscard]] bmp(
+            [[msvc::forceinline, nodiscard]] constexpr bmp(
                 _In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff
             ) noexcept;
 
@@ -118,7 +122,7 @@ namespace bmp {
             [[msvc::forceinline, nodiscard]] std::optional<bmp> remove_clr(
                 _In_ const RGBCOMB kind, _In_opt_ const bool inplace = false
             ) noexcept;
-            [[msvc::forceinline, nodiscard]] static constexpr bmp gradient(
+            [[msvc::forceinline, nodiscard]] static constexpr bmp gengradient(
                 _In_ const size_t heightpx = 1080, _In_ const size_t widthpx = 1080
             ) noexcept;
 

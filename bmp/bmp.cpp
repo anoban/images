@@ -1,5 +1,10 @@
 #include "bmp.hpp"
 
+constexpr bmp::BITMAPFILEHEADER(
+    _In_ const std::array<uint8_t, 2>& label, _In_ const uint32_t fsize, _In_ const uint32_t res, _In_ const uint32_t pixoffset
+) noexcept :
+    SOI { label }, FSIZE { fsize }, RESERVED { res }, PIXELDATASTART { pixoffset } { }
+
 std::vector<uint8_t> bmp::open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes) {
     *nread_bytes = 0;
     HANDLE               handle { ::CreateFileW(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
@@ -138,7 +143,9 @@ bmp::bmp::bmp(_In_ const std::wstring& path) {
     } catch (const std::exception& excpt) { throw std::exception(excpt); }
 }
 
-bmp::bmp::bmp(_In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff) noexcept :
+constexpr bmp::bmp::bmp(
+    _In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff
+) noexcept :
     fh { headf }, infh { headinf }, pixels { pbuff } { }
 
 void bmp::bmp::info(void) noexcept {
@@ -275,27 +282,44 @@ std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ c
         return copy;
 }
 
-static constexpr bmp::bmp gradient(_In_ const int32_t heightpx = 1080, _In_ const uint32_t widthpx = 1080) noexcept {
+static bmp::bmp gengradient(_In_opt_ const int32_t heightpx = 1080, _In_opt_ const uint32_t widthpx = 1080) noexcept {
     assert(heightpx >= 255 && widthpx >= 255);
-    const bmp::BITMAPFILEHEADER file { .SOI { std::array<uint8_t, 2> { 'B', 'M' } },
-                                       .FSIZE = static_cast<uint32_t>(
-                                           sizeof(bmp::BITMAPFILEHEADER) + sizeof(bmp::BITMAPINFOHEADER) +
-                                           sizeof(bmp::RGBQUAD) * heightpx * widthpx
-                                       ),
-                                       .PIXELDATASTART = 54 };
-    const bmp::BITMAPINFOHEADER info { .HEADERSIZE    = 40,
-                                       .WIDTH         = widthpx,
-                                       .HEIGHT        = heightpx,
-                                       .NPLANES       = 1,
-                                       .NBITSPERPIXEL = 32,
-                                       .CMPTYPE       = bmp::COMPRESSIONKIND::RGB,
-                                       .IMAGESIZE     = 0,
-                                       .RESPPMX       = 0,
-                                       .RESPPMY       = 0,
-                                       .NCMAPENTRIES  = 0,
-                                       .NIMPCOLORS    = 0 };
-    std::vector<bmp::RGBQUAD>   pixels {};
+    bmp::BITMAPFILEHEADER     file { .SOI { std::array<uint8_t, 2> { 'B', 'M' } },
+                                     .FSIZE = static_cast<uint32_t>(
+                                     sizeof(bmp::BITMAPFILEHEADER) + sizeof(bmp::BITMAPINFOHEADER) +
+                                     sizeof(bmp::RGBQUAD) * heightpx * widthpx
+                                 ),
+                                     .PIXELDATASTART = 54 };
+    bmp::BITMAPINFOHEADER     info { .HEADERSIZE    = 40,
+                                     .WIDTH         = widthpx,
+                                     .HEIGHT        = heightpx,
+                                     .NPLANES       = 1,
+                                     .NBITSPERPIXEL = 32,
+                                     .CMPTYPE       = bmp::COMPRESSIONKIND::RGB,
+                                     .IMAGESIZE     = 0,
+                                     .RESPPMX       = 0,
+                                     .RESPPMY       = 0,
+                                     .NCMAPENTRIES  = 0,
+                                     .NIMPCOLORS    = 0 };
+    std::vector<bmp::RGBQUAD> pixels {};
     pixels.reserve(widthpx * heightpx);
 
     // the idea to create a colour gradient =>
+    // traverse through the pixel buffer, within a row gradually increment the RED value
+    // within a column, gradually increment the GREEN value.
+
+    const size_t hstride = heightpx / 255, vstride = widthpx / 255;
+    uint8_t      red {}, green {};
+
+    for (size_t h = 0; h < heightpx; h += vstride) {
+        for (size_t w = 0; w < widthpx; w += hstride) {
+            // row wise traversal
+            for (size_t hs = 0; hs < hstride; ++hs)
+                for (size_t vs = 0; vs < vstride; ++vs)
+                    pixels.push_back(bmp::RGBQUAD { .BLUE = 0xFF, .GREEN = green, .RED = red, .RESERVED = 0xFF });
+            red++;
+            green++;
+        }
+    }
+    return bmp::bmp(file, info, pixels);
 }
