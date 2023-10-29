@@ -14,10 +14,10 @@
         throw std::runtime_error(std::format("Error {:4d} in GetFileSizeEx [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
 
-    buff.resize(size.QuadPart);
+    buff.resize(static_cast<uint64_t>(size.QuadPart));
     // allocation errors will be automatically handled by the C++ runtime.
 
-    if (!::ReadFile(handle, buff.data(), size.QuadPart, reinterpret_cast<LPDWORD>(nread_bytes), nullptr)) {
+    if (!::ReadFile(handle, buff.data(), static_cast<DWORD>(size.QuadPart), reinterpret_cast<LPDWORD>(nread_bytes), nullptr)) {
         ::CloseHandle(handle);
         throw std::runtime_error(std::format("Error {:4d} in ReadFile [{}{:4d}]\n", ::GetLastError(), __FILE__, __LINE__));
     }
@@ -76,7 +76,7 @@
 
     header.HEADERSIZE    = *reinterpret_cast<const uint32_t*>(imstream.data() + 14);
     header.WIDTH         = *reinterpret_cast<const uint32_t*>(imstream.data() + 18);
-    header.HEIGHT        = *reinterpret_cast<const uint32_t*>(imstream.data() + 22);
+    header.HEIGHT        = *reinterpret_cast<const int32_t*>(imstream.data() + 22);
     header.NPLANES       = *reinterpret_cast<const uint16_t*>(imstream.data() + 26);
     header.NBITSPERPIXEL = *reinterpret_cast<const uint16_t*>(imstream.data() + 28);
     header.CMPTYPE       = get_compressionkind(*reinterpret_cast<const uint32_t*>(imstream.data() + 30U));
@@ -89,8 +89,8 @@
     return header;
 }
 
-[[msvc::forceinline, nodiscard]] bmp::BMPPIXDATAORDERING bmp::bmp::get_pixelorder(_In_ const BITMAPINFOHEADER& infh) noexcept {
-    return (infh.HEIGHT >= 0) ? BMPPIXDATAORDERING::BOTTOMUP : BMPPIXDATAORDERING::TOPDOWN;
+[[msvc::forceinline, nodiscard]] bmp::BMPPIXDATAORDERING bmp::bmp::get_pixelorder(_In_ const BITMAPINFOHEADER& header) noexcept {
+    return (header.HEIGHT >= 0) ? BMPPIXDATAORDERING::BOTTOMUP : BMPPIXDATAORDERING::TOPDOWN;
 }
 
 [[msvc::forceinline]] void bmp::bmp::serialize(_In_ const std::wstring& path) {
@@ -179,7 +179,7 @@
 }
 
 [[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::tobwhite(
-    _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace = false
+    _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace
 ) noexcept {
     bmp* imptr { nullptr };
     bmp  copy {};
@@ -193,30 +193,85 @@
     switch (cnvrsnkind) {
         case TOBWKIND::AVERAGE :
             std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
-                pix.BLUE = pix.GREEN = pix.RED = avg;
+                pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3);
             });
             break;
 
         case TOBWKIND::WEIGHTED_AVERAGE :
             std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
-                pix.BLUE = pix.GREEN = pix.RED = avg;
+                pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((pix.BLUE * 0.299L) + (pix.GREEN * 0.587) + (pix.RED * 0.114));
             });
             break;
 
-        case TOBWKIND::AVERAGE :
+        case TOBWKIND::LUMINOSITY :
             std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
-                pix.BLUE = pix.GREEN = pix.RED = avg;
+                pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((pix.BLUE * 0.2126L) + (pix.GREEN * 0.7152L) + (pix.RED * 0.0722L));
             });
             break;
 
-        case TOBWKIND::AVERAGE :
+        case TOBWKIND::BINARY :
             std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                const uint8_t avg { static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3) };
-                pix.BLUE = pix.GREEN = pix.RED = avg;
+                pix.BLUE = pix.GREEN = pix.RED = (static_cast<uint64_t>(pix.BLUE) + pix.GREEN + pix.RED) / 3 >= 128 ? 255Ui8 : 0Ui8;
             });
             break;
     }
+
+    if (inplace)
+        return std::nullopt;
+    else
+        return copy;
+}
+
+[[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::tonegative(_In_opt_ const bool inplace) noexcept {
+    bmp* imptr { nullptr };
+    bmp  copy {};
+    if (inplace) {
+        imptr = this;
+    } else {
+        copy  = *this;
+        imptr = &copy;
+    }
+
+    std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+        pix.BLUE  = pix.BLUE >= 128 ? 255Ui8 : 0Ui8;
+        pix.GREEN = pix.GREEN >= 128 ? 255Ui8 : 0Ui8;
+        pix.RED   = pix.RED >= 128 ? 255Ui8 : 0Ui8;
+    });
+
+    if (inplace)
+        return std::nullopt;
+    else
+        return copy;
+}
+
+[[msvc::forceinline, nodiscard]] std::optional<bmp::bmp> bmp::bmp::remove_clr(
+    _In_ const RGBCOMB kind, _In_opt_ const bool inplace
+) noexcept {
+    bmp* imptr { nullptr };
+    bmp  copy {};
+    if (inplace) {
+        imptr = this;
+    } else {
+        copy  = *this;
+        imptr = &copy;
+    }
+
+    switch (kind) {
+        case RGBCOMB::BLUE  : std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.BLUE = 0; }); break;
+        case RGBCOMB::GREEN : std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = 0; }); break;
+        case RGBCOMB::RED   : std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = 0; }); break;
+        case RGBCOMB::REDGREEN :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.GREEN = 0; });
+            break;
+        case RGBCOMB::REDBLUE :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.BLUE = 0; });
+            break;
+        case RGBCOMB::GREENBLUE :
+            std::for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = pix.BLUE = 0; });
+            break;
+    }
+    if (inplace)
+        return std::nullopt;
+    else
+        return copy;
 }

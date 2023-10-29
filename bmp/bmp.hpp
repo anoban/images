@@ -87,6 +87,8 @@ namespace bmp {
 
     enum class TOBWKIND : uint32_t { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
 
+    enum class RGBCOMB : uint32_t { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
+
     class bmp {
         private:
             size_t                                              size {};
@@ -98,7 +100,7 @@ namespace bmp {
             [[msvc::forceinline, nodiscard]] BITMAPFILEHEADER   parse_fileheader(_In_ const std::vector<uint8_t>& imstream);
             [[msvc::forceinline, nodiscard]] COMPRESSIONKIND    get_compressionkind(_In_ const uint32_t cmpkind) noexcept;
             [[msvc::forceinline, nodiscard]] BITMAPINFOHEADER   parse_infoheader(_In_ const std::vector<uint8_t>& imstream);
-            [[msvc::forceinline, nodiscard]] BMPPIXDATAORDERING get_pixelorder(_In_ const BITMAPINFOHEADER& infh) noexcept;
+            [[msvc::forceinline, nodiscard]] BMPPIXDATAORDERING get_pixelorder(_In_ const BITMAPINFOHEADER& header) noexcept;
 
         public:
             bmp(void) = default;
@@ -107,7 +109,11 @@ namespace bmp {
             [[msvc::forceinline]] void                          serialize(_In_ const std::wstring& path);
             [[msvc::forceinline, msvc::flatten]] void           info(void) noexcept;
             [[msvc::forceinline, nodiscard]] std::optional<bmp> tobwhite(
-                _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace
+                _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace = false
+            ) noexcept;
+            [[msvc::forceinline, nodiscard]] std::optional<bmp> tonegative(_In_opt_ const bool inplace = false) noexcept;
+            [[msvc::forceinline, nodiscard]] std::optional<bmp> remove_clr(
+                _In_ const RGBCOMB kind, _In_opt_ const bool inplace = false
             ) noexcept;
 
     }; // class bmp
@@ -120,110 +126,4 @@ namespace bmp {
 
 } // namespace bmp
 
-/*
-
-// en enum to specify the RGB -> BW conversion method.
-// AVERAGE takes the mean of R, G and B values.
-// WEIGHTED_AVERAGE does GREY = (0.299 R) + (0.587 G) + (0.114 B)
-// LUMINOSITY does LUM = (0.2126 R) + (0.7152 G) + (0.0722 B)
-typedef enum { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY } RGBTOBWKIND;
-
-// If inplace = true, return value can be safely ignored.
-static inline BMP to_blacknwhite(_In_ const BMP* image, _In_ const RGBTOBWKIND conversion_kind, _In_ const bool inplace) {
-    // ___RGBQUAD encoding assumed.
-    BMP local = *image;
-    if (!inplace) {
-        local.pixel_buffer = malloc(image->fsize - 54);
-        if (!local.pixel_buffer) {
-            wprintf_s(L"Error in %s (%s, %d), malloc returned nullptr\n", __FUNCTIONW__, __FILEW__, __LINE__);
-            return (BMP) {
-                .fsize = 0, .npixels = 0, .fhead = { 0, 0, 0, 0 },
-                        .infhead = { 0, 0, 0, 0, 0, RGB, 0, 0, 0, 0, 0 },
-                        .pixel_buffer = nullptr
-            };
-        }
-        memcpy_s(local.pixel_buffer, local.fsize - 54, image->pixel_buffer, image->fsize - 54);
-    }
-
-    switch (conversion_kind) {
-        case AVERAGE :
-            for (size_t i = 0; i < local.npixels; ++i) {
-                local.pixel_buffer[i].BLUE = local.pixel_buffer[i].GREEN = local.pixel_buffer[i].RED =
-                    ((local.pixel_buffer[i].BLUE + local.pixel_buffer[i].GREEN + local.pixel_buffer[i].RED) / 3); // plain arithmetic mean
-            }
-            break;
-        case WEIGHTED_AVERAGE :
-            for (size_t i = 0; i < local.npixels; ++i) {
-                local.pixel_buffer[i].BLUE = local.pixel_buffer[i].GREEN = local.pixel_buffer[i].RED =            // weighted average
-                    (uint8_t) ((local.pixel_buffer[i].BLUE * 0.299L) + (local.pixel_buffer[i].GREEN * 0.587L) +
-                               (local.pixel_buffer[i].RED * 0.114L));
-            }
-            break;
-        case LUMINOSITY :
-            for (size_t i = 0; i < local.npixels; ++i) {
-                local.pixel_buffer[i].BLUE = local.pixel_buffer[i].GREEN = local.pixel_buffer[i].RED =
-                    (uint8_t) ((local.pixel_buffer[i].BLUE * 0.2126L) + (local.pixel_buffer[i].GREEN * 0.7152L) +
-                               (local.pixel_buffer[i].RED * 0.0722L));
-            }
-            break;
-        // case BINARY :
-        //     for (size_t i = 0; i < local.npixels; ++i) {
-        //         local.pixel_buffer[i].BLUE  = local.pixel_buffer[i].BLUE > 128 ? 255 : 0;
-        //         local.pixel_buffer[i].GREEN = local.pixel_buffer[i].GREEN > 128 ? 255 : 0;
-        //         local.pixel_buffer[i].RED   = local.pixel_buffer[i].RED > 128 ? 255 : 0;
-        //     }
-        //     break;
-        case BINARY :
-            uint64_t value = 0;
-            for (size_t i = 0; i < local.npixels; ++i) {
-                value                      = (local.pixel_buffer[i].BLUE + local.pixel_buffer[i].GREEN + local.pixel_buffer[i].RED);
-                local.pixel_buffer[i].BLUE = local.pixel_buffer[i].GREEN = local.pixel_buffer[i].RED = (value / 3) > 128 ? 255 : 0;
-            }
-            break;
-    }
-    return local;
-}
-
-// The color palette in pixel buffer is in BGR order NOT RGB!
-typedef enum { REMRED, REMGREEN, REMBLUE, REMRG, REMRB, REMGB } RMCOLOURKIND;
-
-// If inplace = true, return value can be safely ignored.
-static inline BMP remove_color(_In_ const BMP* image, _In_ const RMCOLOURKIND rmcolor, _In_ const bool inplace) {
-    BMP local = *image;
-    if (!inplace) {
-        local.pixel_buffer = malloc(image->fsize - 54);
-        if (!local.pixel_buffer) {
-            wprintf_s(L"Error in %s (%s, %d), malloc returned nullptr\n", __FUNCTIONW__, __FILEW__, __LINE__);
-            return (BMP) {
-                .fsize = 0, .npixels = 0, .fhead = { 0, 0, 0, 0 },
-                        .infhead = { 0, 0, 0, 0, 0, RGB, 0, 0, 0, 0, 0 },
-                        .pixel_buffer = nullptr
-            };
-        }
-        memcpy_s(local.pixel_buffer, local.fsize - 54, image->pixel_buffer, image->fsize - 54);
-    }
-
-    switch (rmcolor) {
-        case REMRED :
-            for (size_t i = 0; i < local.npixels; ++i) local.pixel_buffer[i].RED = 0;
-            break;
-        case REMGREEN :
-            for (size_t i = 0; i < local.npixels; ++i) local.pixel_buffer[i].GREEN = 0;
-            break;
-        case REMBLUE :
-            for (size_t i = 0; i < local.npixels; ++i) local.pixel_buffer[i].BLUE = 0;
-            break;
-        case REMRG :
-            for (size_t i = 0; i < local.npixels; ++i) local.pixel_buffer[i].RED = local.pixel_buffer[i].GREEN = 0;
-            break;
-        case REMRB :
-            for (size_t i = 0; i < local.npixels; ++i) local.pixel_buffer[i].RED = local.pixel_buffer[i].BLUE = 0;
-            break;
-        case REMGB :
-            for (size_t i = 0; i < local.npixels; ++i) local.pixel_buffer[i].GREEN = local.pixel_buffer[i].BLUE = 0;
-            break;
-    }
-    return local;
-}
-*/
 #endif // !__BMP_H_
