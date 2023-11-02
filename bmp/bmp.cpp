@@ -1,10 +1,5 @@
 #include "bmp.hpp"
 
-constexpr bmp::BITMAPFILEHEADER(
-    _In_ const std::array<uint8_t, 2>& label, _In_ const uint32_t fsize, _In_ const uint32_t res, _In_ const uint32_t pixoffset
-) noexcept :
-    SOI { label }, FSIZE { fsize }, RESERVED { res }, PIXELDATASTART { pixoffset } { }
-
 std::vector<uint8_t> bmp::open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes) {
     *nread_bytes = 0;
     HANDLE               handle { ::CreateFileW(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
@@ -146,7 +141,7 @@ bmp::bmp::bmp(_In_ const std::wstring& path) {
 constexpr bmp::bmp::bmp(
     _In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff
 ) noexcept :
-    fh { headf }, infh { headinf }, pixels { pbuff } { }
+    fh { headf }, infh { headinf }, pixels { std::move(pbuff) } { }
 
 void bmp::bmp::info(void) noexcept {
     ::wprintf_s(
@@ -278,21 +273,22 @@ std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ c
     }
     if (inplace)
         return std::nullopt;
-    else [[likely]]
+    else
         return copy;
 }
 
-static bmp::bmp gengradient(_In_opt_ const int32_t heightpx = 1080, _In_opt_ const uint32_t widthpx = 1080) noexcept {
+// DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
+bmp::bmp gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) noexcept {
     assert(heightpx >= 255 && widthpx >= 255);
-    bmp::BITMAPFILEHEADER     file { .SOI { std::array<uint8_t, 2> { 'B', 'M' } },
+    bmp::BITMAPFILEHEADER     file { .SOI { std::array<uint8_t, 2> { { 'B', 'M' } } },
                                      .FSIZE = static_cast<uint32_t>(
                                      sizeof(bmp::BITMAPFILEHEADER) + sizeof(bmp::BITMAPINFOHEADER) +
                                      sizeof(bmp::RGBQUAD) * heightpx * widthpx
                                  ),
                                      .PIXELDATASTART = 54 };
     bmp::BITMAPINFOHEADER     info { .HEADERSIZE    = 40,
-                                     .WIDTH         = widthpx,
-                                     .HEIGHT        = heightpx,
+                                     .WIDTH         = static_cast<uint32_t>(widthpx),
+                                     .HEIGHT        = static_cast<int32_t>(heightpx),
                                      .NPLANES       = 1,
                                      .NBITSPERPIXEL = 32,
                                      .CMPTYPE       = bmp::COMPRESSIONKIND::RGB,

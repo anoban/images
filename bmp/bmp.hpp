@@ -37,10 +37,6 @@ namespace bmp {
             uint32_t               FSIZE {};
             uint32_t               RESERVED {}; // this is actually two consecutive 16 bit elements, but who cares :)
             uint32_t               PIXELDATASTART {};
-
-            constexpr BITMAPFILEHEADER(
-                _In_ const std::array<uint8_t, 2>& label, _In_ const uint32_t fsize, _In_ const uint32_t res, _In_ const uint32_t pixoffset
-            ) noexcept;
     };
     #pragma pack(pop)
 
@@ -102,34 +98,44 @@ namespace bmp {
             std::vector<RGBQUAD>                                pixels {};
 
             [[msvc::forceinline, nodiscard]] BITMAPFILEHEADER   parse_fileheader(_In_ const std::vector<uint8_t>& imstream);
+
             [[msvc::forceinline, nodiscard]] COMPRESSIONKIND    get_compressionkind(_In_ const uint32_t cmpkind) noexcept;
+
             [[msvc::forceinline, nodiscard]] BITMAPINFOHEADER   parse_infoheader(_In_ const std::vector<uint8_t>& imstream);
+
             [[msvc::forceinline, nodiscard]] BMPPIXDATAORDERING get_pixelorder(_In_ const BITMAPINFOHEADER& header) noexcept;
 
         public:
             bmp(void) = default;
             [[msvc::forceinline, nodiscard]] bmp(_In_ const std::wstring& path);
+
             [[msvc::forceinline, nodiscard]] constexpr bmp(
                 _In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const std::vector<RGBQUAD>& pbuff
             ) noexcept;
 
             [[msvc::forceinline]] void                          serialize(_In_ const std::wstring& path);
+
             [[msvc::forceinline, msvc::flatten]] void           info(void) noexcept;
+
             [[msvc::forceinline, nodiscard]] std::optional<bmp> tobwhite(
                 _In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace = false
             ) noexcept;
+
             [[msvc::forceinline, nodiscard]] std::optional<bmp> tonegative(_In_opt_ const bool inplace = false) noexcept;
+
             [[msvc::forceinline, nodiscard]] std::optional<bmp> remove_clr(
                 _In_ const RGBCOMB kind, _In_opt_ const bool inplace = false
             ) noexcept;
-            [[msvc::forceinline, nodiscard]] static constexpr bmp gengradient(
-                _In_ const size_t heightpx = 1080, _In_ const size_t widthpx = 1080
+
+            [[msvc::noinline, nodiscard]] static bmp gengradient(
+                _In_opt_ const size_t heightpx = 1080, _In_opt_ const size_t widthpx = 1080
             ) noexcept;
 
     }; // class bmp
 
     [[msvc::forceinline, nodiscard]] std::vector<uint8_t>      open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes);
     // expects argv to be passed as fnames (without any preprocessing) i.e do not remove the first element in argv.
+
     [[msvc::forceinline, nodiscard]] std::vector<std::wstring> remove_ext(
         _In_count_(size) wchar_t* const fnames[], _In_ const size_t length, _In_ const wchar_t* const extension
     ) noexcept;

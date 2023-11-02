@@ -1,3 +1,7 @@
 #include "bmp.hpp"
 
-int main(void) { constexpr auto img { bmp::bmp::gengradient() }; }
+int main(void) {
+    auto img { bmp::bmp::gengradient() };
+    img.serialize(L"./synth.bmp");
+    return EXIT_SUCCESS;
+}
