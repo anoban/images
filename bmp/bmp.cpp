@@ -280,11 +280,13 @@ std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ c
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
 bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) noexcept {
     assert(heightpx >= 255 && widthpx >= 255);
+
     BITMAPFILEHEADER file {
         .SOI { std::array<uint8_t, 2> { { 'B', 'M' } } },
         .FSIZE          = static_cast<uint32_t>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * heightpx * widthpx),
         .PIXELDATASTART = 54
     };
+
     BITMAPINFOHEADER     info { .HEADERSIZE    = 40,
                                 .WIDTH         = static_cast<uint32_t>(widthpx),
                                 .HEIGHT        = static_cast<int32_t>(heightpx),
@@ -296,6 +298,7 @@ bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const si
                                 .RESPPMY       = 0,
                                 .NCMAPENTRIES  = 0,
                                 .NIMPCOLORS    = 0 };
+
     std::vector<RGBQUAD> pixels {};
     pixels.reserve(widthpx * heightpx);
 
@@ -318,7 +321,7 @@ bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const si
         for (size_t w = 0; w < widthpx; ++w) { // for each column
             pixels.push_back(RGBQUAD { .BLUE = B, .GREEN = G, .RED = R, .RESERVED = 0xFF });
             R -= w % vstride;
-            B += w % vstride;
+            // B += w % vstride;
         }
     }
 
