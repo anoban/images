@@ -278,44 +278,49 @@ std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ c
 }
 
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
-bmp::bmp gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) noexcept {
+bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) noexcept {
     assert(heightpx >= 255 && widthpx >= 255);
-    bmp::BITMAPFILEHEADER     file { .SOI { std::array<uint8_t, 2> { { 'B', 'M' } } },
-                                     .FSIZE = static_cast<uint32_t>(
-                                     sizeof(bmp::BITMAPFILEHEADER) + sizeof(bmp::BITMAPINFOHEADER) +
-                                     sizeof(bmp::RGBQUAD) * heightpx * widthpx
-                                 ),
-                                     .PIXELDATASTART = 54 };
-    bmp::BITMAPINFOHEADER     info { .HEADERSIZE    = 40,
-                                     .WIDTH         = static_cast<uint32_t>(widthpx),
-                                     .HEIGHT        = static_cast<int32_t>(heightpx),
-                                     .NPLANES       = 1,
-                                     .NBITSPERPIXEL = 32,
-                                     .CMPTYPE       = bmp::COMPRESSIONKIND::RGB,
-                                     .IMAGESIZE     = 0,
-                                     .RESPPMX       = 0,
-                                     .RESPPMY       = 0,
-                                     .NCMAPENTRIES  = 0,
-                                     .NIMPCOLORS    = 0 };
-    std::vector<bmp::RGBQUAD> pixels {};
+    BITMAPFILEHEADER file {
+        .SOI { std::array<uint8_t, 2> { { 'B', 'M' } } },
+        .FSIZE          = static_cast<uint32_t>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * heightpx * widthpx),
+        .PIXELDATASTART = 54
+    };
+    BITMAPINFOHEADER     info { .HEADERSIZE    = 40,
+                                .WIDTH         = static_cast<uint32_t>(widthpx),
+                                .HEIGHT        = static_cast<int32_t>(heightpx),
+                                .NPLANES       = 1,
+                                .NBITSPERPIXEL = 32,
+                                .CMPTYPE       = COMPRESSIONKIND::RGB,
+                                .IMAGESIZE     = 0,
+                                .RESPPMX       = 0,
+                                .RESPPMY       = 0,
+                                .NCMAPENTRIES  = 0,
+                                .NIMPCOLORS    = 0 };
+    std::vector<RGBQUAD> pixels {};
     pixels.reserve(widthpx * heightpx);
 
     // the idea to create a colour gradient =>
     // traverse through the pixel buffer, within a row gradually increment the RED value
     // within a column, gradually increment the GREEN value.
 
-    const size_t hstride = heightpx / 255, vstride = widthpx / 255;
-    uint8_t      red {}, green {};
+    // the deal here is that we must keep at least one RGB component constant within windows of this width.
+    const size_t hstride { widthpx / 255 }, vstride { heightpx / 255 };
 
-    for (size_t h = 0; h < heightpx; h += vstride) {
-        for (size_t w = 0; w < widthpx; w += hstride) {
-            // row wise traversal
-            for (size_t hs = 0; hs < hstride; ++hs)
-                for (size_t vs = 0; vs < vstride; ++vs)
-                    pixels.push_back(bmp::RGBQUAD { .BLUE = 0xFF, .GREEN = green, .RED = red, .RESERVED = 0xFF });
-            red++;
-            green++;
+    // start with R = 0xFF, G = 0xFF & B = 0x00
+    // alonside a row,
+    // maintain the G constant, decrease the R and increase the B
+    // do the same with subsequent rows, but decrement the G gradually.
+
+    uint8_t      R { 0xFF }, G { 0xFF }, B { 0x00 };
+
+    for (size_t h = 0; h < heightpx; ++h) {    // for each row
+        G -= h % hstride;
+        for (size_t w = 0; w < widthpx; ++w) { // for each column
+            pixels.push_back(RGBQUAD { .BLUE = B, .GREEN = G, .RED = R, .RESERVED = 0xFF });
+            R -= w % vstride;
+            B += w % vstride;
         }
     }
-    return bmp::bmp(file, info, pixels);
+
+    return bmp(file, info, pixels);
 }
