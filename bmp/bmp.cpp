@@ -277,9 +277,10 @@ std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ c
         return copy;
 }
 
+// TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
 bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) noexcept {
-    assert(heightpx >= 255 && widthpx >= 255);
+    assert(heightpx > 255 && widthpx > 255);
 
     BITMAPFILEHEADER file {
         .SOI { std::array<uint8_t, 2> { { 'B', 'M' } } },
@@ -307,23 +308,19 @@ bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const si
     // within a column, gradually increment the GREEN value.
 
     // the deal here is that we must keep at least one RGB component constant within windows of this width.
-    const size_t hstride { widthpx / 255 }, vstride { heightpx / 255 };
-
-    // start with R = 0xFF, G = 0xFF & B = 0x00
-    // alonside a row,
-    // maintain the G constant, decrease the R and increase the B
-    // do the same with subsequent rows, but decrement the G gradually.
+    const size_t hstride { widthpx / 256 }, vstride { heightpx / 256 };
 
     uint8_t      R { 0xFF }, G { 0xFF }, B { 0x00 };
 
-    for (size_t h = 0; h < heightpx; ++h) {    // for each row
-        G -= h % hstride;
-        for (size_t w = 0; w < widthpx; ++w) { // for each column
-            pixels.push_back(RGBQUAD { .BLUE = B, .GREEN = G, .RED = R, .RESERVED = 0xFF });
-            R -= w % vstride;
-            // B += w % vstride;
+    for (size_t h = 0; h < heightpx; h += vstride) {
+        for (size_t x = 0; x < vstride; ++x) {
+            for (size_t w = 0; w < widthpx; w += hstride) {
+                R++;
+                for (size_t i = 0; i < hstride; ++i) pixels.push_back(RGBQUAD { .BLUE = B, .GREEN = G, .RED = R, .RESERVED = 0xFF });
+                G--;
+            }
         }
+        B++;
     }
-
     return bmp(file, info, pixels);
 }
