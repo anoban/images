@@ -25,4 +25,11 @@
     #include <handleapi.h>
     #include <sal.h>
 
-#endif // !__PNG_H_
+struct PNGCHUNK {
+        uint16_t               LENGTH {};     // number of bytes in the DATA field.
+        std::array<uint8_t, 4> CHUNKNAME {};  // an array of 4 chars
+        std::vector<uint8_t>   DATA {};       // chunk data
+        uint32_t               CHUNKCRC32 {}; // a 32 bit Cyclic Redundancy Check (CRC) value calculated from the data.
+};
+
+#endif                                        // !__PNG_H_
