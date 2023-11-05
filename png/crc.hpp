@@ -8,7 +8,7 @@
 
 namespace crc {
 
-    static inline const std::array<size_t, 256> constexpr lookuptable(void) noexcept {
+    [[nodiscard, msvc::flatten, msvc::forceinline]] static inline const std::array<size_t, 256> constexpr lookuptable(void) noexcept {
         std::array<size_t, 256> table {};
         uint32_t                byte {}, crc {};
 
@@ -26,7 +26,8 @@ namespace crc {
         return table;
     }
 
-    static inline const uint32_t constexpr crc32(_In_ const std::vector<uint8_t>& stream) noexcept {
+    [[nodiscard, deprecated /* inefficient, use the alternative that leverages the lookup table */
+    ]] static inline const uint32_t constexpr crc32(_In_ const std::vector<uint8_t>& stream) noexcept {
         uint32_t crc { 0xFFFFFFFF };
         uint8_t  tmp {};
 
