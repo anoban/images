@@ -279,8 +279,9 @@ std::optional<bmp::bmp> bmp::bmp::remove_clr(_In_ const RGBCOMB kind, _In_opt_ c
 
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
-bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) noexcept {
-    assert(heightpx > 255 && widthpx > 255);
+bmp::bmp bmp::bmp::gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) {
+    if (((heightpx % 256) != 0) || ((widthpx % 256) != 0))
+        throw std::runtime_error(std::format("Dimensions need to be multiples of 256! Received ({}, {})", heightpx, widthpx));
 
     BITMAPFILEHEADER file {
         .SOI { std::array<uint8_t, 2> { { 'B', 'M' } } },

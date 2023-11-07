@@ -129,7 +129,7 @@ namespace bmp {
 
             [[msvc::noinline, nodiscard]] static bmp gengradient(
                 _In_opt_ const size_t heightpx = 1080, _In_opt_ const size_t widthpx = 1080
-            ) noexcept;
+            );
 
     }; // class bmp
 
