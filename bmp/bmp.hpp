@@ -31,6 +31,10 @@ namespace bmp {
         {'B', 'M'}
     };
 
+    // every Windows BMP begins with a BITMAPFILEHEADER struct
+    // this helps in recognizing the file format as .bmp
+    // the first two bytes will be 'B', 'M'
+
     #pragma pack(push, 1)
     struct BITMAPFILEHEADER {
             std::array<uint8_t, 2> SOI {};      // 'B', 'M'
@@ -40,13 +44,23 @@ namespace bmp {
     };
     #pragma pack(pop)
 
-    enum class COMPRESSIONKIND : uint32_t { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN }; // uint32_t
+    // types of compressions used in BMP files.
+    enum class COMPRESSIONKIND : uint32_t { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
+
+    // image header comes in two variants!
+    // one representing OS/2 BMP format (BITMAPCOREHEADER) and another representing the most common Windows BMP format.
+    // (BITMAPINFOHEADER)
+    // however there are no markers to identify the type of the image header present in the bmp image.
+    // the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct.
+    // sizeof BITMAPCOREHEADER is 12 bytes
+    // sizeof BITMAPINFOHEADER is >= 40 bytes.
+    // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes!
 
     #pragma pack(push, 2)
     struct BITMAPINFOHEADER {
-            uint32_t        HEADERSIZE {};                                         // >= 40 bytes.
+            uint32_t        HEADERSIZE {}; // >= 40 bytes.
             uint32_t        WIDTH {};
-            int32_t         HEIGHT {}; // usually an unsigned value, a negative value alludes that the pixel data is ordered top down,
+            int32_t         HEIGHT {};     // usually an unsigned value, a negative value alludes that the pixel data is ordered top down,
             // instead of the customary bottom up order. bmp images with a - height values may not be compressed!
             uint16_t        NPLANES {};       // must be 1
             uint16_t        NBITSPERPIXEL {}; // 1, 4, 8, 16, 24 or 32
@@ -59,12 +73,14 @@ namespace bmp {
     };
     #pragma pack(pop)
 
+    // a BMP with BITMAPCOREHEADER cannot be compressed.
+    // and is very rarely used in modern BMPs.
     struct BITMAPCOREHEADER {
-            uint32_t HEADERSIZE {};           // 12 bytes
+            uint32_t HEADERSIZE {};    // 12 bytes
             uint16_t WIDTH {};
             uint16_t HEIGHT {};
-            uint16_t NPLANES {};              // must be 1
-            uint16_t NBITSPERPIXEL {};        // 1, 4, 8 or 24
+            uint16_t NPLANES {};       // must be 1
+            uint16_t NBITSPERPIXEL {}; // 1, 4, 8 or 24
     };
 
     #pragma pack(push, 1)
@@ -72,11 +88,11 @@ namespace bmp {
             uint8_t BLUE {};
             uint8_t GREEN {};
             uint8_t RED {};
-            uint8_t RESERVED {}; // must be 0, but seems to be 0xFF in most BMPs, yikes!
+            uint8_t RESERVED { 0xFF }; // must be 0, but seems to be 0xFF in most BMPs.
     };
     #pragma pack(pop)
 
-    // BMP files in OS/2 use the third variant
+    // BMP files in OS/2 use this variant.
     struct RGBTRIPLE {
             uint8_t BLUE {};
             uint8_t GREEN {};
