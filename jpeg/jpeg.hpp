@@ -5,43 +5,40 @@
     #include <concepts>
     #include <cstdint>
 
+    #ifdef _WIN32
+        #define _AMD64_     // architecture
+        #define WIN32_LEAN_AND_MEAN
+        #define WIN32_EXTRA_MEAN
+    #endif
+    #include <windef.h>     // for Win32 typedefs
+    #include <wingdi.h>     // let's use Win32's RGBTRIPLE and RGBQUAD structs instead of redundant redefinitions
+
 namespace jpeg {
 
-    #pragma pack(push, 1)
-    struct RGBTRIPLE {
-            uint8_t BLUE {};
-            uint8_t GREEN {};
-            uint8_t RED {};
+    namespace constants { } // namespace constants
+
+    // JPEG uses YCbCr format for storing pixels.
+    template<typename T> requires std::integral<T> || std::floating_point<T> struct YCbCr {
+            T Y {};  // Y - luminance or brightness of the pixel
+            T Cb {}; // Cb - Blue
+            T Cr {}; // Cr - Red
+                     // Y component is called Luma component and the Cr and Cb components are collectively called Chroma components.
     };
-    #pragma pack(pop)
 
-    #pragma pack(push, 1)
-    struct RGBQUAD : public RGBTRIPLE {
-            uint8_t RESERVED { 0xFF }; // must be 0, but seems to be 0xFF in most BMPs.
-    };
-    #pragma pack(pop)
+    template<typename T /* input type */, typename OT /* output type */>
+    requires std::is_same<RGBTRIPLE, T>::value || std::is_same<RGBQUAD, T>::value
+    inline constexpr YCbCr<OT> to_YCbCr(_In_ const T& pixel) noexcept {
+        // Y = (0.299 x R) + (0.587 x G) + (0.114 x B)
+        // Cb = (-0.1687 x R) - (0.3313 x G) + (0.5 x B) + 128
+        // Cr = (0.5 x R)  - (0.4187 x G) - (0.0813 x B) + 128
 
-    // JPEG usesYCbCr format for storing pixels.
+        constexpr auto Y { (0.299L * pixel.rgbRed) + (0.587L * pixel.rgbGreen) + (0.114L * pixel.rgbBlue) };
+        constexpr auto Cb { (-0.1687L * pixel.rgbRed) - (0.3313L * pixel.rgbGreen) + (0.5L * pixel.rgbBlue) + 128.0L };
+        constexpr auto Cr { (0.5L * pixel.rgbRed) - (0.4187L * pixel.rgbGreen) - (0.0813L * pixel.rgbBlue) + 128.0L };
 
-    #pragma pack(push, 1)
-    struct YCbCr {
-            // Y - muminance or brightness of the pixel
-            // Cb - Blue
-            // Cr - Red
-            // Y component is called Luma component and the Cr and Cb components are collectively called Chroma components.
-    };
-    #pragma pack(pop)
-
-    template<typename T> requires std::is_base_of<RGBTRIPLE, T>::value constexpr YCbCr toYCbCr(_In_ const T& pixel) noexcept {
-        T     tmp {};
-        YCbCr pix { .};
-
-        /*
-        Y=0.299∗R+0.587∗G+0.114∗B
-
-        Cb=−0.1687∗R−0.3313∗G+0.5∗B+128
-        Cr=0.5∗R−0.4187∗G−0.0813∗B+128
-        */
+        return YCbCr<OT> {
+            {static_cast<OT>(Y), static_cast<OT>(Cb), static_cast<OT>(Cr)}
+        };
     }
 
 } // namespace jpeg
