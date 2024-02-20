@@ -10,7 +10,7 @@
 #include <handleapi.h>
 #include <sal.h>
 
-uint8_t* open(_In_ const wchar_t* restrict const path, _Out_ uint64_t* const nread_bytes) {
+uint8_t* open(_In_ const wchar_t* const restrict path, _Inout_ uint64_t* const nread_bytes) {
     *nread_bytes    = 0;
     HANDLE64 handle = CreateFileW(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
     uint8_t* buffer = NULL;
@@ -36,7 +36,7 @@ uint8_t* open(_In_ const wchar_t* restrict const path, _Out_ uint64_t* const nre
 
 stdvector<stdwstring> bmpremove_ext(
     _In_count_(size) wchar_t* const fnames[], _In_ const size_t length, _In_ const wchar_t* const extension
-) noexcept {
+) {
     stdvector<stdwstring> trimmed {};
     for (size_t i = 1; i < length; ++i) {
         stdwstring tmp { fnames[i] };
@@ -48,7 +48,7 @@ stdvector<stdwstring> bmpremove_ext(
     return trimmed;
 }
 
-BITMAPFILEHEADER parse_fileheader(_In_ const stdvector<uint8_t>& imstream) {
+BITMAPFILEHEADER parse_fileheader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
     static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
     assert(imstream.size() >= sizeof(BITMAPFILEHEADER));
 
@@ -74,7 +74,7 @@ COMPRESSIONKIND __stdcall get_compressionkind(_In_ const uint32_t cmpkind) {
     return UNKNOWN;
 }
 
-BITMAPINFOHEADER parse_infoheader(_In_ const stdvector<uint8_t>& imstream) {
+BITMAPINFOHEADER parse_infoheader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
     static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "Error: BITMAPINFOHEADER must be 40 bytes in size");
     assert(imstream.size() >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
 
