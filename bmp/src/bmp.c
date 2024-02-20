@@ -1,4 +1,11 @@
-#include "bmp.hpp"
+#define _AMD64_ // architecture
+#define WIN32_LEAN_AND_MEAN
+#define WIN32_EXTRA_MEAN
+
+#include <errhandlingapi.h>
+#include <fileapi.h>
+#include <handleapi.h>
+#include <sal.h>
 
 std::vector<uint8_t> bmp::open(_In_ const std::wstring& path, _Out_ uint64_t* const nread_bytes) {
     *nread_bytes = 0;
