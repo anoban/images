@@ -8,7 +8,7 @@
 //      1) Up to 256 colours using 1 to 8 bit per pixel
 //      2) Storing multiple static image files in a single .gif file
 
-// In contrast to other image encosings GIF uses Little Endian byte ordering for multi byte values, so no need for additional bit twiddling operations
+// In contrast to other image encodings GIF uses Little Endian byte ordering for multi byte values, so no need for additional bit twiddling operations
 // on Intel LE systems.
 
 #endif

@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <bmp.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -50,16 +52,14 @@ stdvector<stdwstring> bmpremove_ext(
 
 BITMAPFILEHEADER parse_fileheader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
     static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
-    assert(imstream.size() >= sizeof(BITMAPFILEHEADER));
+    assert(length >= sizeof(BITMAPFILEHEADER));
 
-    BITMAPFILEHEADER           header {};
-    const stdarray<uint8_t, 2> tmp {
-        {imstream.at(0), imstream.at(1)}
-    };
-    if (tmp != soi) throw stdruntime_error("Error in bmpbmpparse_fileheader, file isn't a Windows BMP file\n");
+    BITMAPFILEHEADER header = { 0 };
+
+    if (tmp != soi) _putws(L"Error in parse_fileheader, file isn't a Windows BMP file\n");
     header.SOI            = soi;
-    header.FSIZE          = *<const uint32_t*>(imstream.data() + 2);
-    header.PIXELDATASTART = *<const uint32_t*>(imstream.data() + 10);
+    header.FSIZE          = *(const uint32_t*) (imstream + 2);
+    header.PIXELDATASTART = *(const uint32_t*) (imstream + 10);
 
     return header;
 }

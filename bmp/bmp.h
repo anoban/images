@@ -1,7 +1,6 @@
 #pragma once
 #ifndef __BMP_H_
     #define __BMP_H_
-
     #include <stdint.h>
 
 static const uint8_t SOIMAGE[2] = { 'B', 'M' };
@@ -10,12 +9,14 @@ static const uint8_t SOIMAGE[2] = { 'B', 'M' };
 // this helps in recognizing the file format as .bmp
 // the first two bytes will be 'B', 'M'
 
+    #pragma pack(push, 1)
 typedef struct {
         uint8_t  SOI[2];   // 'B', 'M'
         uint32_t FSIZE;
         uint32_t RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
         uint32_t PIXELDATASTART;
 } BITMAPFILEHEADER;
+    #pragma pack(pop)
 
 // types of compressions used in BMP files.
 typedef enum { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN } COMPRESSIONKIND;
