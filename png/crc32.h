@@ -16,6 +16,7 @@ static const uint32_t CASTAGNOLI             = 0x82F63B78;
 // Also has better error detection characteristics than IEEE. https://dx.doi.org/10.1109/DSN.2002.1028931
 static const uint32_t KOOPMAN                = 0xEB31D82E;
 
+// computed and stored using the IEEE variant of the polynomial
 static const uint32_t CRC32_LOOKUPTABLE[256] = {
     0,          1996959894, 3993919788, 2567524794, 124634137,  1886057615, 3915621685, 2657392035, 249268274,  2044508324, 3772115230,
     2547177864, 162941995,  2125561021, 3887607047, 2428444049, 498536548,  1789927666, 4089016648, 2227061214, 450548861,  1843258603,
@@ -43,10 +44,11 @@ static const uint32_t CRC32_LOOKUPTABLE[256] = {
     3272380065, 1510334235, 755167117
 };
 
-static bool is_lkptable_initialized = false;
-
     // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
     #ifdef __RUNTIME_POPULATE_CRCTABLE__
+
+static bool is_lkptable_initialized = false;
+
 static void __forceinline __stdcall populate(void) {
     uint32_t byte = 0;
     uint32_t crc  = 0;
@@ -62,7 +64,7 @@ static void __forceinline __stdcall populate(void) {
         CRC32_LOOKUPTABLE[i] = crc;
     }
 }
-    #endif
+    #endif // !__RUNTIME_POPULATE_CRCTABLE__
 
 // carries dependancy on CRC32_LOOKUPTABLE
 // works great, tested :) Produces same results as Python's binascii's crc32 method :)

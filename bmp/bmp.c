@@ -12,55 +12,28 @@
 #include <handleapi.h>
 #include <sal.h>
 
-uint8_t* open(_In_ const wchar_t* const restrict path, _Inout_ uint64_t* const nread_bytes) {
-    *nread_bytes    = 0;
-    HANDLE64 handle = CreateFileW(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
-    uint8_t* buffer = NULL;
+static const uint8_t SOIMAGE[2] = { 'B', 'M' };
 
-    if (handle == INVALID_HANDLE_VALUE) fwprintf_s(stderr, L"Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__);
-
-    LARGE_INTEGER size = { .QuadPart = 0 };
-    if (!GetFileSizeEx(handle, &size)) {
-        CloseHandle(handle);
-        fwprintf_s(stderr, L"Error {:4d} in GetFileSizeEx [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__);
-    }
-
-    // allocation errors will be automatically handled by the C++ runtime.
-
-    if (!ReadFile(handle, buffer, (DWORD) size.QuadPart, (LPDWORD) nread_bytes, NULL)) {
-        CloseHandle(handle);
-        fwprintf_s(stderr, L"Error {:4d} in ReadFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__);
-    }
-
-    CloseHandle(handle);
-    return buffer;
-}
-
-stdvector<stdwstring> bmpremove_ext(
-    _In_count_(size) wchar_t* const fnames[], _In_ const size_t length, _In_ const wchar_t* const extension
-) {
-    stdvector<stdwstring> trimmed {};
-    for (size_t i = 1; i < length; ++i) {
-        stdwstring tmp { fnames[i] };
-        // if the string contains multiple instances of the extension, all the characters following the first instance will be erased
-        // e.g. "dell_alienware_hd.bmp.bwhite.bmp" will become dell_alienware_hd is the extension is ".bmp"
-        size_t     pos {};
-        if ((pos = tmp.find(extension)) != stdwstringnpos) trimmed.push_back(stdmove(tmp.substr(0, pos)));
-    }
-    return trimmed;
-}
-
-BITMAPFILEHEADER parse_fileheader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
+BITMAPFILEHEADER     parse_fileheader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
     static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
     assert(length >= sizeof(BITMAPFILEHEADER));
 
-    BITMAPFILEHEADER header = { 0 };
+    BITMAPFILEHEADER header = {
+            .SOI            = { 0 },
+            .FSIZE          = 0,
+            .RESERVED       = 0,
+            .PIXELDATASTART = 0,
+    };
 
-    if (tmp != soi) _putws(L"Error in parse_fileheader, file isn't a Windows BMP file\n");
-    header.SOI            = soi;
-    header.FSIZE          = *(const uint32_t*) (imstream + 2);
-    header.PIXELDATASTART = *(const uint32_t*) (imstream + 10);
+    if ((SOIMAGE[0] != imstream[0]) && (SOIMAGE[1] != imstream[1])) {
+        _putws(L"Error in parse_fileheader, file isn't a Windows BMP file\n");
+        return header;
+    }
 
+    header.SOI[0]         = 'B';
+    header.SOI[1]         = 'M';
+    header.FSIZE          = *(uint32_t*) (imstream + 2);
+    header.PIXELDATASTART = *(uint32_t*) (imstream + 10);
     return header;
 }
 
@@ -78,7 +51,7 @@ BITMAPINFOHEADER parse_infoheader(_In_ const uint8_t* const restrict imstream, _
     static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "Error: BITMAPINFOHEADER must be 40 bytes in size");
     assert(imstream.size() >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
 
-    BITMAPINFOHEADER header { 0, 0, 0, 0, 0, COMPRESSIONKINDUNKNOWN, 0, 0, 0, 0, 0 };
+    BITMAPINFOHEADER header = { 0, 0, 0, 0, 0, UNKNOWN, 0, 0, 0, 0, 0 };
     if (*<const uint32_t*>(imstream.data() + 14U) > 40) throw stdruntime_error("Error: Unparseable BITMAPINFOHEADER\n");
 
     header.HEADERSIZE    = *(const uint32_t*) (imstream + 14);

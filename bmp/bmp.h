@@ -3,8 +3,6 @@
     #define __BMP_H_
     #include <stdint.h>
 
-static const uint8_t SOIMAGE[2] = { 'B', 'M' };
-
 // every Windows BMP begins with a BITMAPFILEHEADER struct
 // this helps in recognizing the file format as .bmp
 // the first two bytes will be 'B', 'M'
