@@ -166,7 +166,7 @@ AlignOperands:   Align          # int aaa = bbbbbbbbbbbbbbb +
           
 AlignTrailingComments:
   Kind:            Always
-  OverEmptyLines:  5
+  OverEmptyLines:  0
 # int a;      // all these
 # 
 # int ab;     // comments are

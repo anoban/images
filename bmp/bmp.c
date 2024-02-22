@@ -1,39 +1,29 @@
 #include <assert.h>
 #include <bmp.h>
-#include <stdint.h>
-#include <stdio.h>
-
-#define _AMD64_ // architecture
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_MEAN
-
 #include <errhandlingapi.h>
 #include <fileapi.h>
 #include <handleapi.h>
 #include <sal.h>
+#include <stdio.h>
 
 static const uint8_t SOIMAGE[2] = { 'B', 'M' };
 
 BITMAPFILEHEADER     parse_fileheader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
-    static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
+    // static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
+    // above won't work with WinGdi's structs as they aren't packed. So commenting out the above line:(
     assert(length >= sizeof(BITMAPFILEHEADER));
 
-    BITMAPFILEHEADER header = {
-            .SOI            = { 0 },
-            .FSIZE          = 0,
-            .RESERVED       = 0,
-            .PIXELDATASTART = 0,
-    };
+    BITMAPFILEHEADER header = { .bfType = 0, .bfSize = 0, .bfReserved1 = 0, .bfReserved2 = 0, .bfOffBits = 0 };
 
     if ((SOIMAGE[0] != imstream[0]) && (SOIMAGE[1] != imstream[1])) {
         _putws(L"Error in parse_fileheader, file isn't a Windows BMP file\n");
         return header;
     }
 
-    header.SOI[0]         = 'B';
-    header.SOI[1]         = 'M';
-    header.FSIZE          = *(uint32_t*) (imstream + 2);
-    header.PIXELDATASTART = *(uint32_t*) (imstream + 10);
+    header.SOI[0]    = 'B';
+    header.SOI[1]    = 'M';
+    header.bfSize    = *(uint32_t*) (imstream + 2);  // file size in bytes
+    header.bfOffBits = *(uint32_t*) (imstream + 10); // offset to the start of pixel data
     return header;
 }
 
@@ -105,22 +95,19 @@ void bmpbmpserialize(_In_ const stdwstring& path) {
     return;
 }
 
-bmpbmpbmp(_In_ const stdwstring& path) {
-    try {
-        [[msvcforceinline_calls]] auto fbuff { open(path, &size) };
-        [[msvcforceinline_calls]] fh   = parse_fileheader(fbuff);
-        [[msvcforceinline_calls]] infh = parse_infoheader(fbuff);
+bmp(_In_ const stdwstring& path) {
+    auto fbuff { open(path, &size) };
+    fh      = parse_fileheader(fbuff);
+    infh    = parse_infoheader(fbuff);
 
-        npixels                        = (size - 54) / 4;
-        for (auto it = fbuff.begin() + 54; it != fbuff.cend(); it += 4) pixels.push_back(RGBQUAD { *it, *(it + 1), *(it + 2), *(it + 3) });
-    } catch (const stdexception& excpt) { throw stdexception(excpt); }
+    npixels = (size - 54) / 4;
+    for (auto it = fbuff.begin() + 54; it != fbuff.cend(); it += 4) pixels.push_back(RGBQUAD { *it, *(it + 1), *(it + 2), *(it + 3) });
 }
 
-constexpr bmpbmpbmp(_In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const stdvector<RGBQUAD>& pbuff) noexcept
-    :
+bmp(_In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const stdvector<RGBQUAD>& pbuff) :
     fh { headf }, infh { headinf }, pixels { stdmove(pbuff) } { }
 
-void bmpbmpinfo(void) noexcept {
+void info(void) {
     wprintf_s(
         L"File size %Lf MiBs\nPixel data start offset: %d\n"
         L"BITMAPINFOHEADER size: %u\nImage width: %u\nImage height: %u\nNumber of planes: %hu\n"
@@ -158,7 +145,7 @@ void bmpbmpinfo(void) noexcept {
     return;
 }
 
-tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) noexcept {
+tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace)
@@ -200,7 +187,7 @@ tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) noexcept {
         return copy;
 }
 
-stdoptional<bmpbmp> tonegative(_In_opt_ const bool inplace) noexcept {
+stdoptional<bmpbmp> tonegative(_In_opt_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace) {
@@ -222,7 +209,7 @@ stdoptional<bmpbmp> tonegative(_In_opt_ const bool inplace) noexcept {
         return copy;
 }
 
-stdoptional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace) noexcept {
+stdoptional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace) {
