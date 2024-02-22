@@ -80,7 +80,7 @@ bool serialize(
 
     DWORD nbytes = 0;
 
-    if (!WriteFile(hFile, buffer, 54, &nbytes, NULL)) {
+    if (!WriteFile(hFile, buffer, size, &nbytes, NULL)) {
         fwprintf_s(stderr, L"Error %4d in WriteFile\n", GetLastError());
         goto PREMATURE_RETURN;
     }

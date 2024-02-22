@@ -52,10 +52,8 @@ typedef struct chunk {
         uint32_t crc32;
 } chunk_t;
 
-bool validate_chunk(_In_ const chunk_t* const restrict chunk) {
-    bool is_valid = true;
-    for (size_t i = 0; i < 4; ++i) is_valid &= isascii(chunk->type[i]);
-    return is_valid;
+bool IsValidPngChunk(_In_ const chunk_t* const restrict chunk) {
+    return isascii(chunk->type[0]) && isascii(chunk->type[1]) && isascii(chunk->type[2]) && isascii(chunk->type[3]);
 }
 
 /*

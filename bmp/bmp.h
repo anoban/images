@@ -10,6 +10,14 @@
         #include <wingdi.h>
     #endif // !__USE_HANDROLLED_BMP_STRUCTS__
 
+/*
+        BMP format supports 1, 4, 8, 16, 24 and 32 bits per pixel.
+        Even though Windows BMP format supports simple run length compression for 4 or 8 bits per pixel, it's rarely useful since
+        it can only be used with large pixel blocks of identical colours.
+        
+        Multibyte integers in Windows BMP are stored LSB first (LE byte  order)
+*/
+
 // Since BMP format originted in Microsoft, Windows SDK comes pre-packed with almost all necessary data structures and routines
 // needed to read in and process
 

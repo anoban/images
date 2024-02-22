@@ -68,7 +68,7 @@ static void __forceinline __stdcall populate(void) {
 
 // carries dependancy on CRC32_LOOKUPTABLE
 // works great, tested :) Produces same results as Python's binascii's crc32 method :)
-static __forceinline uint32_t __stdcall crc32checksum(
+static __forceinline uint32_t __stdcall GetCrc32Checksum(
     _In_count_c_(length) const uint8_t* const restrict bytestream, _In_ const size_t length
 ) {
     uint32_t crc = 0xFFFFFFFF;
