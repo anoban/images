@@ -5,6 +5,7 @@
 #include <fileapi.h>
 #include <handleapi.h>
 #include <heapapi.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <windef.h>
@@ -55,4 +56,39 @@ GET_FILESIZE_ERR:
 INVALID_HANDLE_ERR:
     *size = 0;
     return NULL;
+}
+
+// a file format agnostic write routine to serialize binary image files.
+// if a file with the specified name exists on disk, it will be overwriten.
+bool serialize(
+    _In_ const wchar_t* const restrict filename,
+    _In_ const uint8_t* const restrict buffer,
+    _In_ const size_t size,
+    _In_ const bool   free_after_use /* specifies whether to free the buffer after serialization */
+) {
+    // buffer is assumed to be allocated with HeapAlloc, i.e HeapFree will be invoked to free the buffer NOT UCRT's free()
+    // one major caveat is that the caller needs to pass in a byte stream instead of a image struct, which implies a potentially
+    // unnecessary memory allocationand buffer creation from the image structs.
+    // defining separate write routines for each image format will be redundant and will ruin the modularity of the project.
+
+    const HANDLE64 hFile = CreateFileW(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE) {
+        fwprintf_s(stderr, L"Error %d in CreateFileW\n", GetLastError());
+        goto PREMATURE_RETURN;
+    }
+
+    DWORD nbytes = 0;
+
+    if (!WriteFile(hFile, buffer, 54, &nbytes, NULL)) {
+        fwprintf_s(stderr, L"Error %4d in WriteFile\n", GetLastError());
+        goto PREMATURE_RETURN;
+    }
+
+    CloseHandle(hFile);
+    return true;
+
+PREMATURE_RETURN:
+    CloseHandle(hFile);
+    return false;
 }

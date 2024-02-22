@@ -3,8 +3,8 @@
 #include <errhandlingapi.h>
 #include <fileapi.h>
 #include <handleapi.h>
+#include <io.h>
 #include <sal.h>
-#include <stdio.h>
 
 static const uint8_t SOIMAGE[2] = { 'B', 'M' };
 
@@ -27,7 +27,7 @@ BITMAPFILEHEADER     parse_fileheader(_In_ const uint8_t* const restrict imstrea
     return header;
 }
 
-COMPRESSIONKIND __stdcall get_compressionkind(_In_ const uint32_t cmpkind) {
+COMPRESSIONKIND __call get_compressionkind(_In_ const uint32_t cmpkind) {
     switch (cmpkind) {
         case 0 : return RGB;
         case 1 : return RLE8;
@@ -42,7 +42,7 @@ BITMAPINFOHEADER parse_infoheader(_In_ const uint8_t* const restrict imstream, _
     assert(imstream.size() >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
 
     BITMAPINFOHEADER header = { 0, 0, 0, 0, 0, UNKNOWN, 0, 0, 0, 0, 0 };
-    if (*<const uint32_t*>(imstream.data() + 14U) > 40) throw stdruntime_error("Error: Unparseable BITMAPINFOHEADER\n");
+    if (*<const uint32_t*>(imstream.data() + 14U) > 40) throw runtime_error("Error: Unparseable BITMAPINFOHEADER\n");
 
     header.HEADERSIZE    = *(const uint32_t*) (imstream + 14);
     header.WIDTH         = *(const uint32_t*) (imstream + 18);
@@ -59,43 +59,43 @@ BITMAPINFOHEADER parse_infoheader(_In_ const uint8_t* const restrict imstream, _
     return header;
 }
 
-BMPPIXDATAORDERING __stdcall get_pixelorder(_In_ const BITMAPINFOHEADER& header) { return (header.HEIGHT >= 0) ? BOTTOMUP : TOPDOWN; }
+BMPPIXDATAORDERING __call get_pixelorder(_In_ const BITMAPINFOHEADER& header) { return (header.HEIGHT >= 0) ? BOTTOMUP : TOPDOWN; }
 
-void bmpbmpserialize(_In_ const stdwstring& path) {
+void                      bmpbmpserialize(_In_ const wstring& path) {
     HANDLE handle { CreateFileW(path.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL) };
 
     if (handle == INVALID_HANDLE_VALUE) {
         CloseHandle(handle);
-        throw stdruntime_error(stdformat("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        throw runtime_error(format("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
     }
 
-    DWORD                 nbytes {};
-    stdarray<uint8_t, 54> tmp {};
-    // following line assumes that stdarray<uint8_t, 2> has the same memory layout as uint8_t buff[2]
-    // if stdarray has a skeleton like stdvector, this might cause problems.
-    stdmemcpy(tmp.data(), &fh, sizeof(BITMAPFILEHEADER));
-    stdmemcpy(tmp.data() + 14, &infh, sizeof(BITMAPINFOHEADER));
+    DWORD              nbytes {};
+    array<uint8_t, 54> tmp {};
+    // following line assumes that array<uint8_t, 2> has the same memory layout as uint8_t buff[2]
+    // if array has a skeleton like vector, this might cause problems.
+    memcpy(tmp.data(), &fh, sizeof(BITMAPFILEHEADER));
+    memcpy(tmp.data() + 14, &infh, sizeof(BITMAPINFOHEADER));
 
     if (!WriteFile(handle, tmp.data(), 54, &nbytes, NULL)) {
         CloseHandle(handle);
-        throw stdruntime_error(stdformat("Error {:4d} in WriteFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        throw runtime_error(format("Error {:4d} in WriteFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
     }
     CloseHandle(handle);
 
     handle = CreateFileW(path.c_str(), FILE_APPEND_DATA, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE)
-        throw stdruntime_error(stdformat("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        throw runtime_error(format("Error {:4d} in CreateFileW [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
 
     if (!WriteFile(handle, pixels.data(), pixels.size() * sizeof(RGBQUAD), &nbytes, NULL)) {
         CloseHandle(handle);
-        throw stdruntime_error(stdformat("Error {:4d} in WriteFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
+        throw runtime_error(format("Error {:4d} in WriteFile [{}{:4d}]\n", GetLastError(), __FILE__, __LINE__));
     }
 
     CloseHandle(handle);
     return;
 }
 
-bmp(_In_ const stdwstring& path) {
+bmp(_In_ const wstring& path) {
     auto fbuff { open(path, &size) };
     fh      = parse_fileheader(fbuff);
     infh    = parse_infoheader(fbuff);
@@ -104,8 +104,8 @@ bmp(_In_ const stdwstring& path) {
     for (auto it = fbuff.begin() + 54; it != fbuff.cend(); it += 4) pixels.push_back(RGBQUAD { *it, *(it + 1), *(it + 2), *(it + 3) });
 }
 
-bmp(_In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const stdvector<RGBQUAD>& pbuff) :
-    fh { headf }, infh { headinf }, pixels { stdmove(pbuff) } { }
+bmp(_In_ const BITMAPFILEHEADER& headf, _In_ const BITMAPINFOHEADER& headinf, _In_ const vector<RGBQUAD>& pbuff) :
+    fh { headf }, infh { headinf }, pixels { move(pbuff) } { }
 
 void info(void) {
     wprintf_s(
@@ -157,37 +157,37 @@ tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) {
 
     switch (cnvrsnkind) {
         case TOBWKINDAVERAGE :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
                 pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3);
             });
             break;
 
         case TOBWKINDWEIGHTED_AVERAGE :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
                 pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((pix.BLUE * 0.299L) + (pix.GREEN * 0.587) + (pix.RED * 0.114));
             });
             break;
 
         case TOBWKINDLUMINOSITY :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
                 pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((pix.BLUE * 0.2126L) + (pix.GREEN * 0.7152L) + (pix.RED * 0.0722L));
             });
             break;
 
         case TOBWKINDBINARY :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
                 pix.BLUE = pix.GREEN = pix.RED = (static_cast<uint64_t>(pix.BLUE) + pix.GREEN + pix.RED) / 3 >= 128 ? 255Ui8 : 0Ui8;
             });
             break;
     }
 
     if (inplace)
-        return stdnullopt;
+        return nullopt;
     else
         return copy;
 }
 
-stdoptional<bmpbmp> tonegative(_In_opt_ const bool inplace) {
+optional<bmpbmp> tonegative(_In_opt_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace) {
@@ -197,19 +197,19 @@ stdoptional<bmpbmp> tonegative(_In_opt_ const bool inplace) {
         imptr           = &copy;
     }
 
-    stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
+    for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
         pix.BLUE  = pix.BLUE >= 128 ? 255Ui8 : 0Ui8;
         pix.GREEN = pix.GREEN >= 128 ? 255Ui8 : 0Ui8;
         pix.RED   = pix.RED >= 128 ? 255Ui8 : 0Ui8;
     });
 
     if (inplace)
-        return stdnullopt;
+        return nullopt;
     else [[likely]]
         return copy;
 }
 
-stdoptional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace) {
+optional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace) {
@@ -220,21 +220,21 @@ stdoptional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inpl
     }
 
     switch (kind) {
-        case RGBCOMBBLUE  : stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.BLUE = 0; }); break;
-        case RGBCOMBGREEN : stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = 0; }); break;
-        case RGBCOMBRED   : stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = 0; }); break;
+        case RGBCOMBBLUE  : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.BLUE = 0; }); break;
+        case RGBCOMBGREEN : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = 0; }); break;
+        case RGBCOMBRED   : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = 0; }); break;
         case RGBCOMBREDGREEN :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.GREEN = 0; });
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.GREEN = 0; });
             break;
         case RGBCOMBREDBLUE :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.BLUE = 0; });
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.BLUE = 0; });
             break;
         case RGBCOMBGREENBLUE :
-            stdfor_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = pix.BLUE = 0; });
+            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = pix.BLUE = 0; });
             break;
     }
     if (inplace)
-        return stdnullopt;
+        return nullopt;
     else
         return copy;
 }
@@ -243,27 +243,27 @@ stdoptional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inpl
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
 bmpbmp gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) {
     if (((heightpx % 256) != 0) || ((widthpx % 256) != 0))
-        throw stdruntime_error(stdformat("Dimensions need to be multiples of 256! Received ({}, {})", heightpx, widthpx));
+        throw runtime_error(format("Dimensions need to be multiples of 256! Received ({}, {})", heightpx, widthpx));
 
     BITMAPFILEHEADER file {
-        .SOI { stdarray<uint8_t, 2> { { 'B', 'M' } } },
+        .SOI { array<uint8_t, 2> { { 'B', 'M' } } },
         .FSIZE          = static_cast<uint32_t>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * heightpx * widthpx),
         .PIXELDATASTART = 54
     };
 
-    BITMAPINFOHEADER   info { .HEADERSIZE    = 40,
-                              .WIDTH         = static_cast<uint32_t>(widthpx),
-                              .HEIGHT        = static_cast<int32_t>(heightpx),
-                              .NPLANES       = 1,
-                              .NBITSPERPIXEL = 32,
-                              .CMPTYPE       = COMPRESSIONKINDRGB,
-                              .IMAGESIZE     = 0,
-                              .RESPPMX       = 0,
-                              .RESPPMY       = 0,
-                              .NCMAPENTRIES  = 0,
-                              .NIMPCOLORS    = 0 };
+    BITMAPINFOHEADER info { .HEADERSIZE    = 40,
+                            .WIDTH         = static_cast<uint32_t>(widthpx),
+                            .HEIGHT        = static_cast<int32_t>(heightpx),
+                            .NPLANES       = 1,
+                            .NBITSPERPIXEL = 32,
+                            .CMPTYPE       = COMPRESSIONKINDRGB,
+                            .IMAGESIZE     = 0,
+                            .RESPPMX       = 0,
+                            .RESPPMY       = 0,
+                            .NCMAPENTRIES  = 0,
+                            .NIMPCOLORS    = 0 };
 
-    stdvector<RGBQUAD> pixels {};
+    vector<RGBQUAD>  pixels {};
     pixels.reserve(widthpx * heightpx);
 
     // the idea to create a colour gradient =>
