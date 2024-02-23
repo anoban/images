@@ -1,10 +1,13 @@
 #include <assert.h>
-#include <bmp.h>
-#include <errhandlingapi.h>
-#include <fileapi.h>
-#include <handleapi.h>
-#include <sal.h>
+#include <heapapi.h>
+#include <stdbool.h>
 #include <stdio.h>
+// clang-format  off
+#include <bmp.h>
+#include <imageio.h>
+// clang-format on
+
+// ALL INLINE FUNCTIONS ARE MEANT TO BE USED WITHIN THIS TRANSLATION UNIT
 
 static const uint16_t SOI = 0x4D42; // that's 'M' followed by a 'B' (LE)
 // WinGdi's BITMAPFILEHEADER uses a uint16_t for Start Of Image instead of two chars
@@ -16,19 +19,22 @@ static __forceinline BITMAPFILEHEADER __stdcall ParseFileHeader(_In_ const uint8
 
     BITMAPFILEHEADER header = { .bfType = 0, .bfSize = 0, .bfReserved1 = 0, .bfReserved2 = 0, .bfOffBits = 0 };
 
-    if (('B' != imstream[0]) && ('M' != imstream[1])) {
-        _putws(L"Error in ParseFileHeader, file isn't a Windows BMP file\n");
+    if (('B' != imstream[0]) && ('M' != imstream[1])) { // validate that the passed buffer is of a BMP file
+        _putws(L"Error in ParseFileHeader, file isn't a Windows BMP file");
         return header;
     }
 
     header.bfType    = SOI;
-    header.bfSize    = *(uint32_t*) (imstream + 2);  // file size in bytes
+    header.bfSize    = *(uint32_t*) (imstream + 2); // file size in bytes
+    // 4 bytes skipped (bfReserved1, bfReserved2)
     header.bfOffBits = *(uint32_t*) (imstream + 10); // offset to the start of pixel data
     return header;
 }
 
-static __forceinline COMPRESSIONKIND __stdcall GetCompressionKind(_In_ const uint32_t cmpkind) {
-    switch (cmpkind) {
+// find the type of compression used in the BMP file
+// BMP files, in general aren't compressed
+static __forceinline COMPRESSIONKIND __stdcall GetCompressionKind(_In_ const uint32_t compressionkind) {
+    switch (compressionkind) {
         case 0 : return RGB;
         case 1 : return RLE8;
         case 2 : return RLE4;
@@ -61,17 +67,17 @@ static __forceinline BITMAPINFOHEADER __stdcall ParseInfoHeader(_In_ const uint8
         return header;
     }
 
-    header.biSize          = *(const uint32_t*) (imstream + 14);
-    header.biWidth         = *(const uint32_t*) (imstream + 18);
-    header.biHeight        = *(const int32_t*) (imstream + 22);
-    header.biPlanes        = *(const uint16_t*) (imstream + 26);
-    header.biBitCount      = *(const uint16_t*) (imstream + 28);
-    header.biCompression   = GetCompressionKind(*(const uint32_t*) (imstream + 30U));
-    header.biSizeImage     = *(const uint32_t*) (imstream + 34);
-    header.biXPelsPerMeter = *(const uint32_t*) (imstream + 38);
-    header.biYPelsPerMeter = *(const uint32_t*) (imstream + 42);
-    header.biClrUsed       = *(const uint32_t*) (imstream + 46);
-    header.biClrImportant  = *(const uint32_t*) (imstream + 50);
+    header.biSize          = *(uint32_t*) (imstream + 14);
+    header.biWidth         = *(uint32_t*) (imstream + 18);
+    header.biHeight        = *(int32_t*) (imstream + 22);
+    header.biPlanes        = *(uint16_t*) (imstream + 26);
+    header.biBitCount      = *(uint16_t*) (imstream + 28);
+    header.biCompression   = GetCompressionKind(*(uint32_t*) (imstream + 30U));
+    header.biSizeImage     = *(uint32_t*) (imstream + 34);
+    header.biXPelsPerMeter = *(uint32_t*) (imstream + 38);
+    header.biYPelsPerMeter = *(uint32_t*) (imstream + 42);
+    header.biClrUsed       = *(uint32_t*) (imstream + 46);
+    header.biClrImportant  = *(uint32_t*) (imstream + 50);
 
     return header;
 }
@@ -80,26 +86,41 @@ static __forceinline BMPPIXDATAORDERING __stdcall get_pixelorder(_In_ const BITM
     return (header.biHeight >= 0) ? BOTTOMUP : TOPDOWN;
 }
 
-void  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image) { }
+bool  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image) { }
 
-bmp_t BmpRead(_In_ const wstring& path) {
-    auto fbuff { open(path, &size) };
-    fh      = ParseFileHeader(fbuff);
-    infh    = ParseInfoHeader(fbuff);
+bmp_t BmpRead(_In_ const wchar_t* const restrict filepath) {
+    size_t               size   = 0;
+    bmp_t                image  = { 0 }; // will be used as an empty placeholder for premature returns until members are properly assigned
+    const uint8_t* const buffer = Open(filepath, &size); // HeapFree()
+    if (!buffer) return image;                           // Open will do the error reporting, so just exiting the function is enough
+    const BITMAPFILEHEADER fhead = ParseFileHeader(buffer, size); // 14 bytes (packed)
+    if (!fhead.bfSize) return image; // again ParseFileHeader will report errors, if the predicate isn't satisified, exit the routine
+    const BITMAPINFOHEADER infhead = ParseInfoHeader(buffer, size); // 40 bytes (packed)
+    if (!infhead.biSize) return image;                              // error reporting is handled by ParseInfoHeader
 
-    npixels = (size - 54) / 4;
-    for (auto it = fbuff.begin() + 54; it != fbuff.cend(); it += 4) pixels.push_back(RGBQUAD { *it, *(it + 1), *(it + 2), *(it + 3) });
+    const size_t npixels = (size - 54) / 4; // RGBQUAD consumes 4 bytes
+
+    return image;
 }
 
+// prints out information about the passed BMP file
 void BmpInfo(_In_ const bmp_t* const image) {
     wprintf_s(
-        L"File size %Lf MiBs\nPixel data start offset: %d\n"
-        L"BITMAPINFOHEADER size: %u\nImage width: %u\nImage height: %u\nNumber of planes: %hu\n"
-        L"Number of bits per pixel: %hu\nImage size: %u\nResolution PPM(X): %u\nResolution PPM(Y): %u\nNumber of used colormap entries: % u\n"
+        L"%s BMP file\n"
+        L"BMP pixel ordering: %s\n",
+        infh.IMAGESIZE != 0 ? L"Compressed" : L"Uncompressed",
+        get_pixelorder(infh) == BOTTOMUP ? L"BOTTOMUP" : L"TOPDOWN"
+    );
+
+    wprintf_s(
+        L"File size %.4Lf MiBs\n"
+        L"Image width: %5u pixels\n",
+        L"Image height: %5u pixels\n",
+        L"Number of planes: %hu\n"
+        L"Pixel bit depth: %4hu\n"
+        L"Image size: %u\nResolution PPM(X): %u\nResolution PPM(Y): %u\n"
         L"Number of important colors: % u\n",
         ((long double) (fh.FSIZE) / (1024 * 1024LLU)),
-        image->.PIXELDATASTART,
-        image->infoheader.HEADERSIZE,
         image->infoheader.WIDTH,
         image->infoheader.HEIGHT,
         image->infoheader.NPLANES,
@@ -112,34 +133,27 @@ void BmpInfo(_In_ const bmp_t* const image) {
     );
 
     switch (image->infoheader.biCompression) {
-        case RGB       : _putws(L"BITMAPINFOHEADER.CMPTYPE: RGB"); break;
-        case RLE4      : _putws(L"BITMAPINFOHEADER.CMPTYPE: RLE4"); break;
-        case RLE8      : _putws(L"BITMAPINFOHEADER.CMPTYPE: RLE8"); break;
-        case BITFIELDS : _putws(L"BITMAPINFOHEADER.CMPTYPE: BITFIELDS"); break;
-        case UNKNOWN   : _putws(L"BITMAPINFOHEADER.CMPTYPE: UNKNOWN"); break;
+        case RGB       : _putws(L"RGB"); break;
+        case RLE4      : _putws(L"RLE4"); break;
+        case RLE8      : _putws(L"RLE8"); break;
+        case BITFIELDS : _putws(L"BITFIELDS"); break;
+        case UNKNOWN   : _putws(L"UNKNOWN"); break;
     }
-
-    wprintf_s(
-        L"%s BMP file\n"
-        L"BMP pixel ordering: %s\n",
-        infh.IMAGESIZE != 0 ? L"Compressed" : L"Uncompressed",
-        get_pixelorder(infh) == BOTTOMUP ? L"BOTTOMUP" : L"TOPDOWN"
-    );
 
     return;
 }
 
-tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) {
-    bmp* imptr { NULL };
-    bmp  copy {};
-    if (inplace)
-        imptr = this;
-    else {
-        [[likely]] copy = *this; // copy the bmp instance
-        imptr           = &copy;
+// if inplace = true, the returned struct could be safely ignored (it'll be a skeletal copy of the struct passed into the routine, with the same buffer)
+bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace) {
+    HANDLE64 hProcHeap = NULL;
+    RGBQUAD* altbuffer = NULL;
+    if (!inplace) {
+        hProcHeap = GetProcessHeap();
+        altbuffer = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // dsicount the 54 bytes occupied by the two structs
     }
 
-    switch (cnvrsnkind) {
+    bmp_t result = *image;
+    switch (conversionkind) {
         case AVERAGE :
             for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
                 pix.BLUE = pix.GREEN = pix.RED = static_cast<uint8_t>((static_cast<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3);
@@ -166,7 +180,7 @@ tobwhite(_In_ const TOBWKIND cnvrsnkind, _In_opt_ const bool inplace) {
     }
 }
 
-tonegative(_In_opt_ const bool inplace) {
+bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace) {
@@ -188,29 +202,23 @@ tonegative(_In_opt_ const bool inplace) {
         return copy;
 }
 
-optional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace) {
+bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace) {
     bmp* imptr { NULL };
     bmp  copy {};
     if (inplace) {
         imptr = this;
     } else {
-        [[likely]] copy = *this;
-        imptr           = &copy;
+        copy  = *this;
+        imptr = &copy;
     }
 
     switch (kind) {
-        case RGBCOMBBLUE  : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.BLUE = 0; }); break;
-        case RGBCOMBGREEN : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = 0; }); break;
-        case RGBCOMBRED   : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = 0; }); break;
-        case RGBCOMBREDGREEN :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.GREEN = 0; });
-            break;
-        case RGBCOMBREDBLUE :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.BLUE = 0; });
-            break;
-        case RGBCOMBGREENBLUE :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = pix.BLUE = 0; });
-            break;
+        case BLUE      : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.BLUE = 0; }); break;
+        case GREEN     : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = 0; }); break;
+        case RED       : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = 0; }); break;
+        case REDGREEN  : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.GREEN = 0; }); break;
+        case REDBLUE   : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.BLUE = 0; }); break;
+        case GREENBLUE : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = pix.BLUE = 0; }); break;
     }
     if (inplace)
         return nullopt;
@@ -220,9 +228,10 @@ optional<bmpbmp> remove_clr(_In_ const RGBCOMB kind, _In_opt_ const bool inplace
 
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
-bmpbmp gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx) {
+bmp_t GenGradient(_In_ const size_t heightpx, _In_ const size_t widthpx) {
+    bmp_t image = { 0 };
     if (((heightpx % 256) != 0) || ((widthpx % 256) != 0))
-        throw runtime_error(format("Dimensions need to be multiples of 256! Received ({}, {})", heightpx, widthpx));
+        fwprintf_s(stderr, L"Dimensions need to be multiples of 256! Received ({}, {})", heightpx, widthpx);
 
     BITMAPFILEHEADER file {
         .SOI { array<uint8_t, 2> { { 'B', 'M' } } },
@@ -264,5 +273,5 @@ bmpbmp gengradient(_In_opt_ const size_t heightpx, _In_opt_ const size_t widthpx
         }
         B++;
     }
-    return bmp(file, info, pixels);
+    return (bmp_t) { file, info, pixels };
 }

@@ -4,6 +4,8 @@
     #include <stdbool.h>
     #include <stdint.h>
 
+// for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
+
 // IEEE is by far and away the most common CRC-32 polynomial.
 // Used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
 static const uint32_t IEEE                   = 0xEDB88320;
@@ -44,10 +46,10 @@ static const uint32_t CRC32_LOOKUPTABLE[256] = {
     3272380065, 1510334235, 755167117
 };
 
-    // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
     #ifdef __RUNTIME_POPULATE_CRCTABLE__
-
-static bool is_lkptable_initialized = false;
+// would have to remove the const qualifier of CRC32_LOOKUPTABLE to allow write access
+// and GetCrc32Checksum will also need to be modofied to check whether CRC32_LOOKUPTABLE has been initialized already
+// use a global bool to register the initialization status
 
 static void __forceinline __stdcall populate(void) {
     uint32_t byte = 0;
@@ -67,7 +69,7 @@ static void __forceinline __stdcall populate(void) {
     #endif // !__RUNTIME_POPULATE_CRCTABLE__
 
 // carries dependancy on CRC32_LOOKUPTABLE
-// works great, tested :) Produces same results as Python's binascii's crc32 method :)
+// works great, tested :) Produces same results as Python's binascii.crc32() :)
 static __forceinline uint32_t __stdcall GetCrc32Checksum(
     _In_count_c_(length) const uint8_t* const restrict bytestream, _In_ const size_t length
 ) {

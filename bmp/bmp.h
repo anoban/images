@@ -2,8 +2,8 @@
 #ifndef __BMP_H_
     #define __BMP_H_
     #include <stdint.h>
-    #ifndef __USE_HANDROLLED_BMP_STRUCTS__
-        #define _AMD64_ // architecture
+    #ifndef __USE_HANDROLLED_BMP_STRUCTS__ //  DON'T UNLESS ABSOLUTELY NECESSARY
+        #define _AMD64_                    // architecture
         #define WIN32_LEAN_AND_MEAN
         #define WIN32_EXTRA_MEAN
         #include <windef.h>
@@ -11,11 +11,10 @@
     #endif // !__USE_HANDROLLED_BMP_STRUCTS__
 
 /*
-        BMP format supports 1, 4, 8, 16, 24 and 32 bits per pixel.
-        Even though Windows BMP format supports simple run length compression for 4 or 8 bits per pixel, it's rarely useful since
-        it can only be used with large pixel blocks of identical colours.
-        
-        Multibyte integers in Windows BMP are stored LSB first (LE byte  order)
+   BMP format supports 1, 4, 8, 16, 24 and 32 bits per pixel.
+   Even though Windows BMP format supports simple run length compression for 4 or 8 bits per pixel, it's rarely useful since
+   it can only be used with large pixel blocks of identical colours.
+   Multibyte integers in Windows BMP are stored LSB first (LE byte  order)
 */
 
 // Since BMP format originted in Microsoft, Windows SDK comes pre-packed with almost all necessary data structures and routines
@@ -26,7 +25,7 @@
 // the first two bytes will be 'B', 'M'
 
 // all these data structures are provided in wingdi.h, so let's just use them instead of reinventing the wheel.
-    #ifdef __USE_HANDROLLED_BMP_STRUCTS__
+    #ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DONT
 
     // #pragma pack directive is a risky business, will likely impede gratuitous runtime performance penalties
         #pragma pack(push, 1)
@@ -107,8 +106,6 @@ typedef enum { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN } COMPRESSIONKIND;
 
 // a struct representing a BMP image
 typedef struct bmp {
-        size_t           imgsize; // image size in bytes
-        size_t           npixels; // number of pixels in the BMP buffer
         BITMAPFILEHEADER fileheader;
         BITMAPINFOHEADER infoheader;
         RGBQUAD*         pixels; // pixel buffer

@@ -7,9 +7,9 @@
     #include <stdbool.h>
     #include <stdint.h>
 
-uint8_t* open(_In_ const wchar_t* const restrict file_name, _Inout_ size_t* const restrict size);
+uint8_t* Open(_In_ const wchar_t* const restrict file_name, _Inout_ size_t* const restrict size);
 
-bool     serialize(
+bool     Serialize(
         _In_ const wchar_t* const restrict filename,
         _In_ const uint8_t* const restrict buffer,
         _In_ const size_t size,
