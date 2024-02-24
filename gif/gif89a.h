@@ -12,7 +12,7 @@
 // In contrast to other image encodings GIF uses Little Endian byte ordering for multi byte values,
 // so no need for additional bit twiddling operations on Intel LE systems.
 
-// GIF format generally uses the LZW compression algorithm
+// GIF format generally uses the LZW compression.
 
 /*
     Each GIF file must contain a GIF header at the start of the binary byte stream.
@@ -20,9 +20,12 @@
     Applications that do not comply with GIF89a usually opt for a GIF87a standard GIF header
 */
 
+// succumbing to using Windows's naming conventions as I don't want functions look out of place with the Win32 routines they
+// interface with which religiously use Pascal case with Hungarian notation.
+// GIF file header
 typedef struct gifhead {
-        char signature[3]; // 'G', 'I', 'F'
-        char version[3];   // can be '8', '7', 'a' or '8', '9', 'a'
+        char ghSignature[3]; // the ASCII string "GIF"
+        char ghVersion[3];   // can be "87a" or "89a"
 } gifhead_t;
 
 /*
@@ -31,16 +34,18 @@ typedef struct gifhead {
     Individual Image Descriptors (IID) specify where are these images to be placed in the logical screen.
 */
 
+// GIF Logical Screen Descriptor
 typedef struct lsd {
-        uint16_t width;
-        uint16_t height;
-        uint8_t  bitfields;
-        uint8_t  gctabsize   : 3; // 2^(N + 1) gives the number of entries in the global colour table
-        uint8_t ctabsortflag : 1; // a flag registering whether the colours in the global colour table are sorted in the order of importance
-        uint8_t bitsperpixel : 3; // bit depth - 1
-        uint8_t gctabflag    : 1; // a flag registering whether there's a global colour table present
-        uint8_t backgroundcolor;  // offset to the global colour table
-        uint8_t pixelaspectratio; // if not 0, pixel width and pixel height are not equal
+        uint16_t glWidth;
+        uint16_t glHeight;
+        uint8_t  glBitfields;
+        uint8_t  glGctabsize    : 3; // 2^(N + 1) gives the number of entries in the global colour table
+        uint8_t  glCtabsortflag : 1;
+        // a flag registering whether the colours in the global colour table are sorted in the order of importance
+        uint8_t  glBitsperpixel : 3; // bit depth - 1
+        uint8_t  glGctabflag    : 1; // a flag registering whether there's a global colour table present
+        uint8_t  glBackgroundcolor;  // offset to the global colour table
+        uint8_t  glPixelaspectratio; // if not 0, pixel width and pixel height are not equal
 } lsd_t;
 
 #endif // !__GIF89A_H_

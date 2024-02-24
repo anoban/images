@@ -59,12 +59,12 @@ INVALID_HANDLE_ERR:
 }
 
 // a file format agnostic write routine to serialize binary image files.
-// if a file with the specified name exists on disk, it will be overwriten.
+// if a file with the specified name exists on disk, it will be overwritten.
 bool Serialize(
     _In_ const wchar_t* const restrict filename,
     _In_ const uint8_t* const restrict buffer,
     _In_ const size_t size,
-    _In_ const bool   free_after_use /* specifies whether to free the buffer after serialization */
+    _In_ const bool   freebuffer /* specifies whether to free the buffer after serialization */
 ) {
     // buffer is assumed to be allocated with HeapAlloc, i.e HeapFree will be invoked to free the buffer NOT UCRT's free()
     // one major caveat is that the caller needs to pass in a byte stream instead of a image struct, which implies a potentially
@@ -74,7 +74,7 @@ bool Serialize(
     const HANDLE64 hFile = CreateFileW(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (hFile == INVALID_HANDLE_VALUE) {
-        fwprintf_s(stderr, L"Error %d in CreateFileW\n", GetLastError());
+        fwprintf_s(stderr, L"Error %4d in CreateFileW\n", GetLastError());
         goto PREMATURE_RETURN;
     }
 
@@ -86,6 +86,10 @@ bool Serialize(
     }
 
     CloseHandle(hFile);
+    if (freebuffer) {
+        const HANDLE64 hProcHeap = GetProcessHeap(); // WARNING :: ignoring potential errors here
+        HeapFree(hProcHeap, 0, buffer);
+    }
     return true;
 
 PREMATURE_RETURN:

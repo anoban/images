@@ -8,7 +8,7 @@
                 "/arch:AVX512",
                 "/diagnostics:caret",
                 "/DDEBUG",
-                "/D_DEBUG", // Okay for C, but do not define this for C++
+                "/D_DEBUG",
                 "/F0x10485100",
                 "/favor:INTEL64",
                 "/fp:strict",

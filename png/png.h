@@ -45,16 +45,15 @@
 */
 
 typedef struct chunk {
-        uint32_t length;  // size of the data segment of a given chunk, in bytes (Big Endian format)
-                          // doesn't include any other parts of the chunk
-        char     type[4]; // PNG chunk type, usually encoded as 4 consecutive ASCII characters
-        uint32_t offset;
-        uint32_t crc32;
+        uint32_t pcLength;  // size of the data segment of a given chunk, in bytes (Big Endian format)
+                            // doesn't include any other parts of the chunk
+        char     pcType[4]; // PNG chunk type, usually encoded as 4 consecutive ASCII characters
+        uint32_t pcOffset;
+        uint32_t pcChecksum;
 } chunk_t;
 
-bool IsValidPngChunk(_In_ const chunk_t* const restrict chunk) {
-    return isascii(chunk->type[0]) && isascii(chunk->type[1]) && isascii(chunk->type[2]) && isascii(chunk->type[3]);
-}
+// are all the characters in pcType, valid ASCII characters?.
+bool __stdcall IsValidPngChunk(_In_ const chunk_t* const restrict chunk);
 
 /*
     If the first alphabet of a chunk type is in capital, it is a CRITICAL chunk, that all decoders must be able to parse
@@ -66,6 +65,14 @@ bool IsValidPngChunk(_In_ const chunk_t* const restrict chunk) {
         
     Second character of public chunk types and chunk types approved by the PNG development group will be in uppercase.
     Private chunks defined by applications must have a lowercase second character, in order not to conflict with publicly defined chunks.
+    
+    COPY SAFE CHUNKS
+    
+    The last alphabet of the chunk name will be in lowercase, if the chunk is safe to copy.
+    A decoder shall not attempt to copy non copy-safe chunks if it doesn't recognize them.
+    
+    e.g.
+    
 */
 
 #endif
