@@ -2,6 +2,8 @@
 #ifndef __BMP_H_
     #define __BMP_H_
     #include <stdint.h>
+    // these data structures are implemented for learning purpose, but the functions are designed to operate with WinGdi structs
+    // not these implementations
     #ifndef __USE_HANDROLLED_BMP_STRUCTS__ //  DON'T UNLESS ABSOLUTELY NECESSARY
         #define _AMD64_                    // architecture
         #define WIN32_LEAN_AND_MEAN
@@ -9,6 +11,8 @@
         #include <windef.h>
         #include <wingdi.h>
     #endif // !__USE_HANDROLLED_BMP_STRUCTS__
+
+    #pragma comment(lib, "Gdi32.lib")
 
 /*
    BMP format supports 1, 4, 8, 16, 24 and 32 bits per pixel.
@@ -27,6 +31,7 @@
 // all these data structures are provided in wingdi.h, so let's just use them instead of reinventing the wheel.
     #ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DONT
 
+        #pragma region _HANDROLLED_STRUCTS_
     // #pragma pack directive is a risky business, will likely impede gratuitous runtime performance penalties
         #pragma pack(push, 1)
 typedef struct {
@@ -89,7 +94,7 @@ typedef struct {
         uint8_t GREEN;
         uint8_t RED;
 } RGBTRIPLE;
-
+        #pragma endregion _HANDROLLED_STRUCTS_
     #endif // !__USE_HANDROLLED_BMP_STRUCTS__
 
 // order of pixels in the BMP buffer.

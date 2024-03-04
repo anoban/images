@@ -16,7 +16,7 @@ if ($unrecognized.Count -ne 0) {
     Exit 1
 }
 
-$cflags = @( 
+$cflags = @(
     "/arch:AVX512",
     "/diagnostics:caret",
     "/DNDEBUG",
@@ -37,18 +37,19 @@ $cflags = @(
     "/TC",
     "/Wall",
     "/wd4710",      # not inlined
+    "/wd4711",      # selected for inline expansion
     "/wd4820",      # struct padding
     "/Zc:preprocessor",
     "/link /DEBUG:NONE"
 )
 
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan
-cl.exe $cfiles $cflags    
+cl.exe $cfiles $cflags
 
 # If cl.exe returned 0, (i.e if the compilation succeeded,)
 
 if ($? -eq $True){
     foreach($file in $cfiles){
         Remove-Item $file.Replace(".c", ".obj") -Force
-    }    
+    }
 }

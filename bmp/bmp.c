@@ -172,36 +172,46 @@ void BmpInfo(_In_ const bmp_t* const image) {
 // if inplace = true, the returned struct could be safely ignored (it'll be a skeletal copy of the struct passed into the routine, with the same buffer)
 bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace) {
     HANDLE64 hProcHeap = NULL;
-    RGBQUAD* altbuffer = NULL;
-    if (!inplace) {
-        hProcHeap = GetProcessHeap();
-        altbuffer = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
-    }
+    RGBQUAD* pixels    = NULL;
+    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
 
-    bmp_t result = *image;
+    if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
+        hProcHeap = GetProcessHeap();
+        if (hProcHeap == INVALID_HANDLE_VALUE) {
+            fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
+            return temp;
+        }
+        pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
+        if (!pixels) {
+            fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
+            return temp;
+        }
+    } else
+        pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
+
     switch (conversionkind) {
-        case AVERAGE :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                pix.BLUE = pix.GREEN = pix.RED = <uint8_t>((<long double>(pix.BLUE) + pix.GREEN + pix.RED) / 3);
-            });
+        case AVERAGE : // just get the arithmetic average of all three RGB values
+            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
+                    (((long double) (image->pixels[i].rgbBlue)) + image->pixels[i].rgbGreen + image->pixels[i].rgbRed) / 3.0L;
             break;
 
-        case WEIGHTED_AVERAGE :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                pix.BLUE = pix.GREEN = pix.RED = <uint8_t>((pix.BLUE * 0.299L) + (pix.GREEN * 0.587) + (pix.RED * 0.114));
-            });
+        case WEIGHTED_AVERAGE : // RGB values are averaged using predetermined weights
+            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
+                    (image->pixels[i].rgbBlue * 0.299L + image->pixels[i].rgbGreen * 0.587L + image->pixels[i].rgbRed * 0.114L);
             break;
 
         case LUMINOSITY :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                pix.BLUE = pix.GREEN = pix.RED = <uint8_t>((pix.BLUE * 0.2126L) + (pix.GREEN * 0.7152L) + (pix.RED * 0.0722L));
-            });
+            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
+                    (image->pixels[i].rgbBlue * 0.2126L + image->pixels[i].rgbGreen * 0.7152L + image->pixels[i].rgbRed * 0.0722L);
             break;
 
         case BINARY :
-            for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) {
-                pix.BLUE = pix.GREEN = pix.RED = (<uint64_t>(pix.BLUE) + pix.GREEN + pix.RED) / 3 >= 128 ? 255Ui8 : 0Ui8;
-            });
+            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
+                    (((int32_t) (image->pixels[i].rgbBlue)) + image->pixels[i].rgbGreen + image->pixels[i].rgbRed) / 3 >= 128 ? 255 : 0;
             break;
     }
 }
@@ -232,7 +242,20 @@ bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
 bmp_t GenGradient(_In_ const size_t heightpx, _In_ const size_t widthpx) {
-    bmp_t image = { 0 };
+    bmp_t          image     = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
+    RGBQUAD*       pixels    = NULL;
+    const HANDLE64 hProcHeap = GetProcessHeap();
+
+    if (hProcHeap == INVALID_HANDLE_VALUE) {
+        fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
+        return image;
+    }
+    pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
+    if (!pixels) {
+        fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
+        return image;
+    }
+
     if (((heightpx % 256) != 0) || ((widthpx % 256) != 0))
         fwprintf_s(stderr, L"Dimensions need to be multiples of 256! Received ({}, {})", heightpx, widthpx);
 
