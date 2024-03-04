@@ -116,4 +116,13 @@ typedef struct bmp {
         RGBQUAD*         pixels; // pixel buffer
 } bmp_t;
 
+// prototypes
+bmp_t BmpRead(_In_ const wchar_t* const restrict filepath);
+bool  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image);
+void  BmpInfo(_In_ const bmp_t* const image);
+bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace);
+bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace);
+bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace);
+bmp_t GenGradient(_In_ const size_t heightpx, _In_ const size_t widthpx);
+
 #endif // !__BMP_H_
