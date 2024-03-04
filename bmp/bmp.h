@@ -1,6 +1,7 @@
 #pragma once
 #ifndef __BMP_H_
     #define __BMP_H_
+    #include <stdbool.h>
     #include <stdint.h>
     // these data structures are implemented for learning purpose, but the functions are designed to operate with WinGdi structs
     // not these implementations
@@ -123,6 +124,6 @@ void  BmpInfo(_In_ const bmp_t* const image);
 bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace);
 bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace);
 bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace);
-bmp_t GenGradient(_In_ const size_t heightpx, _In_ const size_t widthpx);
+bmp_t GenGradient(_In_ const size_t npixelsh, _In_ const size_t npixelsw);
 
 #endif // !__BMP_H_

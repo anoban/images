@@ -102,6 +102,7 @@ bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* con
     // we could use this buffer to serialize the structs and pixels into and then write everything to disk at once.
     // this will eliminate the overhead of using two IO calls while brining in the penalty of a separate heap allocation.
     // TRADEOFFS :(
+    return true;
 }
 
 bmp_t BmpRead(_In_ const wchar_t* const restrict filepath) {
@@ -189,27 +190,29 @@ bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_
     } else
         pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
 
+    // no matter how the caller specifies the inplace argument, pixles will point to a valid memory now
+    const size_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
     switch (conversionkind) {
         case AVERAGE : // just get the arithmetic average of all three RGB values
-            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+            for (size_t i = 0; i < npixels; ++i)
                 pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
                     (((long double) (image->pixels[i].rgbBlue)) + image->pixels[i].rgbGreen + image->pixels[i].rgbRed) / 3.0L;
             break;
 
         case WEIGHTED_AVERAGE : // RGB values are averaged using predetermined weights
-            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+            for (size_t i = 0; i < npixels; ++i)
                 pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
                     (image->pixels[i].rgbBlue * 0.299L + image->pixels[i].rgbGreen * 0.587L + image->pixels[i].rgbRed * 0.114L);
             break;
 
         case LUMINOSITY :
-            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+            for (size_t i = 0; i < npixels; ++i)
                 pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
                     (image->pixels[i].rgbBlue * 0.2126L + image->pixels[i].rgbGreen * 0.7152L + image->pixels[i].rgbRed * 0.0722L);
             break;
 
         case BINARY :
-            for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth; ++i)
+            for (size_t i = 0; i < npixels; ++i)
                 pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
                     (((int32_t) (image->pixels[i].rgbBlue)) + image->pixels[i].rgbGreen + image->pixels[i].rgbRed) / 3 >= 128 ? 255 : 0;
             break;
@@ -242,30 +245,60 @@ bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
         pixels[i].rgbRed   = image->pixels[i].rgbRed >= 128 ? 255 : 0;
         // let the reserved byte be.
     }
-
     return inplace ? temp : (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .pixels = pixels };
 }
 
 bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace) {
+    HANDLE64 hProcHeap = NULL;
+    RGBQUAD* pixels    = NULL;
+    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
+
+    if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
+        hProcHeap = GetProcessHeap();
+        if (hProcHeap == INVALID_HANDLE_VALUE) {
+            fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
+            return temp;
+        }
+        pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
+        if (!pixels) {
+            fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
+            return temp;
+        }
+    } else
+        pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
+    const size_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
     switch (colourcombination) {
-        case BLUE      : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.BLUE = 0; }); break;
-        case GREEN     : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = 0; }); break;
-        case RED       : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = 0; }); break;
-        case REDGREEN  : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.GREEN = 0; }); break;
-        case REDBLUE   : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.RED = pix.BLUE = 0; }); break;
-        case GREENBLUE : for_each(imptr->pixels.begin(), imptr->pixels.end(), [](_In_ RGBQUAD& pix) { pix.GREEN = pix.BLUE = 0; }); break;
+        case BLUE :
+            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbBlue = 0;
+            break;
+        case GREEN :
+            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = 0;
+            break;
+        case RED :
+            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbRed = 0;
+            break;
+        case REDGREEN :
+            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbGreen = 0;
+            break;
+        case REDBLUE :
+            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbBlue = 0;
+            break;
+        case GREENBLUE :
+            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = pixels[i].rgbBlue = 0;
+            break;
     }
+    return inplace ? temp : (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .pixels = pixels };
 }
 
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
-bmp_t GenGradient(_In_ const size_t heightpx, _In_ const size_t widthpx) {
+bmp_t GenGradient(_In_ const size_t npixelsh, _In_ const size_t npixelsw) {
     bmp_t          image     = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
     RGBQUAD*       pixels    = NULL;
     const HANDLE64 hProcHeap = GetProcessHeap();
 
-    if ((heightpx % 256) || (widthpx % 256)) {
-        fwprintf_s(stderr, L"Dimensions need to be multiples of 256! Received (%5zu,%5zu)", heightpx, widthpx);
+    if ((npixelsh % 256) || (npixelsw % 256)) {
+        fwprintf_s(stderr, L"Dimensions need to be multiples of 256! Received (%5zu,%5zu)", npixelsh, npixelsw);
         return image;
     }
 
@@ -273,46 +306,43 @@ bmp_t GenGradient(_In_ const size_t heightpx, _In_ const size_t widthpx) {
         fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
         return image;
     }
-    pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
+    pixels = HeapAlloc(hProcHeap, 0, (npixelsw * npixelsh) + 54); // add 54 bytes for the two structs
     if (!pixels) {
         fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
         return image;
     }
 
-    BITMAPFILEHEADER tmpfile = { .bfType    = SOI,
-                                 // packing assumed
-                                 .bfSize    = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + (sizeof(RGBQUAD) * heightpx * widthpx),
-                                 .bfOffBits = 54,
-                                 .bfReserved1 = 0,
-                                 .bfReserved2 = 0 };
+    const BITMAPFILEHEADER tmpfile = { .bfType = SOI,
+                                       // packing assumed
+                                       .bfSize =
+                                           sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + (sizeof(RGBQUAD) * npixelsh * npixelsw),
+                                       .bfOffBits   = 54,
+                                       .bfReserved1 = 0,
+                                       .bfReserved2 = 0 };
 
-    BITMAPINFOHEADER tmpinfo = { .HEADERSIZE    = 40,
-                                 .WIDTH         = <uint32_t>(widthpx),
-                                 .HEIGHT        = <int32_t>(heightpx),
-                                 .NPLANES       = 1,
-                                 .NBITSPERPIXEL = 32,
-                                 .CMPTYPE       = RGB,
-                                 .IMAGESIZE     = 0,
-                                 .RESPPMX       = 0,
-                                 .RESPPMY       = 0,
-                                 .NCMAPENTRIES  = 0,
-                                 .NIMPCOLORS    = 0 };
-
-    vector<RGBQUAD>  pixels {};
-    pixels.reserve(widthpx * heightpx);
+    const BITMAPINFOHEADER tmpinfo = { .biSize          = 40,
+                                       .biWidth         = npixelsw,
+                                       .biHeight        = npixelsh,
+                                       .biPlanes        = 1,
+                                       .biBitCount      = 32, // three bytes per RGB pixel
+                                       .biCompression   = RGB,
+                                       .biSizeImage     = 0,
+                                       .biXPelsPerMeter = 0,
+                                       .biYPelsPerMeter = 0,
+                                       .biClrUsed       = 0,
+                                       .biClrImportant  = 0 };
 
     // the idea to create a colour gradient =>
     // traverse through the pixel buffer, within a row gradually increment the RED value
     // within a column, gradually increment the GREEN value.
 
     // the deal here is that we must keep at least one RGB component constant within windows of this width.
-    const size_t hstride { widthpx / 256 }, vstride { heightpx / 256 };
+    const size_t           hstride = npixelsw / 256, vstride = npixelsh / 256;
+    uint8_t                R = 0xFF, G = 0xFF, B = 0x00;
 
-    uint8_t      R { 0xFF }, G { 0xFF }, B { 0x00 };
-
-    for (size_t h = 0; h < heightpx; h += vstride) {
+    for (size_t h = 0; h < npixelsh; h += vstride) {
         for (size_t x = 0; x < vstride; ++x) {
-            for (size_t w = 0; w < widthpx; w += hstride) {
+            for (size_t w = 0; w < npixelsw; w += hstride) {
                 R++;
                 for (size_t i = 0; i < hstride; ++i) pixels.push_back(RGBQUAD { .BLUE = B, .GREEN = G, .RED = R, .RESERVED = 0xFF });
                 G--;
