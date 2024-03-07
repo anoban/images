@@ -114,7 +114,8 @@ typedef enum { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN } COMPRESSIONKIND;
 typedef struct bmp {
         BITMAPFILEHEADER fileheader;
         BITMAPINFOHEADER infoheader;
-        RGBQUAD*         pixels; // pixel buffer
+        RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e (buffer + 54)
+        uint8_t*         buffer; // this will point to the original file buffer, this is the one that needs deallocation!
 } bmp_t;
 
 // prototypes
@@ -124,6 +125,6 @@ void  BmpInfo(_In_ const bmp_t* const image);
 bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace);
 bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace);
 bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace);
-bmp_t GenGradient(_In_ const size_t npixelsh, _In_ const size_t npixelsw);
+bmp_t GenGradient(_In_ const size_t npixels_h, _In_ const size_t npixels_w);
 
 #endif // !__BMP_H_
