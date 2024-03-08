@@ -113,10 +113,13 @@ bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* con
 bmp_t BmpRead(_In_ const wchar_t* const restrict filepath) {
     size_t               size   = 0;
     bmp_t                image  = { 0 }; // will be used as an empty placeholder for premature returns until members are properly assigned
+
     const uint8_t* const buffer = Open(filepath, &size); // HeapFree()
     if (!buffer) return image;                           // Open will do the error reporting, so just exiting the function is enough
+
     const BITMAPFILEHEADER fhead = ParseFileHeader(buffer, size); // 14 bytes (packed)
     if (!fhead.bfSize) return image; // again ParseFileHeader will report errors, if the predicate isn't satisified, exit the routine
+
     const BITMAPINFOHEADER infhead = ParseInfoHeader(buffer, size); // 40 bytes (packed)
     if (!infhead.biSize) return image;                              // error reporting is handled by ParseInfoHeader
 
@@ -128,7 +131,7 @@ bmp_t BmpRead(_In_ const wchar_t* const restrict filepath) {
     // paying the penalty for two IO calls.
     // 3) or we could create a new buffer with enough space for the structs and pixels and then copy the structs and pixels there first,
     // followed by serialization of this new buffer with one call to CreateFileW, the caveat here is a gratuitous allocation and deallocation
-    const size_t npixels = (size - 54) / 4; // RGBQUAD consumes 4 bytes
+    // const size_t npixels = (size - 54) / 4; // RGBQUAD consumes 4 bytes
 
     // const HANDLE64 hProcHeap = GetProcessHeap();
     // if (hProcHeap == INVALID_HANDLE_VALUE) {
@@ -144,10 +147,10 @@ bmp_t BmpRead(_In_ const wchar_t* const restrict filepath) {
 
     // if stuff goes left, memcpy_s will raise an access violation exception, not bothering error handling here.
     // memcpy_s(pixels, size - 54, buffer + 54, size - 54);
-    image.fileheader     = fhead;
-    image.infoheader     = infhead;
-    image.buffer         = buffer;
-    image.pixels         = (RGBQUAD*) (buffer + 54);
+    image.fileheader = fhead;
+    image.infoheader = infhead;
+    image.buffer     = buffer;
+    image.pixels     = (RGBQUAD*) (buffer + 54);
     // HeapFree(hProcHeap, 0, buffer); // loose the raw bytes buffer
 
     return image;
@@ -211,6 +214,7 @@ bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_
 
     // no matter how the caller specifies the inplace argument, pixles will point to a valid memory now
     const size_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
+
     switch (conversionkind) {
         case AVERAGE : // just get the arithmetic average of all three RGB values
             for (size_t i = 0; i < npixels; ++i)
@@ -259,7 +263,7 @@ bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
     } else
         pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
 
-    for (size_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth /* number of total pixels */; ++i) {
+    for (int64_t i = 0; i < image->infoheader.biHeight * image->infoheader.biWidth /* number of total pixels */; ++i) {
         pixels[i].rgbBlue  = image->pixels[i].rgbBlue >= 128 ? 255 : 0;
         pixels[i].rgbGreen = image->pixels[i].rgbGreen >= 128 ? 255 : 0;
         pixels[i].rgbRed   = image->pixels[i].rgbRed >= 128 ? 255 : 0;
