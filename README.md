@@ -2,6 +2,7 @@
 ---------
 
 ```C
+// original image creds - https://wallpaperswide.com/elsa-wallpapers.html
 const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
 ```
 ![Original](./images/Elsa/elsa.bmp)
