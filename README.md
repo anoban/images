@@ -55,6 +55,11 @@ RemoveColour(&image, REDGREEN, false);
 ```
 ![Elsa](./images/Elsa/elsa_b.bmp)
 
+```C
+ToNegative(&image, true);
+```
+![Elsa](./images/Elsa/elsa_neg.bmp)
+
 ----------------
 ___References:___
 
