@@ -1,7 +1,9 @@
 # ___BMP___
+---------
 
-__Original__
-
+```C
+const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
+```
 ![Original](./images/Elsa/elsa.bmp)
 
 ```C
