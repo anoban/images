@@ -1,23 +1,59 @@
 # ___BMP___
 
+__Original__
+
+![Original](./images/Elsa/elsa.bmp)
+
 ```C
-#include <bmp.h>
-#include <heapapi.h>
-#include <stdlib.h>
-
-int wmain(_In_opt_ int32_t argc, _In_opt_count_(argc) const wchar_t* const argv[]) {
-    const HANDLE64 hProcHeap = GetProcessHeap();
-    bmp_t          image;
-    for (int64_t i = 1; i < argc; ++i) {
-        image = BmpRead(argv[i]);
-        // do something
-        HeapFree(hProcHeap, 0, image.pixels);
-    }
-    return EXIT_SUCCESS;
-}
-
+ToBWhite(&image, LUMINOSITY, false);
 ```
+![Elsa](./images/Elsa/elsa_lum.bmp)
 
+```C
+ToBWhite(&image, AVERAGE, false);
+```
+![Elsa](./images/Elsa/elsa_average.bmp)
+
+```C
+ToBWhite(&image, WEIGHTED_AVERAGE, false);
+```
+![Elsa](./images/Elsa/elsa_waverage.bmp)
+
+```C
+ToBWhite(&image, BINARY, false);
+```
+![Elsa](./images/Elsa/elsa_bin.bmp)
+
+
+```C
+RemoveColour(&image, RED, false);
+```
+![Elsa](./images/Elsa/elsa_bg.bmp)
+
+```C
+RemoveColour(&image, BLUE, false);
+```
+![Elsa](./images/Elsa/elsa_rg.bmp)
+
+```C
+RemoveColour(&image, GREEN, false);
+```
+![Elsa](./images/Elsa/elsa_br.bmp)
+
+```C
+RemoveColour(&image, GREENBLUE, false);
+```
+![Elsa](./images/Elsa/elsa_r.bmp)
+
+```C
+RemoveColour(&image, REDBLUE, false);
+```
+![Elsa](./images/Elsa/elsa_g.bmp)
+
+```C
+RemoveColour(&image, REDGREEN, false);
+```
+![Elsa](./images/Elsa/elsa_b.bmp)
 
 ----------------
 ___References:___

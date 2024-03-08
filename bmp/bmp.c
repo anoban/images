@@ -162,12 +162,12 @@ void BmpInfo(_In_ const bmp_t* const image) {
         L"|---------------------------------------------------------------------------|"
         L"%15s bitmap image (%3.4Lf MiBs)\n"
         L"Pixel ordering: %10s\n"
-        L"Width: %5u pixels, Height: %5u pixels\n"
+        L"Width: %5lu pixels, Height: %5lu pixels\n"
         L"Bit depth: %3u\n"
         L"Resolution (PPM): X {%5ld} Y {%5ld}\n"
         L"|---------------------------------------------------------------------------|",
-        image->fileheader.bfSize / (1024.0L * 1024.0L),
         image->infoheader.biSizeImage ? L"Compressed" : L"Uncompressed",
+        image->fileheader.bfSize / (1024.0L * 1024.0L),
         GetPixelOrder(image->infoheader) == BOTTOMUP ? L"bottom-up" : L"top-down",
         image->infoheader.biWidth,
         image->infoheader.biHeight,
@@ -246,8 +246,9 @@ bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_
 
 bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
     HANDLE64 hProcHeap = NULL;
+    uint8_t* buffer    = NULL;
     RGBQUAD* pixels    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
+    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -255,11 +256,14 @@ bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
             fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
             return temp;
         }
-        pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize);
-        if (!pixels) {
+        buffer = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize);
+        if (!buffer) {
             fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
             return temp;
         }
+        // copy the metadata structs over to the new buffer.
+        memcpy_s(buffer, 54, image->buffer, 54);
+        pixels = (RGBQUAD*) (buffer + 54);
     } else
         pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
 
@@ -269,14 +273,16 @@ bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
         pixels[i].rgbRed   = image->pixels[i].rgbRed >= 128 ? 255 : 0;
         // let the reserved byte be.
     }
-    return inplace ? temp : (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .pixels = pixels };
+    return inplace ? temp :
+                     (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .buffer = buffer, .pixels = pixels };
 }
 
 // removes specified RGB components from the image pixels
 bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace) {
     HANDLE64 hProcHeap = NULL;
+    uint8_t* buffer    = NULL;
     RGBQUAD* pixels    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
+    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -284,36 +290,40 @@ bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination
             fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
             return temp;
         }
-        pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
-        if (!pixels) {
+        buffer = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize);
+        if (!buffer) {
             fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
             return temp;
         }
+        // we need to copy over the complete buffer
+        memcpy_s(buffer, image->fileheader.bfSize, image->buffer, image->fileheader.bfSize);
+        pixels = (RGBQUAD*) (buffer + 54);
     } else
         pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
 
-    const size_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
+    const int64_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
     switch (colourcombination) {
         case BLUE :
-            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbBlue = 0;
+            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbBlue = 0;
             break;
         case GREEN :
-            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = 0;
+            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = 0;
             break;
         case RED :
-            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbRed = 0;
+            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbRed = 0;
             break;
         case REDGREEN :
-            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbGreen = 0;
+            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbGreen = 0;
             break;
         case REDBLUE :
-            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbBlue = 0;
+            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbBlue = 0;
             break;
         case GREENBLUE :
-            for (size_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = pixels[i].rgbBlue = 0;
+            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = pixels[i].rgbBlue = 0;
             break;
     }
-    return inplace ? temp : (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .pixels = pixels };
+    return inplace ? temp :
+                     (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .buffer = buffer, .pixels = pixels };
 }
 
 #ifdef ______________________________
