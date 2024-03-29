@@ -389,9 +389,5 @@ Mkfile.old
 dkms.conf
 
 # Images
-*.bmp
+
 !images/Elsa/*.bmp
-*.png
-*.jpeg
-*.jpg
-*.gif

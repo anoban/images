@@ -30,7 +30,7 @@
 // the first two bytes will be 'B', 'M'
 
 // all these data structures are provided in wingdi.h, so let's just use them instead of reinventing the wheel.
-    #ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DONT
+    #ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DON'T
 
         #pragma region _HANDROLLED_STRUCTS_
     // #pragma pack directive is a risky business, will likely impede gratuitous runtime performance penalties
@@ -120,7 +120,7 @@ typedef struct bmp {
 
 // prototypes
 bmp_t BmpRead(_In_ const wchar_t* const restrict filepath);
-bool  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image);
+bool  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image, _In_ const bool cleanup);
 void  BmpInfo(_In_ const bmp_t* const image);
 bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace);
 bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace);

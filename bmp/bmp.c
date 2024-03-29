@@ -89,7 +89,7 @@ static __forceinline BMPPIXDATAORDERING GetPixelOrder(_In_ const BITMAPINFOHEADE
     return (header.biHeight >= 0) ? BOTTOMUP : TOPDOWN;
 }
 
-bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image) {
+bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image, _In_ const bool cleanup) {
     // since we are using wingdi's struct definitions, our hands are pretty much tied when it comes to control over the memory layout of the structs
     // WE CANNOT ASSUME THAT THE STRUCTS WILL BE PACKED.
 
@@ -102,6 +102,15 @@ bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* con
     // we could use this buffer to serialize the structs and pixels into and then write everything to disk at once.
     // this will eliminate the overhead of using two IO calls while brining in the penalty of a separate heap allocation.
     // TRADEOFFS :(
+
+    static const HANDLE64 hProcHeap = GetProcessHeap();
+    if (cleanup) {
+        hProcHeap = GetProcessHeap();
+        if (hProcHeap == INVALID_HANDLE_VALUE) HeapFree(hProcHeap, 0, image->buffer);
+
+        ;
+    }
+
     if (!Serialize(filepath, image->buffer, image->fileheader.bfSize, false)) {
         //  Serialize will take care of the error reposting, caller doesn't have to.
         fputws(L"Call to Serialize inside BmpWrite failed!", stderr);
@@ -190,10 +199,10 @@ void BmpInfo(_In_ const bmp_t* const image) {
 
 // if inplace = true, the returned struct could be safely ignored (it'll just be an empty bmp_t struct)
 bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace) {
-    HANDLE64 hProcHeap = NULL;
-    uint8_t* buffer    = NULL;
-    RGBQUAD* pixels    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64    hProcHeap = NULL;
+    uint8_t*    buffer    = NULL;
+    RGBQUAD*    pixels    = NULL;
+    const bmp_t temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -245,10 +254,10 @@ bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_
 }
 
 bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
-    HANDLE64 hProcHeap = NULL;
-    uint8_t* buffer    = NULL;
-    RGBQUAD* pixels    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64    hProcHeap = NULL;
+    uint8_t*    buffer    = NULL;
+    RGBQUAD*    pixels    = NULL;
+    const bmp_t temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -279,10 +288,10 @@ bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
 
 // removes specified RGB components from the image pixels
 bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace) {
-    HANDLE64 hProcHeap = NULL;
-    uint8_t* buffer    = NULL;
-    RGBQUAD* pixels    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64    hProcHeap = NULL;
+    uint8_t*    buffer    = NULL;
+    RGBQUAD*    pixels    = NULL;
+    const bmp_t temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -326,11 +335,11 @@ bmp_t RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination
                      (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .buffer = buffer, .pixels = pixels };
 }
 
-#ifdef ______________________________
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 // DO NOT repeat the static keyword here! It's enough to declare the method as static only in the header file.
 bmp_t GenGradient(_In_ const size_t npixels_h, _In_ const size_t npixels_w) {
-    bmp_t          image     = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
+    bmp_t          image     = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    uint8_t*       buffer    = NULL;
     RGBQUAD*       pixels    = NULL;
     const HANDLE64 hProcHeap = GetProcessHeap();
 
@@ -343,8 +352,8 @@ bmp_t GenGradient(_In_ const size_t npixels_h, _In_ const size_t npixels_w) {
         fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
         return image;
     }
-    pixels = HeapAlloc(hProcHeap, 0, (sizeof(RGBQUAD) * npixels_w * npixels_h) + 54); // add 54 bytes for the two structs
-    if (!pixels) {
+    buffer = HeapAlloc(hProcHeap, 0, (sizeof(RGBQUAD) * npixels_w * npixels_h) + 54); // add 54 bytes for the two structs
+    if (!buffer) {
         fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
         return image;
     }
@@ -399,7 +408,7 @@ bmp_t GenGradient(_In_ const size_t npixels_h, _In_ const size_t npixels_w) {
         }
         blue++;
     }
-    return (bmp_t) { file, info, pixels };
+    return (bmp_t) { .fileheader = tmpfile, .infoheader = tmpinfo, .buffer = buffer, .pixels = pixels };
 }
 
 // a struct to specify the factors to scale the colours by
@@ -414,7 +423,8 @@ typedef struct cscale {
 bmp_t ScaleColors(_In_ bmp_t* const image, _In_ const cscale_t scale, _In_ const bool inplace) {
     HANDLE64 hProcHeap = NULL;
     RGBQUAD* pixels    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .pixels = NULL };
+    uint8_t* buffer    = NULL;
+    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -422,13 +432,11 @@ bmp_t ScaleColors(_In_ bmp_t* const image, _In_ const cscale_t scale, _In_ const
             fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
             return temp;
         }
-        pixels = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
-        if (!pixels) {
+        buffer = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize - 54); // discount the 54 bytes occupied by the two structs
+        if (!buffer) {
             fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
             return temp;
         }
     } else
         pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
 }
-
-#endif
