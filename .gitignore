@@ -387,7 +387,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-
-# Images
-
-!images/Elsa/*.bmp
