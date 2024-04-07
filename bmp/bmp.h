@@ -120,7 +120,7 @@ typedef struct bmp {
 
 // prototypes
 bmp_t BmpRead(_In_ const wchar_t* const restrict filepath);
-bool  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image, _In_ const bool cleanup);
+bool  BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ bmp_t* const restrict image, _In_ const bool cleanup);
 void  BmpInfo(_In_ const bmp_t* const image);
 bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace);
 bmp_t ToNegative(_In_ bmp_t* const image, _In_ const bool inplace);

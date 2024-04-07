@@ -38,10 +38,11 @@ static __forceinline BITMAPFILEHEADER ParseFileHeader(_In_ const uint8_t* const 
 // BMP files, in general aren't compressed
 static __forceinline COMPRESSIONKIND GetCompressionKind(_In_ const uint32_t compressionkind) {
     switch (compressionkind) {
-        case 0 : return RGB;
-        case 1 : return RLE8;
-        case 2 : return RLE4;
-        case 3 : return BITFIELDS;
+        case 0  : return RGB;
+        case 1  : return RLE8;
+        case 2  : return RLE4;
+        case 3  : return BITFIELDS;
+        default : break;
     }
     return UNKNOWN;
 }
@@ -71,14 +72,14 @@ static __forceinline BITMAPINFOHEADER ParseInfoHeader(_In_ const uint8_t* const 
     }
 
     header.biSize          = *(uint32_t*) (imstream + 14);
-    header.biWidth         = *(uint32_t*) (imstream + 18);
+    header.biWidth         = *(int32_t*) (imstream + 18);
     header.biHeight        = *(int32_t*) (imstream + 22);
     header.biPlanes        = *(uint16_t*) (imstream + 26);
     header.biBitCount      = *(uint16_t*) (imstream + 28);
     header.biCompression   = GetCompressionKind(*(uint32_t*) (imstream + 30U));
     header.biSizeImage     = *(uint32_t*) (imstream + 34);
-    header.biXPelsPerMeter = *(uint32_t*) (imstream + 38);
-    header.biYPelsPerMeter = *(uint32_t*) (imstream + 42);
+    header.biXPelsPerMeter = *(int32_t*) (imstream + 38);
+    header.biYPelsPerMeter = *(int32_t*) (imstream + 42);
     header.biClrUsed       = *(uint32_t*) (imstream + 46);
     header.biClrImportant  = *(uint32_t*) (imstream + 50);
 
@@ -89,7 +90,7 @@ static __forceinline BMPPIXDATAORDERING GetPixelOrder(_In_ const BITMAPINFOHEADE
     return (header.biHeight >= 0) ? BOTTOMUP : TOPDOWN;
 }
 
-bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* const restrict image, _In_ const bool cleanup) {
+bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ bmp_t* const restrict image, _In_ const bool cleanup) {
     // since we are using wingdi's struct definitions, our hands are pretty much tied when it comes to control over the memory layout of the structs
     // WE CANNOT ASSUME THAT THE STRUCTS WILL BE PACKED.
 
@@ -103,19 +104,29 @@ bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ const bmp_t* con
     // this will eliminate the overhead of using two IO calls while brining in the penalty of a separate heap allocation.
     // TRADEOFFS :(
 
-    static const HANDLE64 hProcHeap = GetProcessHeap();
-    if (cleanup) {
-        hProcHeap = GetProcessHeap();
-        if (hProcHeap == INVALID_HANDLE_VALUE) HeapFree(hProcHeap, 0, image->buffer);
-
-        ;
-    }
+    static HANDLE64 hProcHeap = NULL;
 
     if (!Serialize(filepath, image->buffer, image->fileheader.bfSize, false)) {
         //  Serialize will take care of the error reposting, caller doesn't have to.
-        fputws(L"Call to Serialize inside BmpWrite failed!", stderr);
+        fputws(L"Call to Serialize() inside BmpWrite failed!", stderr);
         return false;
     }
+
+    if (cleanup) {
+        hProcHeap = GetProcessHeap();
+        if (hProcHeap == INVALID_HANDLE_VALUE) {
+            fputws(L"GetProcessHeap() returned INVALID_HANDLE_VALUE inside BmpWrite!", stderr);
+            return false;
+        }
+
+        if (!HeapFree(hProcHeap, 0, image->buffer)) {
+            fputws(L"Impending memory leak! HeapFree() failed inside BmpWrite!", stderr);
+            return false;
+        }
+
+        image->buffer = image->pixels = NULL;
+    }
+
     return true;
 }
 
@@ -192,6 +203,7 @@ void BmpInfo(_In_ const bmp_t* const image) {
             case RLE8      : _putws(L"RLE8"); break;
             case BITFIELDS : _putws(L"BITFIELDS"); break;
             case UNKNOWN   : _putws(L"UNKNOWN"); break;
+            default        : break;
         }
     }
     return;

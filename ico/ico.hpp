@@ -1,8 +1,14 @@
+#if !(defined __cplusplus) || (__cplusplus < 202002L)
+    #error "The ICO subproject requires a C++20 or later standards compliant compiler!"
+#endif
+
 #pragma once
 #ifndef __ICO_HPP__
     #define __ICO_HPP__
 
     #include <array>
+    #include <cassert>
+    #include <iostream>
     #include <optional>
     #include <vector>
 
@@ -82,7 +88,7 @@ namespace ico {
             // represents an .ico file object
 
         public:
-            ico() = delete; // no default ctors
+            ico() = delete; // no default constructor
             ico(_In_ const wchar_t* const filename) noexcept;
 
         private:
