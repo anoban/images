@@ -1,6 +1,6 @@
-#if !(defined __cplusplus) || (__cplusplus < 202002L)
-    #error "The ICO subproject requires a C++20 or later standards compliant compiler!"
-#endif
+// #if !(defined __cplusplus) || (__cplusplus < 202002L)
+//     #error "The ICO subproject requires a C++20 or later standards compliant compiler!"
+// #endif
 
 #pragma once
 #ifndef __ICO_HPP__
@@ -46,7 +46,7 @@ namespace ico {
                 WORD  wPlanes;
                 WORD  wBitCount;
                 DWORD dwBytesInRes;
-                WORD  dwImageOffset;
+                DWORD  dwImageOffset;
             }
             */
 
@@ -62,6 +62,8 @@ namespace ico {
             // https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
             DWORD dwBytesInRes {};  // size of the associated bitmap in bytes
             DWORD dwImageOffset {}; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
+
+            [[nodiscard]] bool is_empty() const noexcept;
     };
 
     struct ICONDIR {
@@ -89,16 +91,17 @@ namespace ico {
 
         public:
             ico() = delete; // no default constructor
-            ico(_In_ const wchar_t* const filename) noexcept;
+            ico(_In_ const wchar_t* const filename);
 
         private:
-            ICONDIR              icDirectory;
-            std::vector<uint8_t> buffer;
+            ICONDIR                                      icDirectory {};
+            std::array<ICONDIRENTRY, MAX_ICONDIRENTRIES> icdEntries {};
+            std::vector<uint8_t>                         buffer {}; // the complete raw byte buffer of the image file
     }; // class ico
 
     namespace io {
 
-        std::optional<std::vector<uint8_t>> Open(_In_ const wchar_t* const filename) noexcept;
+        std::optional<std::vector<uint8_t>> Open(_In_ const wchar_t* const filename);
         bool                                Serialize(_In_ const wchar_t* const filename, _In_ const std::vector<uint8_t>& buffer) noexcept;
 
     } // namespace io
