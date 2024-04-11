@@ -12,6 +12,8 @@
     #include <optional>
     #include <vector>
 
+template<typename T> concept is_printable = std::is_same_v<T, char> || std::is_same_v<T, wchar_t>;
+
 namespace ico {
 
     constexpr std::size_t MAX_ICONDIRENTRIES { 10 };
@@ -92,6 +94,8 @@ namespace ico {
         public:
             ico() = delete; // no default constructor
             ico(_In_ const wchar_t* const filename);
+            template<typename T> requires ::is_printable<T>
+            friend std::basic_ostream<T>& operator<<(std::basic_ostream<T>& ostr, const ico& image);
 
         private:
             ICONDIR                                      icDirectory {};
