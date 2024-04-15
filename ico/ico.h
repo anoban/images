@@ -3,6 +3,7 @@
     #define __ICO_H__
 
     #include <assert.h>
+    #include <imageio.h>
     #include <stdint.h>
     #include <stdio.h>
     #define MAX_ICONDIRENTRIES 10LLU
@@ -16,12 +17,14 @@
 // in summary the binary representation of an .ico file looks like
 // ICONDIR, BITMAP data
 
-// emulating Win32 definitions, names and types for syntactic consistency
+// emulating Win32 typedefs for syntactic consistency
 typedef unsigned char  BYTE;  // 8 bits
 typedef unsigned short WORD;  // 16 bits
 typedef unsigned long  DWORD; // 32 bits
 
 typedef enum IMAGETYPE { ICO = 1 /* icon */, CUR = 2 /* cursor */ } IMAGETYPE;
+
+typedef enum BITMAPTYPE { BMP = 0xA1B2C3, PNG } BITMAPTYPE; // needs to be a signed integer
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
 
@@ -55,6 +58,8 @@ typedef struct ICONDIRENTRY {
         DWORD dwImageOffset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
 } ICONDIRENTRY;
 
+static_assert(sizeof(ICONDIRENTRY) == 16);
+
 typedef struct ICONDIR {
         /*
             Win32 uses the following definition ::
@@ -69,22 +74,22 @@ typedef struct ICONDIR {
 
         // id prefix for IconDirectory, classic Win32 stuff
         WORD         idReserved;                    // reserved field, must always be 0
-        IMAGETYPE    idType;                        // specifies the type of the resources contained, values other than 1 and 2 are invalid
+        WORD         idType;                        // specifies the type of the resources contained, values other than 1 and 2 are invalid
         WORD         idCount;                       // number of resources (images) stored in the given .ico file
         ICONDIRENTRY idEntries[MAX_ICONDIRENTRIES]; // not going to the heap for this.
         // if a .ico or .cur file is suspected to store more than 10 bitmaps, manually adjust MAXICNDRENTRYS to a higher value!
 } ICONDIR;
 
+static_assert(
+    sizeof(ICONDIR) == sizeof(WORD) * 3 /* first three words */ + 2 /* 2 byte padding after the first three words */ +
+                           sizeof(ICONDIRENTRY) * MAX_ICONDIRENTRIES
+);
+
 // represents an .ico file object
-
-public:
-ico() = delete; // no default constructor
-ico(_In_ const wchar_t* const filename);
-template<typename T> requires ::is_printable<T> friend std::basic_ostream<T>& operator<<(std::basic_ostream<T>& ostr, const ico& image);
-
-private:
-ICONDIR                                      icDirectory {};
-std::array<ICONDIRENTRY, MAX_ICONDIRENTRIES> icdEntries {};
-std::vector<uint8_t>                         buffer {}; // the complete raw byte buffer of the image file
+typedef struct ico {
+        uint8_t*   icBuffer; // the raw byte buffer
+        ICONDIR    icIconDir;
+        BITMAPTYPE icTypes[MAX_ICONDIRENTRIES]; // type of the bitmaps stored in the file
+} ico_t;
 
 #endif // !__ICO_H__
