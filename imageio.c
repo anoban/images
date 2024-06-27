@@ -85,11 +85,11 @@ bool Serialize(
         goto PREMATURE_RETURN;
     }
 
-    CloseHandle(hFile);
     if (freebuffer) {
         const HANDLE64 hProcHeap = GetProcessHeap(); // WARNING :: ignoring potential errors here
         HeapFree(hProcHeap, 0, buffer);
     }
+	
     CloseHandle(hFile);
     return true;
 

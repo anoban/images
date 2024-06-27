@@ -5,63 +5,63 @@
 // original image creds - https://wallpaperswide.com/elsa-wallpapers.html
 const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
 ```
-![Original](./images/Elsa/elsa.bmp)
+![Original](./images/Elsa/elsa.jpeg)
 
 ```C
 ToBWhite(&image, LUMINOSITY, false);
 ```
-![Elsa](./images/Elsa/elsa_lum.bmp)
+![Elsa](./images/Elsa/elsa_lum.jpeg)
 
 ```C
 ToBWhite(&image, AVERAGE, false);
 ```
-![Elsa](./images/Elsa/elsa_average.bmp)
+![Elsa](./images/Elsa/elsa_average.jpeg)
 
 ```C
 ToBWhite(&image, WEIGHTED_AVERAGE, false);
 ```
-![Elsa](./images/Elsa/elsa_waverage.bmp)
+![Elsa](./images/Elsa/elsa_waverage.jpeg)
 
 ```C
 ToBWhite(&image, BINARY, false);
 ```
-![Elsa](./images/Elsa/elsa_bin.bmp)
+![Elsa](./images/Elsa/elsa_bin.jpeg)
 
 
 ```C
 RemoveColour(&image, RED, false);
 ```
-![Elsa](./images/Elsa/elsa_bg.bmp)
+![Elsa](./images/Elsa/elsa_bg.jpeg)
 
 ```C
 RemoveColour(&image, BLUE, false);
 ```
-![Elsa](./images/Elsa/elsa_rg.bmp)
+![Elsa](./images/Elsa/elsa_rg.jpeg)
 
 ```C
 RemoveColour(&image, GREEN, false);
 ```
-![Elsa](./images/Elsa/elsa_br.bmp)
+![Elsa](./images/Elsa/elsa_br.jpeg)
 
 ```C
 RemoveColour(&image, GREENBLUE, false);
 ```
-![Elsa](./images/Elsa/elsa_r.bmp)
+![Elsa](./images/Elsa/elsa_r.jpeg)
 
 ```C
 RemoveColour(&image, REDBLUE, false);
 ```
-![Elsa](./images/Elsa/elsa_g.bmp)
+![Elsa](./images/Elsa/elsa_g.jpeg)
 
 ```C
 RemoveColour(&image, REDGREEN, false);
 ```
-![Elsa](./images/Elsa/elsa_b.bmp)
+![Elsa](./images/Elsa/elsa_b.jpeg)
 
 ```C
 ToNegative(&image, true);
 ```
-![Elsa](./images/Elsa/elsa_neg.bmp)
+![Elsa](./images/Elsa/elsa_neg.jpeg)
 
 ----------------
 ___References:___
