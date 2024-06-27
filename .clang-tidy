@@ -109,7 +109,6 @@ Checks: >
   cert-err52-cpp,
   cppcoreguidelines-init-variables,
   cppcoreguidelines-narrowing-conversions,
-  google-runtime-int,
   misc-confusable-identifiers,
   misc-definitions-in-headers,
   misc-header-include-cycle,
@@ -247,13 +246,6 @@ CheckOptions:
 
   - key: bugprone-too-small-loop-variable.MagnitudeBitsUpperLimit
     value: 30
-
-  - key: google-runtime-int.UnsignedTypePrefix
-    value: uint
-  - key: google-runtime-int.SignedTypePrefix
-    value: int
-  - key: google-runtime-int.TypeSuffix
-    value: 32_t
 
   - key: misc-unused-parameters.StrictMode
     value: true
