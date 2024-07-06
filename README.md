@@ -4,15 +4,13 @@
 ```C
 const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
 ```
- <img src="./images/Elsa/elsa.jpeg">
+<img src="./images/Elsa/elsa.jpeg">
 
-## _Black and white transformations_
------------
+### _Black and white transformations_
 
 ```C
 ToBWhite(&image, LUMINOSITY, false);             ToBWhite(&image, AVERAGE, false);
 ```
-
 <div>
 <img src="./images/Elsa/elsa_lum.jpeg" width=45%>
 <img src="./images/Elsa/elsa_average.jpeg" width=45%>
@@ -21,31 +19,25 @@ ToBWhite(&image, LUMINOSITY, false);             ToBWhite(&image, AVERAGE, false
 ```C
 ToBWhite(&image, WEIGHTED_AVERAGE, false);       ToBWhite(&image, BINARY, false);
 ```
-
 <div>
 <img src="./images/Elsa/elsa_waverage.jpeg" width=45%>
 <img src="./images/Elsa/elsa_bin.jpeg" width=45%>
 </div>
 
+### _Colour removals_
 
 ```C
-RemoveColour(&image, RED, false);
+RemoveColour(&image, RED, false);                RemoveColour(&image, BLUE, false);
 ```
-![Elsa](./images/Elsa/elsa_bg.jpeg)
+<div>
+<img src="./images/Elsa/elsa_bg.jpeg" width=45%>
+<img src="./images/Elsa/elsa_rg.jpeg" width=45%>
+</div>
 
 ```C
-RemoveColour(&image, BLUE, false);
-```
-![Elsa](./images/Elsa/elsa_rg.jpeg)
-
-```C
-RemoveColour(&image, GREEN, false);
+RemoveColour(&image, GREEN, false);              RemoveColour(&image, GREENBLUE, false);
 ```
 ![Elsa](./images/Elsa/elsa_br.jpeg)
-
-```C
-RemoveColour(&image, GREENBLUE, false);
-```
 ![Elsa](./images/Elsa/elsa_r.jpeg)
 
 ```C
