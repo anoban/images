@@ -4,7 +4,7 @@
 ```C
 const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
 ```
-<img src="./images/Elsa/elsa.jpeg">
+<img src="./images/Elsa/elsa.jpeg" width=60%>
 
 ### _Black and white transformations_
 
@@ -37,18 +37,18 @@ RemoveColour(&image, RED, false);                RemoveColour(&image, BLUE, fals
 ```C
 RemoveColour(&image, GREEN, false);              RemoveColour(&image, GREENBLUE, false);
 ```
-![Elsa](./images/Elsa/elsa_br.jpeg)
-![Elsa](./images/Elsa/elsa_r.jpeg)
+<div>
+<img src="./images/Elsa/elsa_br.jpeg" width=45%>
+<img src="./images/Elsa/elsa_r.jpeg" width=45%>
+</div>
 
 ```C
-RemoveColour(&image, REDBLUE, false);
+RemoveColour(&image, REDBLUE, false);           RemoveColour(&image, REDGREEN, false);
 ```
-![Elsa](./images/Elsa/elsa_g.jpeg)
-
-```C
-RemoveColour(&image, REDGREEN, false);
-```
-![Elsa](./images/Elsa/elsa_b.jpeg)
+<div>
+<img src="./images/Elsa/elsa_g.jpeg" width=45%>
+<img src="./images/Elsa/elsa_b.jpeg" width=45%>
+</div>
 
 ```C
 ToNegative(&image, true);
