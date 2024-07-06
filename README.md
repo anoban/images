@@ -10,7 +10,7 @@ const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
 -----------
 
 ```C
-ToBWhite(&image, LUMINOSITY, false);                                   ToBWhite(&image, AVERAGE, false);
+ToBWhite(&image, LUMINOSITY, false);             ToBWhite(&image, AVERAGE, false);
 ```
 
 <div>
@@ -19,7 +19,7 @@ ToBWhite(&image, LUMINOSITY, false);                                   ToBWhite(
 </div>
 
 ```C
-ToBWhite(&image, WEIGHTED_AVERAGE, false);                             ToBWhite(&image, BINARY, false);
+ToBWhite(&image, WEIGHTED_AVERAGE, false);       ToBWhite(&image, BINARY, false);
 ```
 
 <div>
