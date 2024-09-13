@@ -15,6 +15,7 @@
                 "/fpcvt:IA",
                 "/Gw",
                 "/MP",
+				"/MTd",
                 "/Qpar",
                 "/Zc:preprocessor",
                 "/Zi",
