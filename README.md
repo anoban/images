@@ -1,8 +1,10 @@
 # _Bitmaps_
 ---------
 
+_Images used in this `README` for exhibition are stored as `JPEG` files in the `images` directory. But the algorithms in `<bmp.h>` cannot serialize bitmaps as `JPEG` files, bitmaps were converted to `JPEG`s using `Microsoft Photos` for use here, in order to minimize the repository size._
+
 ```C
-const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp");
+const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp"); // original image
 ```
 <img src="./images/Elsa/elsa.jpeg" width=60%>
 
@@ -53,7 +55,7 @@ RemoveColour(&image, REDBLUE, false);           RemoveColour(&image, REDGREEN, f
 ### _Negative_
 
 ```C
-ToNegative(&image, true);
+ToNegative(&image, true);   // filmroll negatives
 ```
 <img src="./images/Elsa/elsa_neg.jpeg" width=60%>
 
