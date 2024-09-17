@@ -1,7 +1,7 @@
 # _Bitmaps_
 ---------
 
-_Images used in this `README` for exhibition are stored as `JPEG` files in the `images` directory. But the algorithms in `<bmp.h>` cannot serialize bitmaps as `JPEG` files, bitmaps were converted to `JPEG`s using `Microsoft Photos` for use here, in order to minimize the repository size._
+Images used in this `README` for exhibition are stored as `JPEG` files in the `images` directory. But the algorithms in `<bmp.h>` cannot serialize bitmaps as `JPEG` files, bitmaps were converted to `JPEG`s using `Microsoft Photos` for use here, in order to minimize the repository size.
 
 ```C
 const bmp_t image = BmpRead(L"./images/Elsa/elsa.bmp"); // original image
@@ -63,8 +63,8 @@ ToNegative(&image, true);   // filmroll negatives
 
 ### _References:_
 
-- `Compressed Image File Formats: JPEG, PNG, GIF, XBM, BMP - John Miano (1999) ACM Press/Addison-Wesley Publishing Co`.
+- Compressed Image File Formats: JPEG, PNG, GIF, XBM, BMP - John Miano (1999) ACM Press/Addison-Wesley Publishing Co.
 
-- `PNG: The Definitive Guide. - Greg Roelofs and Richard Koman. (1999) O'Reilly Associates, Inc., USA`.
+- PNG: The Definitive Guide. - Greg Roelofs and Richard Koman. (1999) O'Reilly Associates, Inc., USA.
 
-- `The Data Compression Book, Second Edition, Mark Nelson and Jean-Loop Gailly. 1995. M&T Books, New York, NY`
+- The Data Compression Book, Second Edition, Mark Nelson and Jean-Loop Gailly. 1995. M&T Books, New York, NY.
