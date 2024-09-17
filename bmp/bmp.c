@@ -12,7 +12,7 @@
 
 // ALL INLINE FUNCTIONS ARE MEANT TO BE USED WITHIN THIS TRANSLATION UNIT AND WON'T EXPOSE THEIR SIGNATURES IN <bmp.h>
 
-static const uint16_t                 SOI = 0x4D42; // that's 'M' followed by a 'B' (LE)
+static const uint16_t SOI = 0x4D42; // that's 'M' followed by a 'B' (LE)
 // wingdi's BITMAPFILEHEADER uses a uint16_t for Start Of Image instead of two chars
 
 static __forceinline BITMAPFILEHEADER ParseFileHeader(_In_ const uint8_t* const restrict imstream, _In_ const size_t length) {
@@ -131,8 +131,8 @@ bool BmpWrite(_In_ const wchar_t* const restrict filepath, _In_ bmp_t* const res
 }
 
 bmp_t BmpRead(_In_ const wchar_t* const restrict filepath) {
-    size_t               size   = 0;
-    bmp_t                image  = { 0 }; // will be used as an empty placeholder for premature returns until members are properly assigned
+    size_t size                 = 0;
+    bmp_t  image                = { 0 }; // will be used as an empty placeholder for premature returns until members are properly assigned
 
     const uint8_t* const buffer = Open(filepath, &size); // HeapFree()
     if (!buffer) return image;                           // Open will do the error reporting, so just exiting the function is enough
@@ -231,7 +231,7 @@ bmp_t ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_
         memcpy_s(buffer, 54, image->buffer, 54);
         pixels = (RGBQUAD*) (buffer + 54); // space for the structs
     } else
-        pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
+        pixels = image->pixels;            // if the image is to be modified inplace, copy its pixel buffer's address
 
     // no matter how the caller specifies the inplace argument, pixles will point to a valid memory now
     const size_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
@@ -396,8 +396,8 @@ bmp_t GenGradient(_In_ const size_t npixels_h, _In_ const size_t npixels_w) {
     // increment the BLUE pixel across subsequent frames.
 
     // the deal here is that we must keep at least one RGB component constant within these stride windows. (our pick is BLUE)
-    const size_t           hstride = npixels_w / 256, vstride = npixels_h / 256;
-    uint8_t                red = 0xFF, green = 0xFF, blue = 0x00;
+    const size_t hstride = npixels_w / 256, vstride = npixels_h / 256;
+    uint8_t      red = 0xFF, green = 0xFF, blue = 0x00;
 
     // for moving across pixel rows, by a select stride, captures row frames, stride by stride.
     for (size_t v = 0; v < npixels_h /* for all pixels in a column */

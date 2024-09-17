@@ -36,7 +36,7 @@
     // #pragma pack directive is a risky business, will likely impede gratuitous runtime performance penalties
         #pragma pack(push, 1)
 typedef struct {
-        uint8_t  SOI[2]; // 'B', 'M'
+        uint8_t  SOI[2];   // 'B', 'M'
         uint32_t FSIZE;
         uint32_t RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
         uint32_t PIXELDATASTART;

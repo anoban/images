@@ -3,10 +3,12 @@
     #define __ICO_H__
 
     #include <assert.h>
-    #include <imageio.h>
     #include <stdint.h>
     #include <stdio.h>
-    #define MAX_ICONDIRENTRIES 10LLU
+
+    #include <../imageio.h>
+
+    #define MAX_ICONDIRENTRIES 4LLU // most .ico images will have only one bitmap in them, so 4 is generous enough
 
 // an ICO file can be imagined as a meta-info struct, called ICONDIR, for ICON DIRectory followed by a bitmap or an array of bitmaps
 // (.ico files can contain one or more images)
@@ -28,7 +30,6 @@ typedef enum BITMAPTYPE { BMP = 0xA1B2C3, PNG = 0x1A2B3C } BITMAPTYPE; // needs 
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
 
-    #pragma pack(push, 1)
 typedef struct ICONDIRENTRY {
         /*
             Win32 uses the following definition ::
@@ -59,7 +60,7 @@ typedef struct ICONDIRENTRY {
         DWORD dwImageOffset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
 } ICONDIRENTRY;
 
-static_assert(sizeof(ICONDIRENTRY) == 16);
+static_assert(sizeof(ICONDIRENTRY) == 16 != 0);
 
 typedef struct ICONDIR {
         /*
@@ -80,17 +81,15 @@ typedef struct ICONDIR {
         ICONDIRENTRY idEntries[MAX_ICONDIRENTRIES]; // not going to the heap for this.
         // if a .ico or .cur file is suspected to store more than 10 bitmaps, manually adjust MAXICNDRENTRYS to a higher value!
 } ICONDIR;
-    #pragma pack(pop)
 
 static_assert(
-    sizeof(ICONDIR) == sizeof(WORD) * 3 /* first three words */ + 2 /* 2 byte padding after the first three words */ +
-                           sizeof(ICONDIRENTRY) * MAX_ICONDIRENTRIES
+    sizeof(ICONDIR) == sizeof(WORD) * 3 + 2 /* 2 byte padding after the three words */ + sizeof(ICONDIRENTRY) * MAX_ICONDIRENTRIES
 );
 
 // represents an .ico file object
 typedef struct ico {
-        uint8_t*   icBuffer; // the raw byte buffer
-        ICONDIR    icIconDir;
+        uint8_t*   icBuffer;                    // the raw byte buffer
+        ICONDIR    icIconDir;                   // parsed ICONDIR struct
         BITMAPTYPE icTypes[MAX_ICONDIRENTRIES]; // type of the bitmaps stored in the file
 } ico_t;
 
