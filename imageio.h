@@ -8,14 +8,17 @@
     #define WIN32_LEAN_AND_MEAN
     #define WIN32_EXTRA_MEAN
 
+// clang-format off
     #include <errhandlingapi.h>
     #include <fileapi.h>
     #include <handleapi.h>
     #include <heapapi.h>
+    #include <windef.h>
+// clang-format on
+
     #include <stdbool.h>
     #include <stdint.h>
     #include <stdio.h>
-    #include <windef.h>
 
 // a generic file reading routine, that reads in an existing binary file and returns the buffer. (NULL in case of a failure)
 // returned memory needs to be freed using HeapFree()! NOT UCRT's free()
