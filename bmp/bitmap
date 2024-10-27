@@ -196,7 +196,7 @@ class bitmap final {
         using size_type          = unsigned long long;
         using difference_type    = long long;
 
-        inline bitmap() noexcept = default;
+        inline bitmap() noexcept = default; // that's good enough
 
         inline bitmap(_In_ const wchar_t* const filename) noexcept : buffer {}, pixels {}, file_header {}, info_header {}, size {} {
             buffer = internal::open(filename, size);
