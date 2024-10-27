@@ -1,4 +1,5 @@
-#include <bmp.h>
+#include <bitmap>
+
 #include <heapapi.h>
 #include <stdio.h>
 #include <stdlib.h>

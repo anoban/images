@@ -1,0 +1,94 @@
+#pragma once
+
+#define _AMD64_ // architecture
+#define WIN32_LEAN_AND_MEAN
+#define WIN32_EXTRA_MEAN
+
+// clang-format off
+    #include <errhandlingapi.h>
+    #include <fileapi.h>
+    #include <handleapi.h>
+// clang-format on
+
+#include <cstdio>
+#include <new>
+
+namespace internal {
+
+    // a generic file reading routine, that reads in an existing binary file and returns the buffer. (nullptr in case of a failure)
+    // returned memory needs to be freed (`delete[]` ed)
+    [[nodiscard("expensive file io"
+    )]] static inline unsigned char* __cdecl open(_In_ const wchar_t* const filename, _Inout_ unsigned long long* const size) noexcept {
+        unsigned char* buffer {};
+        unsigned long  nbytes {};
+        LARGE_INTEGER  fsize { .QuadPart = 0LLU };
+        const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
+
+        if (file_handle == INVALID_HANDLE_VALUE) [[unlikely]] {
+            ::fwprintf_s(stderr, L"Error %lu in CreateFileW\n", ::GetLastError());
+            goto INVALID_HANDLE_ERROR;
+        }
+
+        if (!::GetFileSizeEx(file_handle, &fsize)) [[unlikely]] { // NOLINT(readability-implicit-bool-conversion)
+            ::fwprintf_s(stderr, L"Error %lu in GetFileSizeEx\n", ::GetLastError());
+            goto GETFILESIZEEX_ERROR;
+        }
+
+        buffer = new (std::nothrow) unsigned char[fsize.QuadPart];
+        if (!buffer) { // NOLINT(readability-implicit-bool-conversion)
+            ::fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
+            goto GETFILESIZEEX_ERROR;
+        }
+
+        // NOLINTNEXTLINE(readability-implicit-bool-conversion)
+        if (!::ReadFile(file_handle, buffer, fsize.QuadPart, &nbytes, nullptr)) [[unlikely]] {
+            ::fwprintf_s(stderr, L"Error %lu in ReadFile\n", ::GetLastError());
+            goto READFILE_ERROR;
+        }
+
+        [[likely]] // let's be optimistic here
+        ::CloseHandle(file_handle);
+        *size = fsize.QuadPart;
+        return buffer;
+
+READFILE_ERROR:
+        delete[] buffer;
+GETFILESIZEEX_ERROR:
+        ::CloseHandle(file_handle);
+INVALID_HANDLE_ERROR:
+        *size = 0;
+        return nullptr;
+    }
+
+    // a file format agnostic write routine to serialize binary image files, if a file with the specified name exists on disk, it will be overwritten
+    static inline bool __cdecl serialize(
+        _In_ const wchar_t* const       filename,
+        _In_ const unsigned char* const buffer,
+        _In_ const unsigned long long   size,
+        _In_ const bool                 freebuffer // specifies whether to free the buffer after serialization
+    ) noexcept {
+        const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
+        unsigned long  nbytes {};
+
+        if (file_handle == INVALID_HANDLE_VALUE) {
+            ::fwprintf_s(stderr, L"Error %4lu in CreateFileW\n", ::GetLastError());
+            goto PREMATURE_RETURN;
+        }
+
+        // NOLINTNEXTLINE(readability-implicit-bool-conversion)
+        if (!::WriteFile(file_handle, buffer, size, &nbytes, nullptr)) {
+            ::fwprintf_s(stderr, L"Error %4lu in WriteFile\n", ::GetLastError());
+            goto PREMATURE_RETURN;
+        }
+
+        if (freebuffer) delete[] buffer;
+
+        [[likely]] ::CloseHandle(file_handle);
+        return true;
+
+PREMATURE_RETURN:
+        ::CloseHandle(file_handle);
+        return false;
+    }
+
+} // namespace internal

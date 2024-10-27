@@ -3,7 +3,7 @@ $unrecognized = [System.Collections.ArrayList]::new()
 
 
 foreach ($arg in $args) {
-    if ($arg -clike "*.c") {
+    if ($arg -clike "*.cpp") {
         [void]$cfiles.Add($arg.ToString().Replace(".\", ""))
     }
     else {
@@ -21,25 +21,31 @@ $cflags = @(
     "/diagnostics:caret",
     "/DNDEBUG",
     "/D_NDEBUG",
+    "/EHac",
     "/F0x10485100",
     "/favor:INTEL64",
     "/fp:strict",
     "/fpcvt:IA",
     "/GL",
     "/Gw",
+    "/I./",
+    "/I./include/",
+    "/jumptablerdata",
     "/MP",
-    "/MT",
+    "/MT", # statically link the multithreaded version of Windows libs
     "/O2",
     "/Ob3",
     "/Oi",
     "/Ot",
     "/Qpar",
-    "/std:clatest",
-    "/TC",
+    "/std:c++20",
+    "/TP",
     "/Wall",
+    "/wd4514",      # removed unreferenced inline function
     "/wd4710",      # not inlined
     "/wd4711",      # selected for inline expansion
     "/wd4820",      # struct padding
+    "/Zc:__cplusplus",
     "/Zc:preprocessor",
     "/link /DEBUG:NONE"
 )
@@ -51,6 +57,6 @@ cl.exe $cfiles $cflags
 
 if ($? -eq $True){
     foreach($file in $cfiles){
-        Remove-Item $file.Replace(".c", ".obj") -Force
+        Remove-Item $file.Replace(".cpp", ".obj") -Force
     }
 }

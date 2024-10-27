@@ -166,7 +166,7 @@ AlignOperands:   Align          # int aaa = bbbbbbbbbbbbbbb +
 
 AlignTrailingComments:
   Kind:            Always
-  OverEmptyLines:  1
+  OverEmptyLines:  0
 # int a;      // all these
 #
 # int ab;     // comments are
@@ -199,8 +199,7 @@ AllowAllParametersOfDeclarationOnNextLine: true  # If the function declaration d
   #                 int d,
   #                 int e);
 
-# Requires clang-format 18, commenting out for now.
-# AllowBreakBeforeNoexceptSpecifier: Never        # Controls if there could be a line break before a noexcept specifier.
+AllowBreakBeforeNoexceptSpecifier: OnlyWithParen        # Controls if there could be a line break before a noexcept specifier.
 
 AllowShortBlocksOnASingleLine: Always           # Always merge short blocks into a single line.
                                                 # e.g.
@@ -208,6 +207,20 @@ AllowShortBlocksOnASingleLine: Always           # Always merge short blocks into
                                                 # while (true) { continue; }
 
 AllowShortCaseLabelsOnASingleLine: true         # If true, short case labels will be contracted to a single line.
+
+AllowShortCompoundRequirementOnASingleLine: true
+                                                # template <typename T>
+                                                # concept c = requires(T x) {
+                                                #   { x + 1 } -> std::same_as<int>;
+                                                # };
+
+                                                # false:
+                                                # template <typename T>
+                                                # concept c = requires(T x) {
+                                                #   {
+                                                #     x + 1
+                                                #   } -> std::same_as<int>;
+                                                # };
 
 AllowShortEnumsOnASingleLine: true
 
@@ -292,8 +305,7 @@ AlwaysBreakTemplateDeclarations: MultiLine # Force break after template declarat
                                            #       int bbbbbbbbbbbbbbbbbbbbb) {
                                            # }
 
-AttributeMacros:
-  - __capability
+AttributeMacros: []
 
 BinPackArguments: false         # If false, a function call's arguments will either be all on the same line or will have one line each.
 
@@ -302,7 +314,12 @@ BinPackParameters: false        # If false, a function declaration's or function
 
 BitFieldColonSpacing: Both
 
+BracedInitializerIndentWidth: 3
+
+BreakAdjacentStringLiterals: true
+
 BreakBeforeBraces: Custom       # Control of individual brace wrapping cases. (Whether a line break is inserted before the starting brace `{`)
+
 BraceWrapping:
 
   AfterCaseLabel:  false
@@ -382,6 +399,8 @@ BreakAfterAttributes: Never     # Break after a group of C++11 attributes before
 # [[nodiscard]] inline int f();
 # [[gnu::const]] [[nodiscard]] int g();
 
+BreakAfterReturnType: Automatic
+
 BreakArrays:     false                # This is currently only for formatting JSON.
 # if set to true;                     if set to false;
 # [                          vs.      [1, 2, 3, 4]
@@ -425,6 +444,8 @@ BreakConstructorInitializers: AfterColon  # The break constructor initializers s
 #    initializer1(),
 #    initializer2()
 
+BreakFunctionDefinitionParameters: false
+
 BreakInheritanceList: AfterColon
 # class Foo :
 #     Base1,
@@ -440,6 +461,8 @@ BreakStringLiterals: false
 # if set to false;
 # const char* x =
 #     "veryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongString";
+
+BreakTemplateDeclarations: No
 
 ColumnLimit:    140          # A column limit of 0 means that there is no column limit. In this case, clang-format will respect
                              # the input's line breaking decisions within statements unless they contradict other rules.
@@ -672,7 +695,7 @@ IndentWrappedFunctionNames: false      # Indent if a function definition or decl
 InsertBraces:    false                 # Insert braces after control statements (if, else, for, do, and while) in C++ unless the control
                                        # statements are inside macro definitions or the braces would enclose preprocessor directives.
 
-InsertNewlineAtEOF: false
+InsertNewlineAtEOF: true
 
 InsertTrailingCommas: None             # insert trailing commas in container literals (arrays and objects) that wrap across multiple lines.
                                        # It is currently only available for JavaScript.
@@ -688,7 +711,6 @@ IntegerLiteralSeparator:              # Format integer literal separators (' for
                                       # insert separators between digits starting from the rightmost digit.
                                       # You can also specify a minimum number of digits (BinaryMinDigits, DecimalMinDigits, and HexMinDigits)
                                       # the integer literal must have in order for the separators to be inserted.
-# This is for C, as C does not recognize these separators!
   Binary:           0
   BinaryMinDigits:  0
   Decimal:          0
@@ -729,6 +751,8 @@ LineEnding:      CRLF
 MacroBlockBegin: ''
 
 MacroBlockEnd:   ''
+
+MainIncludeChar: AngleBracket
 
 MaxEmptyLinesToKeep: 1                  # The maximum number of consecutive empty lines to keep.
 
@@ -858,6 +882,8 @@ SeparateDefinitionBlocks: Leave               # Specifies the use of empty lines
                                               # enums, and functions.
 
 ShortNamespaceLines: 1
+
+SkipMacroDefinitionBody: false
 
 SortIncludes:    CaseInsensitive              #  Includes are sorted in an alphabetical or case insensitive fashion.
 
