@@ -1,28 +1,27 @@
 #pragma once
-#ifndef __BMP_H__
-    #define __BMP_H__
-    #define _AMD64_ // architecture
-    #define WIN32_LEAN_AND_MEAN
-    #define WIN32_EXTRA_MEAN
 
-    #include <assert.h>
-    #include <stdbool.h>
-    #include <stdint.h>
-    #include <stdio.h>
+#define _AMD64_ // architecture
+#define WIN32_LEAN_AND_MEAN
+#define WIN32_EXTRA_MEAN
 
-    // these data structures are implemented for learning purpose, but the functions are designed to operate with WinGdi structs
-    // not these implementations
-    #ifndef __USE_HANDROLLED_BMP_STRUCTS__ //  DON'T UNLESS ABSOLUTELY NECESSARY
-        #include <windef.h>
-        #include <wingdi.h>
-    #endif // !__USE_HANDROLLED_BMP_STRUCTS__
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 
-    #include <errhandlingapi.h>
-    #include <handleapi.h>
-    #include <heapapi.h>
-    #pragma comment(lib, "Gdi32.lib")
+// these data structures are implemented for learning purpose, but the functions are designed to operate with WinGdi structs
+// not these implementations
+#ifndef __USE_HANDROLLED_BMP_STRUCTS__ //  DON'T UNLESS ABSOLUTELY NECESSARY
+    #include <windef.h>
+    #include <wingdi.h>
+#endif // !__USE_HANDROLLED_BMP_STRUCTS__
 
-    #include <../imageio.h>
+#include <errhandlingapi.h>
+#include <handleapi.h>
+#include <heapapi.h>
+#pragma comment(lib, "Gdi32.lib")
+
+#include <imageio.h>
 
 /*
    BMP format supports 1, 4, 8, 16, 24 and 32 bits per pixel.
@@ -34,34 +33,33 @@
 // Since BMP format originted in Microsoft, Windows SDK comes pre-packed with almost all necessary data structures and routines
 // needed to read in and process
 
-// every Windows BMP begins with a BITMAPFILEHEADER struct
-// this helps in recognizing the file format as .bmp
+// every Windows BMP begins with a BITMAPFILEHEADER struct, this helps in recognizing the file format as .bmp
 // the first two bytes will be 'B', 'M'
 
-// all these data structures are provided in wingdi.h, so let's just use them instead of reinventing the wheel.
-    #ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DON'T
+// all these data structures are provided in wingdi.h by Windows SDK, so let's just use them instead of reinventing the wheel (using the reinvented wheel ;p)
+#ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DON'T
 
-        #pragma region _HANDROLLED_STRUCTS_
-    // #pragma pack directive is a risky business, will likely impede gratuitous runtime performance penalties
-        #pragma pack(push, 1)
+    #pragma region _HANDROLLED_STRUCTS_
+// #pragma pack directive is a risky business, will likely impede gratuitous runtime performance penalties
+    #pragma pack(push, 1)
 typedef struct {
         uint8_t  SOI[2];   // 'B', 'M'
         uint32_t FSIZE;
         uint32_t RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
         uint32_t PIXELDATASTART;
 } BITMAPFILEHEADER;
-        #pragma pack(pop)
+    #pragma pack(pop)
 
-    // image header comes in two variants!
-    // one representing OS/2 BMP format (BITMAPCOREHEADER) and another representing the most common Windows BMP format.
-    // (BITMAPINFOHEADER)
-    // however there are no markers to identify the type of the image header present in the bmp image.
-    // the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct.
-    // sizeof BITMAPCOREHEADER is 12 bytes
-    // sizeof BITMAPINFOHEADER is >= 40 bytes.
-    // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes!
+// image header comes in two variants!
+// one representing OS/2 BMP format (BITMAPCOREHEADER) and another representing the most common Windows BMP format.
+// (BITMAPINFOHEADER)
+// however there are no markers to identify the type of the image header present in the bmp image.
+// the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct.
+// sizeof BITMAPCOREHEADER is 12 bytes
+// sizeof BITMAPINFOHEADER is >= 40 bytes.
+// from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes!
 
-        #pragma pack(push, 1)
+    #pragma pack(push, 1)
 typedef struct {
         uint32_t        HEADERSIZE; // >= 40 bytes.
         uint32_t        WIDTH;      // width of the bitmap image in pixels
@@ -77,11 +75,11 @@ typedef struct {
         uint32_t        NCMAPENTRIES;  // number of entries in the colourmap that are used.
         uint32_t        NIMPCOLORS;    // number of important colors.
 } BITMAPINFOHEADER;
-        #pragma pack(pop)
+    #pragma pack(pop)
 
-    // a BMP with BITMAPCOREHEADER cannot be compressed and is very rarely used in modern BMPs.
+// a BMP with BITMAPCOREHEADER cannot be compressed and is very rarely used in modern BMPs.
 
-        #pragma pack(push, 1)
+    #pragma pack(push, 1)
 typedef struct {
         uint32_t HEADERSIZE; // 12 bytes
         uint16_t WIDTH;
@@ -104,8 +102,8 @@ typedef struct {
         uint8_t GREEN;
         uint8_t RED;
 } RGBTRIPLE;
-        #pragma endregion _HANDROLLED_STRUCTS_
-    #endif // !__USE_HANDROLLED_BMP_STRUCTS__
+    #pragma endregion _HANDROLLED_STRUCTS_
+#endif // !__USE_HANDROLLED_BMP_STRUCTS__
 
 // order of pixels in the BMP buffer.
 typedef enum { TOPDOWN, BOTTOMUP } BMPPIXDATAORDERING;
@@ -568,5 +566,3 @@ static inline bmp_t __cdecl ScaleColors(_In_ bmp_t* const image, _In_ const csca
     } else
         pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
 }
-
-#endif // !__BMP_H__

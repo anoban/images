@@ -1,23 +1,20 @@
 #pragma once
-#ifndef __ICO_H__
-    #define __ICO_H__
 
-    #include <assert.h>
-    #include <stdint.h>
-    #include <stdio.h>
+#include <assert.h>
+#include <imageio.h>
+#include <stdint.h>
+#include <stdio.h>
 
-    #include <../imageio.h>
-
-    #define MAX_ICONDIRENTRIES 4LLU // most .ico images will have only one bitmap in them, so 4 is generous enough
+#define MAX_ICONDIRENTRIES 4LLU // most .ico images will have only one bitmap in them, so 4 is generous enough
 
 // an ICO file can be imagined as a meta-info struct, called ICONDIR, for ICON DIRectory followed by a bitmap or an array of bitmaps
 // (.ico files can contain one or more images)
-// these bitmap images are stored in contiguously following the ICONDIR structure.
+// these bitmap images are stored contiguously, following the ICONDIR structure.
 // each bitmap is defined by an ICONDIRENTRY struct in the ICONDIR struct
 // the bitmap data can be in the format of a Windows BMP file without the BITMAPFILEHEADER struct or a PNG image in its entirety i.e uncompressed.
 
-// in summary the binary representation of an .ico file looks like
-// ICONDIR, BITMAP data
+// in summary, the binary representation of an .ico file looks like
+// ICONDIR = { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
 
 // emulating Win32 typedefs for syntactic consistency
 typedef unsigned char  BYTE;  // 8 bits
@@ -60,10 +57,9 @@ typedef struct ICONDIRENTRY {
         DWORD dwImageOffset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
 } ICONDIRENTRY;
 
-static_assert(sizeof(ICONDIRENTRY) == 16 != 0);
+static_assert(sizeof(ICONDIRENTRY) == 16);
 
-typedef struct ICONDIR {
-        /*
+/*
             Win32 uses the following definition ::
             typedef struct GRPICONDIR
             {
@@ -72,8 +68,9 @@ typedef struct ICONDIR {
                 WORD idCount;
                 GRPICONDIRENTRY idEntries[];
             } GRPICONDIR
-            */
+*/
 
+typedef struct ICONDIR {
         // id prefix for IconDirectory, classic Win32 stuff
         WORD         idReserved;                    // reserved field, must always be 0
         WORD         idType;                        // specifies the type of the resources contained, values other than 1 and 2 are invalid
@@ -92,5 +89,3 @@ typedef struct ico {
         ICONDIR    icIconDir;                   // parsed ICONDIR struct
         BITMAPTYPE icTypes[MAX_ICONDIRENTRIES]; // type of the bitmaps stored in the file
 } ico_t;
-
-#endif // !__ICO_H__
