@@ -33,68 +33,80 @@
 // the first two bytes will be 'B', 'M'
 
 // all these data structures are provided in wingdi.h by Windows SDK, so let's just use them instead of reinventing the wheel (using the reinvented wheel ;p)
-#ifdef __USE_HANDROLLED_BMP_STRUCTS__ // JUST DON'T
+namespace __handrolled_wingdi_alternatives {
+    typedef struct {
+            uint8_t  SOI[2]; // 'B', 'M'
+            uint32_t FSIZE;
+            uint32_t RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
+            uint32_t PIXELDATASTART;
+    } BITMAPFILEHEADER;
 
-typedef struct {
-        uint8_t  SOI[2]; // 'B', 'M'
-        uint32_t FSIZE;
-        uint32_t RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
-        uint32_t PIXELDATASTART;
-} BITMAPFILEHEADER;
+    // image header comes in two variants!
+    // one representing OS/2 BMP format (BITMAPCOREHEADER) and another representing the most common Windows BMP format.
+    // (BITMAPINFOHEADER)
+    // however there are no markers to identify the type of the image header present in the bmp image.
+    // the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct.
+    // sizeof BITMAPCOREHEADER is 12 bytes
+    // sizeof BITMAPINFOHEADER is >= 40 bytes.
+    // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes!
 
-// image header comes in two variants!
-// one representing OS/2 BMP format (BITMAPCOREHEADER) and another representing the most common Windows BMP format.
-// (BITMAPINFOHEADER)
-// however there are no markers to identify the type of the image header present in the bmp image.
-// the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct.
-// sizeof BITMAPCOREHEADER is 12 bytes
-// sizeof BITMAPINFOHEADER is >= 40 bytes.
-// from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes!
+    typedef struct {
+            uint32_t        HEADERSIZE; // >= 40 bytes.
+            uint32_t        WIDTH;      // width of the bitmap image in pixels
+            int32_t         HEIGHT;     // height of the bitmap image in pixels
+            // usually an unsigned value, a negative value alludes that the pixel data is ordered top down,
+            // instead of the customary bottom up order. bmp images with a - height values may not be compressed!
+            uint16_t        NPLANES;       // must be 1
+            uint16_t        NBITSPERPIXEL; // 1, 4, 8, 16, 24 or 32
+            COMPRESSIONKIND CMPTYPE;       // compression kind
+            uint32_t        IMAGESIZE;     // 0 if not compressed.
+            uint32_t        RESPPMX;       // resolution in pixels per meter along x axis.
+            uint32_t        RESPPMY;       // resolution in pixels per meter along y axis.
+            uint32_t        NCMAPENTRIES;  // number of entries in the colourmap that are used.
+            uint32_t        NIMPCOLORS;    // number of important colors.
+    } BITMAPINFOHEADER;
 
-typedef struct {
-        uint32_t        HEADERSIZE; // >= 40 bytes.
-        uint32_t        WIDTH;      // width of the bitmap image in pixels
-        int32_t         HEIGHT;     // height of the bitmap image in pixels
-        // usually an unsigned value, a negative value alludes that the pixel data is ordered top down,
-        // instead of the customary bottom up order. bmp images with a - height values may not be compressed!
-        uint16_t        NPLANES;       // must be 1
-        uint16_t        NBITSPERPIXEL; // 1, 4, 8, 16, 24 or 32
-        COMPRESSIONKIND CMPTYPE;       // compression kind
-        uint32_t        IMAGESIZE;     // 0 if not compressed.
-        uint32_t        RESPPMX;       // resolution in pixels per meter along x axis.
-        uint32_t        RESPPMY;       // resolution in pixels per meter along y axis.
-        uint32_t        NCMAPENTRIES;  // number of entries in the colourmap that are used.
-        uint32_t        NIMPCOLORS;    // number of important colors.
-} BITMAPINFOHEADER;
+    // a BMP with BITMAPCOREHEADER cannot be compressed and is very rarely used in modern BMPs.
 
-// a BMP with BITMAPCOREHEADER cannot be compressed and is very rarely used in modern BMPs.
+    typedef struct {
+            uint32_t HEADERSIZE; // 12 bytes
+            uint16_t WIDTH;
+            uint16_t HEIGHT;
+            uint16_t NPLANES;       // must be 1
+            uint16_t NBITSPERPIXEL; // could be 1, 4, 8 or 24
+    } BITMAPCOREHEADER;
 
-typedef struct {
-        uint32_t HEADERSIZE; // 12 bytes
-        uint16_t WIDTH;
-        uint16_t HEIGHT;
-        uint16_t NPLANES;       // must be 1
-        uint16_t NBITSPERPIXEL; // could be 1, 4, 8 or 24
-} BITMAPCOREHEADER;
+    // struct used to represent RGB pixels in BMP images (more widely uised compared to RGBTRIPLE)
+    typedef struct {
+            uint8_t BLUE;
+            uint8_t GREEN;
+            uint8_t RED;
+            uint8_t RESERVED; // must be 0, but seems to be 0xFF in most BMPs.
+    } RGBQUAD;
 
-// struct used to represent RGB pixels in BMP images (more widely uised compared to RGBTRIPLE)
-typedef struct {
-        uint8_t BLUE;
-        uint8_t GREEN;
-        uint8_t RED;
-        uint8_t RESERVED; // must be 0, but seems to be 0xFF in most BMPs.
-} RGBQUAD;
+    // BMP files in OS/2 use this variant.
+    typedef struct {
+            uint8_t BLUE;
+            uint8_t GREEN;
+            uint8_t RED;
+    } RGBTRIPLE;
 
-// BMP files in OS/2 use this variant.
-typedef struct {
-        uint8_t BLUE;
-        uint8_t GREEN;
-        uint8_t RED;
-} RGBTRIPLE;
-
-#endif // !__USE_HANDROLLED_BMP_STRUCTS__
+} // namespace __handrolled_wingdi_alternatives
 
 class bitmap final {
+    public:
+        // order of pixels in the BMP buffer.
+        enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
+
+        // mechanism to be used in converting the pixels to black and white.
+        enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
+
+        // combinations of colours to remove from pixels.
+        enum class RGB_COMBINATIONS : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
+
+        // types of compressions used in BMP files.
+        enum class COMPRESSION_KINDS : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
+
     private:
         BITMAPFILEHEADER file_header;
         BITMAPINFOHEADER info_header;
@@ -104,8 +116,9 @@ class bitmap final {
         // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a uint16_t for SOI instead of two chars
         static constexpr unsigned short SOI { 0x4D42 }; // Start Of Image
 
-        __forceinline BITMAPFILEHEADER __cdecl ParseFileHeader(
-            _In_ const unsigned char* const imstream, _In_ const size_t length
+        __forceinline BITMAPFILEHEADER __cdecl __parse_file_header( // NOLINT(readability-convert-member-functions-to-static)
+            _In_reads_bytes_(length) const unsigned char* const imstream,
+            _In_ const size_t                                   length
         ) noexcept {
             // static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "Error: BITMAPFILEHEADER must be 14 bytes in size");
             // above won't work with wingdi's structs as they aren't packed. So commenting out the above line:(
@@ -114,7 +127,7 @@ class bitmap final {
             BITMAPFILEHEADER header = { .bfType = 0, .bfSize = 0, .bfReserved1 = 0, .bfReserved2 = 0, .bfOffBits = 0 };
 
             if (('B' != imstream[0]) && ('M' != imstream[1])) { // validate that the passed buffer is of a BMP file
-                _putws(L"Error in ParseFileHeader, file isn't a Windows BMP file");
+                _putws(L"Error in __parse_file_header, file isn't a Windows BMP file");
                 return header;
             }
 
@@ -127,22 +140,27 @@ class bitmap final {
 
         // find the type of compression used in the BMP file
         // BMP files, in general aren't compressed
-        [[nodiscard]] __forceinline COMPRESSIONKIND __cdecl GetCompressionKind(_In_ const uint32_t compressionkind) noexcept {
-            switch (compressionkind) {
-                case 0  : return RGB;
-                case 1  : return RLE8;
-                case 2  : return RLE4;
-                case 3  : return BITFIELDS;
+        [[nodiscard]] __forceinline COMPRESSION_KINDS __cdecl __get_compression_kind( // NOLINT(readability-convert-member-functions-to-static)
+            _In_ const unsigned& kind
+        ) noexcept {
+            switch (kind) {
+                case 0  : return COMPRESSION_KINDS::RGB;
+                case 1  : return COMPRESSION_KINDS::RLE8;
+                case 2  : return COMPRESSION_KINDS::RLE4;
+                case 3  : return COMPRESSION_KINDS::BITFIELDS;
                 default : break;
             }
-            [[unlikely]] return UNKNOWN;
+            [[unlikely]] return COMPRESSION_KINDS::UNKNOWN;
         }
-        __forceinline BITMAPINFOHEADER __cdecl ParseInfoHeader(_In_ const uint8_t* const imstream, _In_ const size_t length) noexcept {
+        __forceinline BITMAPINFOHEADER __cdecl __parse_info_header( // NOLINT(readability-convert-member-functions-to-static)
+            _In_reads_bytes_(length) const uint8_t* const imstream,
+            _In_ const size_t                             length
+        ) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
             static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "Error: BITMAPINFOHEADER must be 40 bytes in size");
             assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
 
-            BITMAPINFOHEADER header = {
+            BITMAPINFOHEADER header {
                 .biSize          = 0,
                 .biWidth         = 0,
                 .biHeight        = 0,
@@ -157,7 +175,7 @@ class bitmap final {
             };
 
             if (*((uint32_t*) (imstream + 14U)) > 40) {
-                fputws(L"Error in ParseInfoHeader: Unparseable BITMAPINFOHEADER", stderr);
+                fputws(L"Error in __parse_info_header: Unparseable BITMAPINFOHEADER", stderr);
                 return header;
             }
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -166,13 +184,14 @@ class bitmap final {
             header.biHeight        = *reinterpret_cast<const int32_t*>(imstream + 22);
             header.biPlanes        = *reinterpret_cast<const uint16_t*>(imstream + 26);
             header.biBitCount      = *reinterpret_cast<const uint16_t*>(imstream + 28);
-            header.biCompression   = GetCompressionKind(*(uint32_t*) (imstream + 30U));
+            header.biCompression   = __get_compression_kind(*(uint32_t*) (imstream + 30U));
             header.biSizeImage     = *reinterpret_cast<const uint32_t*>(imstream + 34);
             header.biXPelsPerMeter = *reinterpret_cast<const int32_t*>(imstream + 38);
             header.biYPelsPerMeter = *reinterpret_cast<const int32_t*>(imstream + 42);
             header.biClrUsed       = *reinterpret_cast<const uint32_t*>(imstream + 46);
             header.biClrImportant  = *reinterpret_cast<const uint32_t*>(imstream + 50);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             return header;
         }
 
@@ -181,17 +200,6 @@ class bitmap final {
         }
 
     public:
-        // order of pixels in the BMP buffer.
-        enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
-
-        // mechanism to be used in converting the pixels to black and white.
-        enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
-
-        // combinations of colours to remove from pixels.
-        enum class RGB_COMBINATIONS : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
-
-        // types of compressions used in BMP files.
-        enum class COMPRESSION_KINDS : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
 };
 
 static inline bool __cdecl BmpWrite(_In_ const wchar_t* const filepath, _In_ bmp_t* const image, _In_ const bool cleanup) {
@@ -241,11 +249,11 @@ static inline bmp_t __cdecl BmpRead(_In_ const wchar_t* const filepath) {
     const uint8_t* const buffer = Open(filepath, &size); // HeapFree()
     if (!buffer) return image;                           // Open will do the error reporting, so just exiting the function is enough
 
-    const BITMAPFILEHEADER fhead = ParseFileHeader(buffer, size); // 14 bytes (packed)
-    if (!fhead.bfSize) return image; // again ParseFileHeader will report errors, if the predicate isn't satisified, exit the routine
+    const BITMAPFILEHEADER fhead = __parse_file_header(buffer, size); // 14 bytes (packed)
+    if (!fhead.bfSize) return image; // again __parse_file_header will report errors, if the predicate isn't satisified, exit the routine
 
-    const BITMAPINFOHEADER infhead = ParseInfoHeader(buffer, size); // 40 bytes (packed)
-    if (!infhead.biSize) return image;                              // error reporting is handled by ParseInfoHeader
+    const BITMAPINFOHEADER infhead = __parse_info_header(buffer, size); // 40 bytes (packed)
+    if (!infhead.biSize) return image;                                  // error reporting is handled by __parse_info_header
 
     // creating and using a new buffer to only store pixels sounds like a clean idea but it brings a string of performance issues
     // 1) an additional heap allocation for the new buffer and deallocation of the original buffer
