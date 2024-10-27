@@ -1,23 +1,11 @@
 #pragma once
-
 #define _AMD64_ // architecture
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_MEAN
-
-#include <cassert>
-
-// these data structs are implemented for learning purposes, but the functions are designed to operate with WinGdi structs not the handrolled variants
-#ifndef __USE_HANDROLLED_BMP_STRUCTS__ //  DON'T, UNLESS ABSOLUTELY NECESSARY
-    #include <windef.h>
-    #include <wingdi.h>
-#endif // !__USE_HANDROLLED_BMP_STRUCTS__
-
-#include <errhandlingapi.h>
-#include <handleapi.h>
-#include <heapapi.h>
-#pragma comment(lib, "Gdi32.lib")
-
 #include <imageio>
+
+#include <wingdi.h>
+#pragma comment(lib, "Gdi32.lib")
 
 /*
    BMP format supports 1, 4, 8, 16, 24 and 32 bits per pixel.
@@ -33,13 +21,13 @@
 // the first two bytes will be 'B', 'M'
 
 // all these data structures are provided in wingdi.h by Windows SDK, so let's just use them instead of reinventing the wheel (using the reinvented wheel ;p)
-namespace __handrolled_wingdi_alternatives {
-    typedef struct {
-            uint8_t  SOI[2]; // 'B', 'M'
-            uint32_t FSIZE;
-            uint32_t RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
-            uint32_t PIXELDATASTART;
-    } BITMAPFILEHEADER;
+namespace __handrolled_alternatives {
+    struct BITMAPFILEHEADER {
+            unsigned char SOI[2]; // 'B', 'M'
+            uint32_t      FSIZE;
+            uint32_t      RESERVED; // this is actually two consecutive 16 bit elements, but who cares :)
+            uint32_t      PIXELDATASTART;
+    };
 
     // image header comes in two variants!
     // one representing OS/2 BMP format (BITMAPCOREHEADER) and another representing the most common Windows BMP format.
@@ -50,7 +38,7 @@ namespace __handrolled_wingdi_alternatives {
     // sizeof BITMAPINFOHEADER is >= 40 bytes.
     // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes!
 
-    typedef struct {
+    struct BITMAPINFOHEADER {
             uint32_t        HEADERSIZE; // >= 40 bytes.
             uint32_t        WIDTH;      // width of the bitmap image in pixels
             int32_t         HEIGHT;     // height of the bitmap image in pixels
@@ -64,34 +52,34 @@ namespace __handrolled_wingdi_alternatives {
             uint32_t        RESPPMY;       // resolution in pixels per meter along y axis.
             uint32_t        NCMAPENTRIES;  // number of entries in the colourmap that are used.
             uint32_t        NIMPCOLORS;    // number of important colors.
-    } BITMAPINFOHEADER;
+    };
 
     // a BMP with BITMAPCOREHEADER cannot be compressed and is very rarely used in modern BMPs.
 
-    typedef struct {
+    struct BITMAPCOREHEADER {
             uint32_t HEADERSIZE; // 12 bytes
             uint16_t WIDTH;
             uint16_t HEIGHT;
             uint16_t NPLANES;       // must be 1
             uint16_t NBITSPERPIXEL; // could be 1, 4, 8 or 24
-    } BITMAPCOREHEADER;
+    };
 
     // struct used to represent RGB pixels in BMP images (more widely uised compared to RGBTRIPLE)
-    typedef struct {
-            uint8_t BLUE;
-            uint8_t GREEN;
-            uint8_t RED;
-            uint8_t RESERVED; // must be 0, but seems to be 0xFF in most BMPs.
-    } RGBQUAD;
+    struct RGBQUAD {
+            unsigned char BLUE;
+            unsigned char GREEN;
+            unsigned char RED;
+            unsigned char RESERVED; // must be 0, but seems to be 0xFF in most bitmaps
+    };
 
     // BMP files in OS/2 use this variant.
-    typedef struct {
-            uint8_t BLUE;
-            uint8_t GREEN;
-            uint8_t RED;
-    } RGBTRIPLE;
+    struct RGBTRIPLE {
+            unsigned char BLUE;
+            unsigned char GREEN;
+            unsigned char RED;
+    };
 
-} // namespace __handrolled_wingdi_alternatives
+} // namespace __handrolled_alternatives
 
 class bitmap final {
     public:
@@ -106,8 +94,11 @@ class bitmap final {
 
         // types of compressions used in BMP files.
         enum class COMPRESSION_KINDS : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
-
+        // clang-format off
+#ifndef __TEST__
     private:
+#endif
+        // clang-format on
         BITMAPFILEHEADER file_header;
         BITMAPINFOHEADER info_header;
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
@@ -153,8 +144,8 @@ class bitmap final {
             [[unlikely]] return COMPRESSION_KINDS::UNKNOWN;
         }
         __forceinline BITMAPINFOHEADER __cdecl __parse_info_header( // NOLINT(readability-convert-member-functions-to-static)
-            _In_reads_bytes_(length) const uint8_t* const imstream,
-            _In_ const size_t                             length
+            _In_reads_bytes_(length) const unsigned char* const imstream,
+            _In_ const size_t                                   length
         ) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
             static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "Error: BITMAPINFOHEADER must be 40 bytes in size");
@@ -243,11 +234,11 @@ static inline bool __cdecl BmpWrite(_In_ const wchar_t* const filepath, _In_ bmp
 }
 
 static inline bmp_t __cdecl BmpRead(_In_ const wchar_t* const filepath) {
-    size_t size                 = 0;
-    bmp_t  image                = { 0 }; // will be used as an empty placeholder for premature returns until members are properly assigned
+    size_t size  = 0;
+    bmp_t  image = { 0 }; // will be used as an empty placeholder for premature returns until members are properly assigned
 
-    const uint8_t* const buffer = Open(filepath, &size); // HeapFree()
-    if (!buffer) return image;                           // Open will do the error reporting, so just exiting the function is enough
+    const unsigned char* const buffer = Open(filepath, &size); // HeapFree()
+    if (!buffer) return image;                                 // Open will do the error reporting, so just exiting the function is enough
 
     const BITMAPFILEHEADER fhead = __parse_file_header(buffer, size); // 14 bytes (packed)
     if (!fhead.bfSize) return image; // again __parse_file_header will report errors, if the predicate isn't satisified, exit the routine
@@ -271,7 +262,7 @@ static inline bmp_t __cdecl BmpRead(_In_ const wchar_t* const filepath) {
     //     return image;
     // }
 
-    // uint8_t*     pixels  = NULL;
+    // unsigned char*     pixels  = NULL;
     // if (!(pixels = HeapAlloc(hProcHeap, 0, size - 54))) { }
     // even though bmp_t's `pixels` member is declared as an array of RGBQUADs, we will not be creating RGBQUADs before writing them to the buffer.
     // the compiler may choose to optimize this away but performance wise this is too hefty a price to pay.
@@ -322,10 +313,10 @@ static inline void __cdecl BmpInfo(_In_ const bmp_t* const image) {
 
 // if inplace = true, the returned struct could be safely ignored (it'll just be an empty bmp_t struct)
 static inline bmp_t __cdecl ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIND conversionkind, _In_ const bool inplace) {
-    HANDLE64    hProcHeap = NULL;
-    uint8_t*    buffer    = NULL;
-    RGBQUAD*    pixels    = NULL;
-    const bmp_t temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64       hProcHeap = NULL;
+    unsigned char* buffer    = NULL;
+    RGBQUAD*       pixels    = NULL;
+    const bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -377,10 +368,10 @@ static inline bmp_t __cdecl ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIN
 }
 
 static inline bmp_t __cdecl ToNegative(_In_ bmp_t* const image, _In_ const bool inplace) {
-    HANDLE64    hProcHeap = NULL;
-    uint8_t*    buffer    = NULL;
-    RGBQUAD*    pixels    = NULL;
-    const bmp_t temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64       hProcHeap = NULL;
+    unsigned char* buffer    = NULL;
+    RGBQUAD*       pixels    = NULL;
+    const bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -411,10 +402,10 @@ static inline bmp_t __cdecl ToNegative(_In_ bmp_t* const image, _In_ const bool 
 
 // removes specified RGB components from the image pixels
 static inline bmp_t __cdecl RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace) {
-    HANDLE64    hProcHeap = NULL;
-    uint8_t*    buffer    = NULL;
-    RGBQUAD*    pixels    = NULL;
-    const bmp_t temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64       hProcHeap = NULL;
+    unsigned char* buffer    = NULL;
+    RGBQUAD*       pixels    = NULL;
+    const bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();
@@ -461,7 +452,7 @@ static inline bmp_t __cdecl RemoveColour(_In_ bmp_t* const image, _In_ const RGB
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 static inline bmp_t __cdecl GenGradient(_In_ const long npixels_h, _In_ const long npixels_w) {
     bmp_t          image     = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
-    uint8_t*       buffer    = NULL;
+    unsigned char* buffer    = NULL;
     RGBQUAD*       pixels    = NULL;
     const HANDLE64 hProcHeap = GetProcessHeap();
 
@@ -506,8 +497,8 @@ static inline bmp_t __cdecl GenGradient(_In_ const long npixels_h, _In_ const lo
     // increment the BLUE pixel across subsequent frames.
 
     // the deal here is that we must keep at least one RGB component constant within these stride windows. (our pick is BLUE)
-    const size_t hstride = npixels_w / 256, vstride = npixels_h / 256; // NOLINT(readability-isolate-declaration)
-    uint8_t      red = 0xFF, green = 0xFF, blue = 0x00;                // NOLINT(readability-isolate-declaration)
+    const size_t  hstride = npixels_w / 256, vstride = npixels_h / 256; // NOLINT(readability-isolate-declaration)
+    unsigned char red = 0xFF, green = 0xFF, blue = 0x00;                // NOLINT(readability-isolate-declaration)
 
     // for moving across pixel rows, by a select stride, captures row frames, stride by stride.
     for (size_t v = 0; v < npixels_h /* for all pixels in a column */
@@ -544,10 +535,10 @@ typedef struct cscale {
 
 // TODO incomplete implementation
 static inline bmp_t __cdecl ScaleColors(_In_ bmp_t* const image, _In_ const cscale_t scale, _In_ const bool inplace) {
-    HANDLE64 hProcHeap = NULL;
-    RGBQUAD* pixels    = NULL;
-    uint8_t* buffer    = NULL;
-    bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
+    HANDLE64       hProcHeap = NULL;
+    RGBQUAD*       pixels    = NULL;
+    unsigned char* buffer    = NULL;
+    bmp_t          temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
 
     if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
         hProcHeap = GetProcessHeap();

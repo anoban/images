@@ -9,6 +9,7 @@
         "*.c": "c",
         "*.clang-format": "yaml",
         "*.clang-tidy": "yaml",
-        "bitmap": "cpp"
+        "bitmap": "cpp",
+        "imageio": "cpp"
     }
 }

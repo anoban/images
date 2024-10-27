@@ -1,9 +1,5 @@
 #pragma once
-
-#include <assert.h>
-#include <imageio.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <imageio>
 
 #define MAX_ICONDIRENTRIES 4LLU // most .ico images will have only one bitmap in them, so 4 is generous enough
 

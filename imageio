@@ -10,6 +10,7 @@
     #include <handleapi.h>
 // clang-format on
 
+#include <cassert>
 #include <cstdio>
 #include <new>
 
@@ -19,6 +20,9 @@ namespace internal {
     // returned memory needs to be freed (`delete[]` ed)
     [[nodiscard("expensive file io"
     )]] static inline unsigned char* __cdecl open(_In_ const wchar_t* const filename, _Inout_ unsigned long long* const size) noexcept {
+        assert(filename);
+        assert(size);
+
         unsigned char* buffer {};
         unsigned long  nbytes {};
         LARGE_INTEGER  fsize { .QuadPart = 0LLU };
@@ -62,11 +66,14 @@ INVALID_HANDLE_ERROR:
 
     // a file format agnostic write routine to serialize binary image files, if a file with the specified name exists on disk, it will be overwritten
     static inline bool __cdecl serialize(
-        _In_ const wchar_t* const       filename,
-        _In_ const unsigned char* const buffer,
-        _In_ const unsigned long long   size,
-        _In_ const bool                 freebuffer // specifies whether to free the buffer after serialization
+        _In_ const wchar_t* const                         filename,
+        _In_reads_bytes_(size) const unsigned char* const buffer,
+        _In_ const unsigned long long                     size,
+        _In_ const bool                                   freebuffer // specifies whether to free the buffer after serialization
     ) noexcept {
+        assert(filename);
+        assert(buffer);
+
         const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
         unsigned long  nbytes {};
 
