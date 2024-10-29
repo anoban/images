@@ -1,0 +1,5 @@
+#include <type_traits>
+
+template<typename _TyFrom /* scoped enum type */> static inline constexpr auto to_underlying(_In_ const _TyFrom& enumeration) noexcept {
+    return static_cast<typename std::underlying_type<_TyFrom>::type>(enumeration);
+}
