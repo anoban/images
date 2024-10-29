@@ -221,7 +221,15 @@ class bitmap final {
         inline const_iterator end() const noexcept { return pixels + info_header.biHeight * info_header.biWidth; }
 
         void to_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) noexcept {
-            const auto transformer = []() noexcept -> void { };
+            switch (mapper) {
+                case BW_TRANSFORMATION::AVERAGE : std::transform(begin(), end(), begin(), rgb_transformers::average); break;
+                case BW_TRANSFORMATION::WEIGHTED_AVERAGE :
+                    std::transform(begin(), end(), begin(), rgb_transformers::weighted_average);
+                    break;
+                case BW_TRANSFORMATION::LUMINOSITY : std::transform(begin(), end(), begin(), rgb_transformers::luminosity); break;
+                case BW_TRANSFORMATION::BINARY     : std::transform(begin(), end(), begin(), rgb_transformers::binary); break;
+                default                            : break;
+            }
         }
 
         bitmap make_blacknwhite() const noexcept { }
@@ -240,31 +248,6 @@ static inline bool __cdecl BmpWrite(_In_ const wchar_t* const filepath, _In_ bmp
     // we could use this buffer to serialize the structs and pixels into and then write everything to disk at once.
     // this will eliminate the overhead of using two IO calls while brining in the penalty of a separate heap allocation.
     // TRADEOFFS :(
-
-    static HANDLE64 hProcHeap = NULL;
-
-    if (!internal::serialize(filepath, image->buffer, image->fileheader.bfSize, false)) {
-        //  Serialize will take care of the error reposting, caller doesn't have to.
-        fputws(L"Call to Serialize() inside BmpWrite failed!", stderr);
-        return false;
-    }
-
-    if (cleanup) {
-        hProcHeap = GetProcessHeap();
-        if (hProcHeap == INVALID_HANDLE_VALUE) {
-            fputws(L"GetProcessHeap() returned INVALID_HANDLE_VALUE inside BmpWrite!", stderr);
-            return false;
-        }
-
-        if (!HeapFree(hProcHeap, 0, image->buffer)) {
-            fputws(L"Impending memory leak! HeapFree() failed inside BmpWrite!", stderr);
-            return false;
-        }
-
-        image->buffer = image->pixels = NULL;
-    }
-
-    return true;
 }
 
 static inline bmp_t __cdecl BmpRead(_In_ const wchar_t* const filepath) {

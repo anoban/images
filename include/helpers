@@ -17,32 +17,28 @@ static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noe
     return static_cast<_TyTo>(enumeration);
 }
 
-namespace bitmap {
+namespace rgb_transformers {
 
-    namespace rgb_transformers {
+    static inline constexpr void average(_Inout_ RGBQUAD& pixel) noexcept {
+        pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+            static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L);
+    }
 
-        static inline constexpr void average(_Inout_ RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
-                static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L);
-        }
+    static inline constexpr void weighted_average(_Inout_ RGBQUAD& pixel) noexcept {
+        pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+            static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L);
+    }
 
-        static inline constexpr void weighted_average(_Inout_ RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
-                static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L);
-        }
+    static inline constexpr void luminosity(_Inout_ RGBQUAD& pixel) noexcept {
+        pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+            static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L);
+    }
 
-        static inline constexpr void luminosity(_Inout_ RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
-                static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L);
-        }
+    static inline constexpr void binary(_Inout_ RGBQUAD& pixel) noexcept {
+        pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+            (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8;
+    }
 
-        static inline constexpr void binary(_Inout_ RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
-                (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8;
-        }
-
-    } // namespace rgb_transformers
-
-} // namespace bitmap
+} // namespace rgb_transformers
 
 // NOLINTEND(readability-redundant-inline-specifier)
