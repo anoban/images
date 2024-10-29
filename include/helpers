@@ -1,5 +1,48 @@
 #include <type_traits>
 
-template<typename _TyFrom /* scoped enum type */> static inline constexpr auto to_underlying(_In_ const _TyFrom& enumeration) noexcept {
-    return static_cast<typename std::underlying_type<_TyFrom>::type>(enumeration);
+// clang-format off
+#define _AMD64_
+#define WIN32_LEAN_AND_MEAN
+#define WIN32_EXTRA_MEAN
+#include <windef.h>
+#include <wingdi.h>
+// clang-format on
+
+// NOLINTBEGIN(readability-redundant-inline-specifier)
+template<
+    typename _TyFrom /* scoped enum type */,
+    typename _TyTo /* the underlying type */ =
+        typename std::enable_if<std::is_enum<_TyFrom>::value, typename std::underlying_type<_TyFrom>::type>::type>
+static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noexcept {
+    return static_cast<_TyTo>(enumeration);
 }
+
+namespace bitmap {
+
+    namespace rgb_transformers {
+
+        static inline constexpr void average(_Inout_ RGBQUAD& pixel) noexcept {
+            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+                static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L);
+        }
+
+        static inline constexpr void weighted_average(_Inout_ RGBQUAD& pixel) noexcept {
+            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+                static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L);
+        }
+
+        static inline constexpr void luminosity(_Inout_ RGBQUAD& pixel) noexcept {
+            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+                static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L);
+        }
+
+        static inline constexpr void binary(_Inout_ RGBQUAD& pixel) noexcept {
+            pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
+                (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8;
+        }
+
+    } // namespace rgb_transformers
+
+} // namespace bitmap
+
+// NOLINTEND(readability-redundant-inline-specifier)

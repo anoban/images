@@ -219,6 +219,12 @@ class bitmap final {
         inline iterator end() noexcept { return pixels + info_header.biHeight * info_header.biWidth; }
 
         inline const_iterator end() const noexcept { return pixels + info_header.biHeight * info_header.biWidth; }
+
+        void to_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) noexcept {
+            const auto transformer = []() noexcept -> void { };
+        }
+
+        bitmap make_blacknwhite() const noexcept { }
 };
 
 static inline bool __cdecl BmpWrite(_In_ const wchar_t* const filepath, _In_ bmp_t* const image, _In_ const bool cleanup) {
@@ -336,31 +342,7 @@ static inline bmp_t __cdecl ToBWhite(_In_ bmp_t* const image, _In_ const TOBWKIN
     // no matter how the caller specifies the inplace argument, pixles will point to a valid memory now
     const size_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
 
-    switch (conversionkind) {
-        case AVERAGE : // just get the arithmetic average of all three RGB values
-            for (size_t i = 0; i < npixels; ++i)
-                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
-                    (((long double) (image->pixels[i].rgbBlue)) + image->pixels[i].rgbGreen + image->pixels[i].rgbRed) / 3.0L;
-            break;
-
-        case WEIGHTED_AVERAGE : // RGB values are averaged using predetermined weights
-            for (size_t i = 0; i < npixels; ++i)
-                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
-                    (image->pixels[i].rgbBlue * 0.299L + image->pixels[i].rgbGreen * 0.587L + image->pixels[i].rgbRed * 0.114L);
-            break;
-
-        case LUMINOSITY :
-            for (size_t i = 0; i < npixels; ++i)
-                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
-                    (image->pixels[i].rgbBlue * 0.2126L + image->pixels[i].rgbGreen * 0.7152L + image->pixels[i].rgbRed * 0.0722L);
-            break;
-
-        case BINARY :
-            for (size_t i = 0; i < npixels; ++i)
-                pixels[i].rgbBlue = pixels[i].rgbGreen = pixels[i].rgbRed =
-                    (((int) (image->pixels[i].rgbBlue)) + image->pixels[i].rgbGreen + image->pixels[i].rgbRed) / 3 >= 128 ? 255 : 0;
-            break;
-    }
+    switch (conversionkind) { }
     return inplace ? temp :
                      (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .buffer = buffer, .pixels = pixels };
 }
