@@ -69,25 +69,29 @@ class bitmap final {
         // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
         static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
+        // NOLINTBEGIN(readability-redundant-inline-specifier)
+
         inline BITMAPFILEHEADER __cdecl __parse_file_header( // NOLINT(readability-convert-member-functions-to-static)
             _In_reads_bytes_(length) const unsigned char* const imstream,
             _In_ const size_t&                                  length
         ) const noexcept {
             static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "struct BITMAPFILEHEADER must be 14 bytes in size");
-            assert(imstream);
             assert(length >= sizeof(BITMAPFILEHEADER));
+            if (!imstream) return {};
 
             BITMAPFILEHEADER header {};
-
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (imstream[0] != 'B' && imstream[1] != 'M') { // validate that the passed buffer is of a bitmap file
                 ::fputws(L"Error in " __FUNCTIONW__ ", file isn't recognized as a Windows bitmap file", stderr);
                 return header;
             }
 
-            header.bfType      = SOI;                                                  // 'B', 'M'
+            header.bfType      = SOI; // 'B', 'M'
+                                      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             header.bfSize      = *reinterpret_cast<const unsigned int*>(imstream + 2); // file size in bytes
             header.bfReserved1 = header.bfReserved2 = 0;                               // 4 reserved bytes
-            header.bfOffBits = *reinterpret_cast<const unsigned int*>(imstream + 10);  // offset to the start of pixel data
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            header.bfOffBits = *reinterpret_cast<const unsigned int*>(imstream + 10); // offset to the start of pixel data
             return header;
         }
 
@@ -110,13 +114,14 @@ class bitmap final {
             _In_ const size_t&                                  length
         ) const noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
-            assert(imstream);
             static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "struct BITMAPINFOHEADER must be 40 bytes in size");
             assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
+            if (!imstream) return {};
 
             BITMAPINFOHEADER header {};
 
-            if (*reinterpret_cast<const unsigned int*>(imstream + 14U) != 40) { // header size must be == 40 bytes
+            if (*reinterpret_cast<const unsigned int*>(imstream + 14U) != 40) { // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                // header size must be == 40 bytes
                 ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER", stderr);
                 return header;
             }
@@ -155,7 +160,8 @@ class bitmap final {
 
         inline bitmap() noexcept = default; // that's good enough
 
-        inline bitmap(_In_ const wchar_t* const filename) noexcept : buffer {}, pixels {}, file_header {}, info_header {}, size {} {
+        inline explicit bitmap(_In_ const wchar_t* const filename) noexcept :
+            buffer {}, pixels {}, file_header {}, info_header {}, size {} {
             buffer = internal::open(filename, size);
             if (!buffer) { // if open failed
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
@@ -168,27 +174,28 @@ class bitmap final {
         }
 
         inline bitmap(_In_reads_bytes_(size) unsigned const char* const _buffer, _In_ const unsigned long& _size) noexcept :
-            buffer {},
-            pixels {}, // optimistically assumes that _buffer will never be a nullptr
-            file_header { __parse_file_header(_buffer, _size) },
+            buffer { new (std::nothrow) unsigned char[_size] }, // cannot take ownership of the incoming buffer, so let's copy it
+            pixels {},
+            file_header { __parse_file_header(_buffer, _size) }, // optimistically assumes that _buffer will never be a nullptr
             info_header { __parse_info_header(_buffer, _size) },
             size { _size } {
-            // cannot take ownership of the incoming buffer, so let's copy it
-            buffer = new (std::nothrow) unsigned char[_size];
-            if (!buffer) { // if open failed
+            if (!buffer) { // if allocation failed
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
 
             ::memcpy_s(buffer, _size, _buffer, _size);
-            pixels = reinterpret_cast<RGBQUAD*>(buffer + 54);
+            pixels = reinterpret_cast<RGBQUAD*>(buffer + 54); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
         inline bitmap(_In_ const bitmap& other) noexcept :
-            buffer {}, pixels {}, file_header { other.file_header }, info_header { other.info_header }, size { other.size } {
-            buffer = new (std::nothrow) unsigned char[size];
+            buffer { new (std::nothrow) unsigned char[other.size] },
+            pixels {},
+            file_header { other.file_header },
+            info_header { other.info_header },
+            size { other.size } {
             if (!buffer) {
-                ::memset(this, 0U, sizeof(bitmap));
+                ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
@@ -199,7 +206,7 @@ class bitmap final {
 
         inline ~bitmap() noexcept {
             delete[] buffer;
-            ::memset(this, 0, sizeof(bitmap));
+            ::memset(this, 0, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
         }
 
         inline void __cdecl info() const noexcept {
@@ -279,59 +286,56 @@ class bitmap final {
             return copy;
         }
 
-        inline void to_decoloured(_In_ const RGB_COMBINATIONS& colour) noexcept { }
+        inline void to_decoloured(_In_ const RGB_COMBINATIONS& colour) noexcept {
+            switch (colour) {
+                case RGB_COMBINATIONS::BLUE :
+                    for (auto& pixel : *this) pixel.rgbBlue = 0;
+                    break;
+                case RGB_COMBINATIONS::GREEN :
+                    for (auto& pixel : *this) pixel.rgbGreen = 0;
+                    break;
+                case RGB_COMBINATIONS::RED :
+                    for (auto& pixel : *this) pixel.rgbRed = 0;
+                    break;
+                case RGB_COMBINATIONS::REDGREEN :
+                    for (auto& pixel : *this) pixel.rgbRed = pixel.rgbGreen = 0;
+                    break;
+                case RGB_COMBINATIONS::REDBLUE :
+                    for (auto& pixel : *this) pixel.rgbRed = pixel.rgbBlue = 0;
+                    break;
+                case RGB_COMBINATIONS::GREENBLUE :
+                    for (auto& pixel : *this) pixel.rgbGreen = pixel.rgbBlue = 0;
+                    break;
+            }
+        }
 
-        inline bitmap make_decoloured(_In_ const RGB_COMBINATIONS& colour) noexcept { }
+        inline bitmap make_decoloured(_In_ const RGB_COMBINATIONS& colour) const noexcept {
+            auto copy { *this };
+            switch (colour) {
+                case RGB_COMBINATIONS::BLUE :
+                    for (auto& pixel : copy) pixel.rgbBlue = 0;
+                    break;
+                case RGB_COMBINATIONS::GREEN :
+                    for (auto& pixel : copy) pixel.rgbGreen = 0;
+                    break;
+                case RGB_COMBINATIONS::RED :
+                    for (auto& pixel : copy) pixel.rgbRed = 0;
+                    break;
+                case RGB_COMBINATIONS::REDGREEN :
+                    for (auto& pixel : copy) pixel.rgbRed = pixel.rgbGreen = 0;
+                    break;
+                case RGB_COMBINATIONS::REDBLUE :
+                    for (auto& pixel : copy) pixel.rgbRed = pixel.rgbBlue = 0;
+                    break;
+                case RGB_COMBINATIONS::GREENBLUE :
+                    for (auto& pixel : copy) pixel.rgbGreen = pixel.rgbBlue = 0;
+                    break;
+            }
+            return copy;
+        }
+
+        // NOLINTEND(readability-redundant-inline-specifier)
 };
-
-// removes specified RGB components from the image pixels
-static inline bmp_t __cdecl RemoveColour(_In_ bmp_t* const image, _In_ const RGBCOMB colourcombination, _In_ const bool inplace) {
-    HANDLE64       hProcHeap = NULL;
-    unsigned char* buffer    = NULL;
-    RGBQUAD*       pixels    = NULL;
-    const bmp_t    temp      = { .fileheader = { 0 }, .infoheader = { 0 }, .buffer = NULL, .pixels = NULL };
-
-    if (!inplace) { // if a new image is requested, allocate a new pixel buffer.
-        hProcHeap = GetProcessHeap();
-        if (hProcHeap == INVALID_HANDLE_VALUE) {
-            fwprintf_s(stderr, L"Error %lu in GetProcessHeap\n", GetLastError());
-            return temp;
-        }
-        buffer = HeapAlloc(hProcHeap, 0, image->fileheader.bfSize);
-        if (!buffer) {
-            fwprintf_s(stderr, L"Error %lu in HeapAlloc\n", GetLastError());
-            return temp;
-        }
-        // we need to copy over the complete buffer
-        memcpy_s(buffer, image->fileheader.bfSize, image->buffer, image->fileheader.bfSize);
-        pixels = (RGBQUAD*) (buffer + 54);
-    } else
-        pixels = image->pixels; // if the image is to be modified inplace, copy its pixel buffer's address
-
-    const int64_t npixels = image->infoheader.biHeight * image->infoheader.biWidth;
-    switch (colourcombination) {
-        case BLUE :
-            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbBlue = 0;
-            break;
-        case GREEN :
-            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = 0;
-            break;
-        case RED :
-            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbRed = 0;
-            break;
-        case REDGREEN :
-            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbGreen = 0;
-            break;
-        case REDBLUE :
-            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbRed = pixels[i].rgbBlue = 0;
-            break;
-        case GREENBLUE :
-            for (int64_t i = 0; i < npixels; ++i) pixels[i].rgbGreen = pixels[i].rgbBlue = 0;
-            break;
-    }
-    return inplace ? temp :
-                     (bmp_t) { .fileheader = image->fileheader, .infoheader = image->infoheader, .buffer = buffer, .pixels = pixels };
-}
 
 // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
 static inline bmp_t __cdecl GenGradient(_In_ const long npixels_h, _In_ const long npixels_w) {
