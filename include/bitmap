@@ -27,21 +27,9 @@
 // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes
 
 class bitmap final {
-    public:
-        // order of pixels in the BMP buffer.
-        enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
-
-        // mechanism to be used in converting the pixels to black and white.
-        enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
-
-        // combinations of colours to remove from pixels.
-        enum class RGB_COMBINATIONS : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
-
-        // types of compressions used in BMP files.
-        enum class COMPRESSION_KINDS : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
         // clang-format off
-#ifndef __TEST__
-    private:
+#ifdef __TEST__
+   public:
 #endif
         // clang-format on
 
@@ -96,17 +84,17 @@ class bitmap final {
         }
 
         // find the type of compression used in the BMP file, bitmap files, in general aren't compressed
-        constexpr inline COMPRESSION_KINDS __cdecl __get_compression_kind( // NOLINT(readability-convert-member-functions-to-static)
+        constexpr inline COMPRESSION_KIND __cdecl __get_compression_kind( // NOLINT(readability-convert-member-functions-to-static)
             _In_ const unsigned& kind
         ) const noexcept {
             switch (kind) {
-                case 0  : return COMPRESSION_KINDS::RGB; // uncompressed RGBQUAD pixels
-                case 1  : return COMPRESSION_KINDS::RLE8;
-                case 2  : return COMPRESSION_KINDS::RLE4;
-                case 3  : return COMPRESSION_KINDS::BITFIELDS;
+                case 0  : return COMPRESSION_KIND::RGB; // uncompressed RGBQUAD pixels
+                case 1  : return COMPRESSION_KIND::RLE8;
+                case 2  : return COMPRESSION_KIND::RLE4;
+                case 3  : return COMPRESSION_KIND::BITFIELDS;
                 default : break;
             }
-            return COMPRESSION_KINDS::UNKNOWN;
+            return COMPRESSION_KIND::UNKNOWN;
         }
 
         inline BITMAPINFOHEADER __cdecl __parse_info_header( // NOLINT(readability-convert-member-functions-to-static)
@@ -184,7 +172,7 @@ class bitmap final {
                 return;
             }
 
-            ::memcpy_s(buffer, _size, _buffer, _size);
+            ::memcpy_s(buffer, size, _buffer, _size);
             pixels = reinterpret_cast<RGBQUAD*>(buffer + 54); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
@@ -201,7 +189,28 @@ class bitmap final {
             }
 
             ::memcpy_s(buffer, size, other.buffer, other.size);
-            pixels = reinterpret_cast<RGBQUAD*>(buffer + 54);
+            pixels = reinterpret_cast<RGBQUAD*>(buffer + 54); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        }
+
+        inline bitmap& operator=(_In_ const bitmap& other) noexcept {
+            if (std::addressof(other) == this) return *this;
+            //
+            return *this;
+        }
+
+        inline bitmap(_Inout_ bitmap&& other) noexcept :
+            buffer { other.buffer },
+            pixels { other.pixels },
+            file_header { other.file_header },
+            info_header { other.info_header },
+            size { other.size } {
+            ::memset(std::addressof(other), 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
+        }
+
+        inline bitmap& operator=(_Inout_ bitmap&& other) noexcept {
+            if (std::addressof(other) == this) return *this;
+            //
+            return *this;
         }
 
         inline ~bitmap() noexcept {
@@ -210,7 +219,7 @@ class bitmap final {
         }
 
         inline void __cdecl info() const noexcept {
-            ::wprintf_s(
+            ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
                 L"|---------------------------------------------------------------------------|"
                 L"%15s bitmap image (%3.4Lf MiBs)\n"
                 L"Pixel ordering: %10s\n"
@@ -230,12 +239,12 @@ class bitmap final {
 
             if (info_header.biSizeImage) { // don't bother if the image isn't compressed
                 switch (info_header.biCompression) {
-                    case ::to_underlying(COMPRESSION_KINDS::RGB)       : ::_putws(L"RGB"); break;
-                    case ::to_underlying(COMPRESSION_KINDS::RLE8)      : ::_putws(L"RLE8"); break;
-                    case ::to_underlying(COMPRESSION_KINDS::RLE4)      : ::_putws(L"RLE4"); break;
-                    case ::to_underlying(COMPRESSION_KINDS::BITFIELDS) : ::_putws(L"BITFIELDS"); break;
-                    case ::to_underlying(COMPRESSION_KINDS::UNKNOWN)   : ::_putws(L"UNKNOWN"); break;
-                    default                                            : break;
+                    case ::to_underlying(COMPRESSION_KIND::RGB)       : ::_putws(L"RGB"); break;
+                    case ::to_underlying(COMPRESSION_KIND::RLE8)      : ::_putws(L"RLE8"); break;
+                    case ::to_underlying(COMPRESSION_KIND::RLE4)      : ::_putws(L"RLE4"); break;
+                    case ::to_underlying(COMPRESSION_KIND::BITFIELDS) : ::_putws(L"BITFIELDS"); break;
+                    case ::to_underlying(COMPRESSION_KIND::UNKNOWN)   : ::_putws(L"UNKNOWN"); break;
+                    default                                           : break;
                 }
             }
         }
@@ -286,51 +295,13 @@ class bitmap final {
             return copy;
         }
 
-        inline void to_decoloured(_In_ const RGB_COMBINATIONS& colour) noexcept {
-            switch (colour) {
-                case RGB_COMBINATIONS::BLUE :
-                    for (auto& pixel : *this) pixel.rgbBlue = 0;
-                    break;
-                case RGB_COMBINATIONS::GREEN :
-                    for (auto& pixel : *this) pixel.rgbGreen = 0;
-                    break;
-                case RGB_COMBINATIONS::RED :
-                    for (auto& pixel : *this) pixel.rgbRed = 0;
-                    break;
-                case RGB_COMBINATIONS::REDGREEN :
-                    for (auto& pixel : *this) pixel.rgbRed = pixel.rgbGreen = 0;
-                    break;
-                case RGB_COMBINATIONS::REDBLUE :
-                    for (auto& pixel : *this) pixel.rgbRed = pixel.rgbBlue = 0;
-                    break;
-                case RGB_COMBINATIONS::GREENBLUE :
-                    for (auto& pixel : *this) pixel.rgbGreen = pixel.rgbBlue = 0;
-                    break;
-            }
+        template<RGB_TAG _TyColComb> inline void to_decoloured() noexcept {
+            std::transform(begin(), end(), begin(), colour_removers::remove<_TyColComb> {});
         }
 
-        inline bitmap make_decoloured(_In_ const RGB_COMBINATIONS& colour) const noexcept {
+        template<RGB_TAG _TyColComb> inline bitmap make_decoloured() const noexcept {
             auto copy { *this };
-            switch (colour) {
-                case RGB_COMBINATIONS::BLUE :
-                    for (auto& pixel : copy) pixel.rgbBlue = 0;
-                    break;
-                case RGB_COMBINATIONS::GREEN :
-                    for (auto& pixel : copy) pixel.rgbGreen = 0;
-                    break;
-                case RGB_COMBINATIONS::RED :
-                    for (auto& pixel : copy) pixel.rgbRed = 0;
-                    break;
-                case RGB_COMBINATIONS::REDGREEN :
-                    for (auto& pixel : copy) pixel.rgbRed = pixel.rgbGreen = 0;
-                    break;
-                case RGB_COMBINATIONS::REDBLUE :
-                    for (auto& pixel : copy) pixel.rgbRed = pixel.rgbBlue = 0;
-                    break;
-                case RGB_COMBINATIONS::GREENBLUE :
-                    for (auto& pixel : copy) pixel.rgbGreen = pixel.rgbBlue = 0;
-                    break;
-            }
+            std::transform(copy.begin(), copy.end(), copy.begin(), colour_removers::remove<_TyColComb> {});
             return copy;
         }
 
