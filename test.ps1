@@ -23,7 +23,7 @@ $cflags = @(
     "/diagnostics:caret",
     "/DNDEBUG",
     "/D_NDEBUG",
-    "/EHac",
+    "/EHa",
     "/F0x10485100",
     "/favor:INTEL64",
     "/Fe:test.exe",
@@ -48,11 +48,11 @@ $cflags = @(
     "/wd4514",      # removed unreferenced inline function
     "/wd4625",      # gtest
     "/wd4626",      # gtest
-    "/wd5026",      # gtest
-    "/wd5027",      # gtest
     "/wd4710",      # not inlined
     "/wd4711",      # selected for inline expansion
-    "/wd4820",      # struct padding
+    "/wd4820",      # padding
+    "/wd5026",      # gtest
+    "/wd5027",      # gtest
     "/Zc:__cplusplus",
     "/Zc:preprocessor",
     "/link /DEBUG:NONE"
