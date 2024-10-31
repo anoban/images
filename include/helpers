@@ -8,21 +8,10 @@
 #include <wingdi.h>
 // clang-format on
 
-// combinations of colours to remove from pixels.
-enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
-
-// order of pixels in the BMP buffer.
-enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
-
-// mechanism to be used in converting the pixels to black and white.
-enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
-
-// types of compressions used in BMP files.
-enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
-
 // NOLINTBEGIN(readability-redundant-inline-specifier)
+
 template<
-    typename _TyFrom /* scoped enum type */,
+    typename _TyFrom /* only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary */,
     typename _TyTo /* the underlying type */ = // std::is_scoped_enum requires C++23
     typename std::enable_if<std::is_enum<_TyFrom>::value, typename std::underlying_type<_TyFrom>::type>::type>
 static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noexcept {
@@ -61,35 +50,5 @@ namespace rgb_transformers {
     }
 
 } // namespace rgb_transformers
-
-namespace colour_removers {
-
-    template<RGB_TAG colour> struct remove;
-
-    template<> struct remove<RGB_TAG::RED> final {
-            inline constexpr void operator()(_Inout_ RGBQUAD& pixel) noexcept { pixel.rgbRed = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::GREEN> final {
-            inline constexpr void operator()(_Inout_ RGBQUAD& pixel) noexcept { pixel.rgbGreen = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::BLUE> final {
-            inline constexpr void operator()(_Inout_ RGBQUAD& pixel) noexcept { pixel.rgbBlue = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::REDGREEN> final {
-            inline constexpr void operator()(_Inout_ RGBQUAD& pixel) noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::GREENBLUE> final {
-            inline constexpr void operator()(_Inout_ RGBQUAD& pixel) noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::REDBLUE> final {
-            inline constexpr void operator()(_Inout_ RGBQUAD& pixel) noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
-    };
-
-} // namespace colour_removers
 
 // NOLINTEND(readability-redundant-inline-specifier)
