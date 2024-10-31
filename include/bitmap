@@ -79,8 +79,8 @@ class bitmap final {
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER file_header;
         BITMAPINFOHEADER info_header;
-        unsigned long    size; // file size, may include trailing unused bytes when constructions involved a buffer reuse
-                               // expecting a 4 bytes padding here
+        unsigned long    file_size;   // file size
+        unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
 
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)
@@ -112,7 +112,7 @@ class bitmap final {
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (imstream[0] != 'B' && imstream[1] != 'M') { // validate that the passed buffer is of a bitmap file
-                ::fputws(L"Error in " __FUNCTIONW__ ", file isn't recognized as a Windows bitmap file", stderr);
+                ::fputws(L"Error in " __FUNCTIONW__ ", file isn't recognized as a Windows bitmap file\n", stderr);
                 return header;
             }
 
@@ -151,7 +151,7 @@ class bitmap final {
 
             if (*reinterpret_cast<const unsigned int*>(imstream + 14U) != 40) { // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 // header size must be == 40 bytes
-                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER", stderr);
+                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
                 return header;
             }
 
@@ -192,10 +192,12 @@ class bitmap final {
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         inline explicit bitmap(_In_ const wchar_t* const filename) noexcept : // construct a bitmap from a file on disk
-            buffer { internal::open(filename, size) },                        // a little unorthodox but okay lol
+            buffer { internal::open(filename, file_size) },                   // a little unorthodox but okay lol
             pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) },               // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
-            file_header { __parse_file_header(buffer, size) },
-            info_header { __parse_info_header(buffer, size) } /*, size {}, we want to preserve size's previous state */ {
+            file_header { __parse_file_header(buffer, file_size) },
+            info_header { __parse_info_header(buffer, file_size) },
+            // size {}, we want to preserve size's previous state updated by internal::open()
+            buffer_size { file_size } {
             if (!buffer) {                          // if open failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
@@ -204,58 +206,66 @@ class bitmap final {
 
         // construct a bitmap from a stream of bytes
         inline bitmap(
-            _In_reads_bytes_(size
-            ) unsigned const char* const _buffer /* this buffer is expected to contain the metadata preceding bitmap pixel buffer too */,
-            _In_ const unsigned long&    _size
+            _In_reads_bytes_(size)
+                const unsigned char* const _buffer, // this buffer is expected to contain the metadata preceding bitmap pixel buffer too
+            _In_ const unsigned long&      _size
         ) noexcept :
             buffer { new (std::nothrow) unsigned char[_size] }, // cannot take ownership of the incoming buffer, so let's copy it
             pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             // if _buffer is nullptr, the __parse_xxx family of helpers will default initialize the cognate header structs
             file_header { __parse_file_header(_buffer, _size) },
             info_header { __parse_info_header(_buffer, _size) },
-            size { _size } {
+            file_size { _size },
+            buffer_size { _size } {
             if (!buffer) { // has the allocation failed
-                pixels = nullptr;
-                size   = 0;
+                pixels    = nullptr;
+                file_size = buffer_size = 0;
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
 
-            ::memcpy_s(buffer, size, _buffer, _size);
+            ::memcpy_s(buffer, file_size, _buffer, _size);
         }
 
         // copy ctor
         inline bitmap(_In_ const bitmap& other) noexcept :
-            buffer { new (std::nothrow) unsigned char[other.size] },
+            buffer { new (std::nothrow
+            ) unsigned char[other.file_size] },                 // don't copy the trailing unused bytes from the bitmap, if present
             pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             file_header { other.file_header },
             info_header { other.info_header },
-            size { other.size } {
+            file_size { other.file_size },
+            buffer_size { other.file_size /* not buffer_size */ } {
             if (!buffer) {
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
 
-            ::memcpy_s(buffer, size, other.buffer, other.size);
+            ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
         }
 
         inline bitmap& operator=(_In_ const bitmap& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
-            // we could probably resue this buffer when the new buffer is smaller than or equal to the size of previous buffer
-            delete[] buffer;
-            buffer = new (std::nothrow) unsigned char[other.size];
-            if (!buffer) {                          // has the allocation failed
-                ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
-                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
-                return *this;
-            }
+            // evaluate whether a reallocation is due
+            if (buffer_size < other.file_size) { // if the existing buffer cannot hold the other object
+                delete[] buffer;
+                buffer = new (std::nothrow) unsigned char[other.file_size];
+                if (!buffer) {                          // has the allocation failed
+                    ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
+                    ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                    return *this;
+                }
+                file_size = buffer_size = other.file_size; // update the sizes after reallocation
+            } else                                         // if no reallocation was needed
+                file_size = other.file_size;               // keep the existing buffer size as we are keeping the existing buffer
 
+            ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
             pixels      = reinterpret_cast<RGBQUAD*>(buffer + 54); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             file_header = other.file_header;
             info_header = other.info_header;
-            ::memcpy_s(buffer, size, other.buffer, other.size);
+
             return *this;
         }
 
@@ -264,13 +274,23 @@ class bitmap final {
             pixels { other.pixels },
             file_header { other.file_header },
             info_header { other.info_header },
-            size { other.size } {
+            file_size { other.file_size },
+            buffer_size { other.buffer_size } {
             ::memset(std::addressof(other), 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
         inline bitmap& operator=(_Inout_ bitmap&& other) noexcept {
             if (std::addressof(other) == this) return *this;
-            //
+
+            delete[] buffer;
+
+            buffer      = other.buffer;
+            pixels      = other.pixels;
+            file_header = other.file_header;
+            info_header = other.info_header;
+            file_size   = other.file_size;
+            buffer_size = other.buffer_size;
+            ::memset(std::addressof(other), 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
             return *this;
         }
 
@@ -281,21 +301,18 @@ class bitmap final {
 
         inline void __cdecl info() const noexcept {
             ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                L"|---------------------------------------------------------------------------|"
+                L"|---------------------------------------------------------------------------|\n"
                 L"%15s bitmap image (%3.4Lf MiBs)\n"
                 L"Pixel ordering: %10s\n"
                 L"Width: %5lu pixels, Height: %5lu pixels\n"
                 L"Bit depth: %3u\n"
-                L"Resolution (PPM): X {%5ld} Y {%5ld}\n"
-                L"|---------------------------------------------------------------------------|",
+                L"|---------------------------------------------------------------------------|\n",
                 info_header.biSizeImage ? L"Compressed" : L"Uncompressed",
                 file_header.bfSize / (1024.0L * 1024.0L),
                 __get_scanline_order(info_header) == SCANLINE_ORDERING::BOTTOMUP ? L"bottom-up" : L"top-down",
                 info_header.biWidth,
                 info_header.biHeight,
-                info_header.biBitCount,
-                info_header.biXPelsPerMeter,
-                info_header.biYPelsPerMeter
+                info_header.biBitCount
             );
 
             if (info_header.biSizeImage) { // don't bother if the image isn't compressed
@@ -310,7 +327,7 @@ class bitmap final {
             }
         }
 
-        inline bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, size); }
+        inline bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
 
         inline iterator begin() noexcept { return pixels; }
 

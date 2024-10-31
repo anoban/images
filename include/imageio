@@ -76,8 +76,8 @@ INVALID_HANDLE_ERROR:
         _In_reads_bytes_(size) const unsigned char* const buffer,
         _In_ const unsigned long&                         size
     ) noexcept {
-        assert(filename);
-        if (!buffer) return false;
+        assert(filename);          // too much??
+        if (!buffer) return false; // fail if the buffer is a nullptr
 
         const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
         unsigned long  nbytes {};

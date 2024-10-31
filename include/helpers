@@ -8,7 +8,17 @@
 #include <wingdi.h>
 // clang-format on
 
+#include <cstdio>
+
 // NOLINTBEGIN(readability-redundant-inline-specifier)
+
+#ifdef _DEBUG
+    #define dbgputws(...)     ::fputws(__VA_ARGS__, stderr)
+    #define dgbwprintf_s(...) ::fwprintf_s(stderr, __VA_ARGS__);
+#else
+    #define dbgputws(...)
+    #define dgbwprintf_s(...)
+#endif
 
 template<
     typename _TyFrom /* only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary */,
