@@ -389,10 +389,10 @@ Mkfile.old
 dkms.conf
 
 # image files
-.bmp
-.jpeg
-.png
-.ico
+*.bmp
+*.jpeg
+*.png
+*.ico
 
-# files to keep
-!images
+# image files to keep
+!images/**

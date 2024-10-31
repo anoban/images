@@ -60,3 +60,7 @@ $cflags = @(
 
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan
 cl.exe $cfiles $cflags
+
+Get-ChildItem *.obj -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.pdb -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.exp -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
