@@ -68,6 +68,11 @@ namespace colour_removers { // this ir really verbose but makes mutating the pix
 
 } // namespace colour_removers
 
+// for the sake of convenience
+static constexpr inline bool operator==(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
+    return left.rgbBlue == right.rgbBlue && left.rgbGreen == right.rgbGreen && left.rgbRed == right.rgbRed;
+}
+
 class bitmap final {
         // clang-format off
 #ifdef __TEST__
