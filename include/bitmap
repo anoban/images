@@ -183,6 +183,10 @@ class bitmap final {
 
     public:
         using value_type         = RGBQUAD; // pixel type
+        using pointer            = value_type*;
+        using const_pointer      = const value_type*;
+        using reference          = value_type&;
+        using const_reference    = const value_type&;
         using iterator           = value_type*;
         using const_iterator     = const value_type*;
         using size_type          = unsigned long long;
@@ -269,6 +273,7 @@ class bitmap final {
             return *this;
         }
 
+        // move constructor
         inline bitmap(_Inout_ bitmap&& other) noexcept :
             buffer { other.buffer },
             pixels { other.pixels },
@@ -279,10 +284,11 @@ class bitmap final {
             ::memset(std::addressof(other), 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
+        // move assignment operator
         inline bitmap& operator=(_Inout_ bitmap&& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
-            delete[] buffer;
+            delete[] buffer; // give up the old buffer
 
             buffer      = other.buffer;
             pixels      = other.pixels;
@@ -291,6 +297,7 @@ class bitmap final {
             file_size   = other.file_size;
             buffer_size = other.buffer_size;
             ::memset(std::addressof(other), 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
+
             return *this;
         }
 
@@ -340,6 +347,10 @@ class bitmap final {
         inline const_iterator end() const noexcept {
             return pixels + info_header.biHeight * info_header.biWidth; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
+
+        inline reference operator[](_In_ const size_type offset) noexcept { return pixels[offset]; }
+
+        inline const_reference operator[](_In_ const size_type offset) const noexcept { return pixels[offset]; }
 
         // since this mutates the internal buffer this cannot be used with const bitmap instances
         inline void to_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) noexcept {

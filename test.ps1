@@ -21,8 +21,9 @@ $cflags = @(
     "./googletest/src/gtest-all.cc", # convenience source file that bundles all the necessary gtest sources
     "/arch:AVX512",
     "/diagnostics:caret",
-    "/DNDEBUG",
-    "/D_NDEBUG",
+    "/DDEBUG",
+    "/D_DEBUG",
+    "/D__TEST__",
     "/EHa",
     "/F0x10485100",
     "/favor:INTEL64",
@@ -36,7 +37,7 @@ $cflags = @(
     "/I./googletest/include/",
     "/jumptablerdata",
     "/MP",
-    "/MT", # statically link the multithreaded version of Windows libs
+    "/MTd", # statically link the multithreaded debug version of Windows libs
     "/O2",
     "/Ob3",
     "/Oi",
@@ -55,7 +56,7 @@ $cflags = @(
     "/wd5027",      # gtest
     "/Zc:__cplusplus",
     "/Zc:preprocessor",
-    "/link /DEBUG:NONE"
+    "/link /DEBUG:FULL"
 )
 
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan
