@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <helpers>
 #include <imageio>
+#include <iostream>
 #include <numeric>
 #include <type_traits>
 
@@ -205,7 +206,7 @@ class bitmap final {
             pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) },               // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             file_header { __parse_file_header(buffer, file_size) },
             info_header { __parse_info_header(buffer, file_size) },
-            // size {}, we want to preserve size's previous state updated by internal::open()
+            // file_size {}, we want to preserve size's previous state materialized by internal::open()
             buffer_size { file_size } {
             if (!buffer) {                          // if open failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
@@ -215,9 +216,9 @@ class bitmap final {
 
         // construct a bitmap from a stream of bytes
         inline bitmap(
-            _In_reads_bytes_(size)
+            _In_reads_bytes_(_size)
                 const unsigned char* const _buffer, // this buffer is expected to contain the metadata preceding bitmap pixel buffer too
-            _In_ const unsigned long&      _size
+            _In_ const unsigned long       _size
         ) noexcept :
             buffer { new (std::nothrow) unsigned char[_size] }, // cannot take ownership of the incoming buffer, so let's copy it
             pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
@@ -226,9 +227,8 @@ class bitmap final {
             info_header { __parse_info_header(_buffer, _size) },
             file_size { _size },
             buffer_size { _size } {
-            if (!buffer) { // has the allocation failed
-                pixels    = nullptr;
-                file_size = buffer_size = 0;
+            if (!buffer) {                          // has the allocation failed
+                ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
@@ -236,7 +236,7 @@ class bitmap final {
             ::memcpy_s(buffer, file_size, _buffer, _size);
         }
 
-        // copy ctor
+        // copy constructor
         inline bitmap(_In_ const bitmap& other) noexcept :
             buffer { new (std::nothrow
             ) unsigned char[other.file_size] },                 // don't copy the trailing unused bytes from the bitmap, if present
@@ -246,7 +246,7 @@ class bitmap final {
             file_size { other.file_size },
             buffer_size { other.file_size /* not buffer_size */ } {
             if (!buffer) {
-                ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
+                ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
@@ -254,6 +254,7 @@ class bitmap final {
             ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
         }
 
+        // copy assignment operator
         inline bitmap& operator=(_In_ const bitmap& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
@@ -262,13 +263,14 @@ class bitmap final {
                 delete[] buffer;
                 buffer = new (std::nothrow) unsigned char[other.file_size];
                 if (!buffer) {                          // has the allocation failed
-                    ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation) I know what I'm doing :)
+                    ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
                     ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                     return *this;
                 }
+
                 file_size = buffer_size = other.file_size; // update the sizes after reallocation
             } else                                         // if no reallocation was needed
-                file_size = other.file_size;               // keep the existing buffer size as we are keeping the existing buffer
+                file_size = other.file_size;               // keep the existing buffer_size as we are reusing the existing buffer
 
             ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
             pixels      = reinterpret_cast<RGBQUAD*>(buffer + 54); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
@@ -339,6 +341,11 @@ class bitmap final {
             }
         }
 
+        friend inline std::wostream& operator<<(_Inout_ std::wostream& ostr, _In_ const bitmap& image) noexcept {
+            //
+            return ostr;
+        }
+
         inline bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
 
         inline iterator begin() noexcept { return pixels; }
@@ -353,9 +360,15 @@ class bitmap final {
             return pixels + info_header.biHeight * info_header.biWidth; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
-        inline reference operator[](_In_ const size_type offset) noexcept { return pixels[offset]; }
+        inline reference operator[](_In_ const size_type offset) noexcept {
+            assert(offset < info_header.biHeight * info_header.biWidth);
+            return pixels[offset];
+        }
 
-        inline const_reference operator[](_In_ const size_type offset) const noexcept { return pixels[offset]; }
+        inline const_reference operator[](_In_ const size_type offset) const noexcept {
+            assert(offset < info_header.biHeight * info_header.biWidth);
+            return pixels[offset];
+        }
 
         // since this mutates the internal buffer this cannot be used with const bitmap instances
         inline void to_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) noexcept {
