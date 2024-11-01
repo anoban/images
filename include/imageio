@@ -34,14 +34,19 @@ namespace internal {
             ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
                 stderr,
                 L"Error %lu in CreateFileW (%s)\n",
-                filename,
-                ::GetLastError()
+                ::GetLastError(),
+                filename
             );
             goto INVALID_HANDLE_ERROR;
         }
 
-        if (!::GetFileSizeEx(file_handle, &fsize)) {                                 // NOLINT(readability-implicit-bool-conversion)
-            ::fwprintf_s(stderr, L"Error %lu in GetFileSizeEx\n", ::GetLastError()); // NOLINT(cppcoreguidelines-pro-type-vararg)
+        if (!::GetFileSizeEx(file_handle, &fsize)) { // NOLINT(readability-implicit-bool-conversion)
+            ::fwprintf_s(                            // NOLINT(cppcoreguidelines-pro-type-vararg)
+                stderr,
+                L"Error %lu in GetFileSizeEx (%s)\n",
+                ::GetLastError(),
+                filename
+            );
             goto GETFILESIZEEX_ERROR;
         }
 
@@ -53,7 +58,7 @@ namespace internal {
 
         // NOLINTNEXTLINE(readability-implicit-bool-conversion)
         if (!::ReadFile(file_handle, buffer, fsize.QuadPart, &size, nullptr)) {
-            ::fwprintf_s(stderr, L"Error %lu in ReadFile\n", ::GetLastError()); // NOLINT(cppcoreguidelines-pro-type-vararg)
+            ::fwprintf_s(stderr, L"Error %lu in ReadFile (%s)\n", ::GetLastError(), filename); // NOLINT(cppcoreguidelines-pro-type-vararg)
             goto READFILE_ERROR;
         }
 
@@ -83,13 +88,23 @@ INVALID_HANDLE_ERROR:
         unsigned long  nbytes {};
 
         if (file_handle == INVALID_HANDLE_VALUE) {
-            ::fwprintf_s(stderr, L"Error %4lu in CreateFileW\n", ::GetLastError()); // NOLINT(cppcoreguidelines-pro-type-vararg)
+            ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                stderr,
+                L"Error %4lu in CreateFileW (%s)\n",
+                ::GetLastError(),
+                filename
+            );
             goto PREMATURE_RETURN;
         }
 
         // NOLINTNEXTLINE(readability-implicit-bool-conversion)
         if (!::WriteFile(file_handle, buffer, size, &nbytes, nullptr)) {
-            ::fwprintf_s(stderr, L"Error %4lu in WriteFile\n", ::GetLastError()); // NOLINT(cppcoreguidelines-pro-type-vararg)
+            ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                stderr,
+                L"Error %4lu in WriteFile (%s)\n",
+                ::GetLastError(),
+                filename
+            );
             goto PREMATURE_RETURN;
         }
 

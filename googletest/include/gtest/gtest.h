@@ -46,32 +46,34 @@
 // registration from Barthelemy Dagenais' (barthelemy@prologique.com)
 // easyUnit framework.
 
+#pragma warning(disable : 4625 4626 5026 5027 5045 4061 4365 4623 4668)
+
 #ifndef GOOGLETEST_INCLUDE_GTEST_GTEST_H_
-#define GOOGLETEST_INCLUDE_GTEST_GTEST_H_
+    #define GOOGLETEST_INCLUDE_GTEST_GTEST_H_
 
-#include <cstddef>
-#include <cstdint>
-#include <limits>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <type_traits>
-#include <vector>
+    #include <cstddef>
+    #include <cstdint>
+    #include <limits>
+    #include <memory>
+    #include <ostream>
+    #include <set>
+    #include <sstream>
+    #include <string>
+    #include <type_traits>
+    #include <vector>
 
-#include "gtest/gtest-assertion-result.h" // IWYU pragma: export
-#include "gtest/gtest-death-test.h"       // IWYU pragma: export
-#include "gtest/gtest-matchers.h"         // IWYU pragma: export
-#include "gtest/gtest-message.h"          // IWYU pragma: export
-#include "gtest/gtest-param-test.h"       // IWYU pragma: export
-#include "gtest/gtest-printers.h"         // IWYU pragma: export
-#include "gtest/gtest-test-part.h"        // IWYU pragma: export
-#include "gtest/gtest-typed-test.h"       // IWYU pragma: export
-#include "gtest/gtest_pred_impl.h"        // IWYU pragma: export
-#include "gtest/gtest_prod.h"             // IWYU pragma: export
-#include "gtest/internal/gtest-internal.h"
-#include "gtest/internal/gtest-string.h"
+    #include "gtest/gtest-assertion-result.h" // IWYU pragma: export
+    #include "gtest/gtest-death-test.h"       // IWYU pragma: export
+    #include "gtest/gtest-matchers.h"         // IWYU pragma: export
+    #include "gtest/gtest-message.h"          // IWYU pragma: export
+    #include "gtest/gtest-param-test.h"       // IWYU pragma: export
+    #include "gtest/gtest-printers.h"         // IWYU pragma: export
+    #include "gtest/gtest-test-part.h"        // IWYU pragma: export
+    #include "gtest/gtest-typed-test.h"       // IWYU pragma: export
+    #include "gtest/gtest_pred_impl.h"        // IWYU pragma: export
+    #include "gtest/gtest_prod.h"             // IWYU pragma: export
+    #include "gtest/internal/gtest-internal.h"
+    #include "gtest/internal/gtest-string.h"
 
 GTEST_DISABLE_MSC_WARNINGS_PUSH_(4251 /* class A needs to have dll-interface to be used by clients of class B */)
 
@@ -156,9 +158,9 @@ GTEST_DECLARE_bool_(throw_on_failure);
 // the specified host machine.
 GTEST_DECLARE_string_(stream_result_to);
 
-#if GTEST_USE_OWN_FLAGFILE_FLAG_
+    #if GTEST_USE_OWN_FLAGFILE_FLAG_
 GTEST_DECLARE_string_(flagfile);
-#endif // GTEST_USE_OWN_FLAGFILE_FLAG_
+    #endif // GTEST_USE_OWN_FLAGFILE_FLAG_
 
 namespace testing {
 
@@ -207,10 +209,10 @@ namespace testing {
     class Test;
     class TestSuite;
 
-// Old API is still available but deprecated
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    // Old API is still available but deprecated
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
     using TestCase = TestSuite;
-#endif
+    #endif
     class TestInfo;
     class UnitTest;
 
@@ -262,10 +264,10 @@ namespace testing {
 
             // Legacy API is deprecated but still available. Use SetUpTestSuite and
             // TearDownTestSuite instead.
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             static void TearDownTestCase() { }
             static void SetUpTestCase() { }
-#endif // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             // Returns true if and only if the current test has a fatal failure.
             static bool HasFatalFailure();
@@ -529,10 +531,10 @@ namespace testing {
             // Returns the test suite name.
             const char* test_suite_name() const { return test_suite_name_.c_str(); }
 
-// Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    // Legacy API is deprecated but still available
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             const char* test_case_name() const { return test_suite_name(); }
-#endif // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             // Returns the test name.
             const char* name() const { return name_.c_str(); }
@@ -589,9 +591,9 @@ namespace testing {
             const TestResult* result() const { return &result_; }
 
         private:
-#ifdef GTEST_HAS_DEATH_TEST
+    #ifdef GTEST_HAS_DEATH_TEST
             friend class internal::DefaultDeathTestFactory;
-#endif // GTEST_HAS_DEATH_TEST
+    #endif // GTEST_HAS_DEATH_TEST
             friend class Test;
             friend class TestSuite;
             friend class internal::UnitTestImpl;
@@ -881,7 +883,7 @@ namespace testing {
             virtual Setup_should_be_spelled_SetUp* Setup() { return nullptr; }
     };
 
-#if GTEST_HAS_EXCEPTIONS
+    #if GTEST_HAS_EXCEPTIONS
 
     // Exception which can be thrown from TestEventListener::OnTestPartResult.
     class GTEST_API_ AssertionException : public internal::GoogleTestFailureException {
@@ -889,7 +891,7 @@ namespace testing {
             explicit AssertionException(const TestPartResult& result) : GoogleTestFailureException(result) { }
     };
 
-#endif // GTEST_HAS_EXCEPTIONS
+    #endif // GTEST_HAS_EXCEPTIONS
 
     // The interface for tracing execution of tests. The methods are organized in
     // the order the corresponding events are fired.
@@ -915,9 +917,9 @@ namespace testing {
             virtual void OnTestSuiteStart(const TestSuite& /*test_suite*/) { }
 
             //  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             virtual void OnTestCaseStart(const TestCase& /*test_case*/) { }
-#endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             // Fired before the test starts.
             virtual void OnTestStart(const TestInfo& test_info) = 0;
@@ -936,10 +938,10 @@ namespace testing {
             // Fired after the test suite ends.
             virtual void OnTestSuiteEnd(const TestSuite& /*test_suite*/) { }
 
-//  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    //  Legacy API is deprecated but still available
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             virtual void OnTestCaseEnd(const TestCase& /*test_case*/) { }
-#endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             // Fired before environment tear-down for each iteration of tests starts.
             virtual void OnEnvironmentsTearDownStart(const UnitTest& unit_test)       = 0;
@@ -966,19 +968,19 @@ namespace testing {
             void OnEnvironmentsSetUpStart(const UnitTest& /*unit_test*/) override { }
             void OnEnvironmentsSetUpEnd(const UnitTest& /*unit_test*/) override { }
             void OnTestSuiteStart(const TestSuite& /*test_suite*/) override { }
-//  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    //  Legacy API is deprecated but still available
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             void OnTestCaseStart(const TestCase& /*test_case*/) override { }
-#endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             void OnTestStart(const TestInfo& /*test_info*/) override { }
             void OnTestDisabled(const TestInfo& /*test_info*/) override { }
             void OnTestPartResult(const TestPartResult& /*test_part_result*/) override { }
             void OnTestEnd(const TestInfo& /*test_info*/) override { }
             void OnTestSuiteEnd(const TestSuite& /*test_suite*/) override { }
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             void OnTestCaseEnd(const TestCase& /*test_case*/) override { }
-#endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             void OnEnvironmentsTearDownStart(const UnitTest& /*unit_test*/) override { }
             void OnEnvironmentsTearDownEnd(const UnitTest& /*unit_test*/) override { }
@@ -1097,10 +1099,10 @@ namespace testing {
             // or NULL if no test is running.
             const TestSuite* current_test_suite() const GTEST_LOCK_EXCLUDED_(mutex_);
 
-// Legacy API is still available but deprecated
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    // Legacy API is still available but deprecated
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             const TestCase* current_test_case() const GTEST_LOCK_EXCLUDED_(mutex_);
-#endif
+    #endif
 
             // Returns the TestInfo object for the test that's currently running,
             // or NULL if no test is running.
@@ -1129,12 +1131,12 @@ namespace testing {
             int test_suite_to_run_count() const;
 
             //  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             int successful_test_case_count() const;
             int failed_test_case_count() const;
             int total_test_case_count() const;
             int test_case_to_run_count() const;
-#endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             // Gets the number of successful tests.
             int successful_test_count() const;
@@ -1179,10 +1181,10 @@ namespace testing {
             // total_test_suite_count() - 1. If i is not in that range, returns NULL.
             const TestSuite* GetTestSuite(int i) const;
 
-//  Legacy API is deprecated but still available
-#ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    //  Legacy API is deprecated but still available
+    #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
             const TestCase* GetTestCase(int i) const;
-#endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
+    #endif //  GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
             // Returns the TestResult containing information on test failures and
             // properties logged outside of individual test suites.
@@ -1378,8 +1380,7 @@ namespace testing {
                     return CmpHelperEQ(lhs_expression, rhs_expression, lhs, rhs);
                 }
 
-                template<typename T>
-                static AssertionResult Compare(
+                template<typename T> static AssertionResult Compare(
                     const char* lhs_expression,
                     const char* rhs_expression,
                     // Handle cases where '0' is used as a null pointer literal.
@@ -1407,15 +1408,15 @@ namespace testing {
         //
         // INTERNAL IMPLEMENTATION - DO NOT USE IN A USER PROGRAM.
 
-#define GTEST_IMPL_CMP_HELPER_(op_name, op)                                                                                                \
-    template<typename T1, typename T2>                                                                                                     \
-    AssertionResult CmpHelper##op_name(const char* expr1, const char* expr2, const T1& val1, const T2& val2) {                             \
-        if (val1 op val2) {                                                                                                                \
-            return AssertionSuccess();                                                                                                     \
-        } else {                                                                                                                           \
-            return CmpHelperOpFailure(expr1, expr2, val1, val2, #op);                                                                      \
-        }                                                                                                                                  \
-    }
+    #define GTEST_IMPL_CMP_HELPER_(op_name, op)                                                                                            \
+        template<typename T1, typename T2>                                                                                                 \
+        AssertionResult CmpHelper##op_name(const char* expr1, const char* expr2, const T1& val1, const T2& val2) {                         \
+            if (val1 op val2) {                                                                                                            \
+                return AssertionSuccess();                                                                                                 \
+            } else {                                                                                                                       \
+                return CmpHelperOpFailure(expr1, expr2, val1, val2, #op);                                                                  \
+            }                                                                                                                              \
+        }
 
         // INTERNAL IMPLEMENTATION - DO NOT USE IN A USER PROGRAM.
 
@@ -1430,7 +1431,7 @@ namespace testing {
         // Implements the helper function for {ASSERT|EXPECT}_GT
         GTEST_IMPL_CMP_HELPER_(GT, >)
 
-#undef GTEST_IMPL_CMP_HELPER_
+    #undef GTEST_IMPL_CMP_HELPER_
 
         // The helper function for {ASSERT|EXPECT}_STREQ.
         //
@@ -1485,12 +1486,12 @@ namespace testing {
     GTEST_API_ AssertionResult
     IsNotSubstring(const char* needle_expr, const char* haystack_expr, const ::std::string& needle, const ::std::string& haystack);
 
-#if GTEST_HAS_STD_WSTRING
+    #if GTEST_HAS_STD_WSTRING
     GTEST_API_ AssertionResult
     IsSubstring(const char* needle_expr, const char* haystack_expr, const ::std::wstring& needle, const ::std::wstring& haystack);
     GTEST_API_ AssertionResult
     IsNotSubstring(const char* needle_expr, const char* haystack_expr, const ::std::wstring& needle, const ::std::wstring& haystack);
-#endif // GTEST_HAS_STD_WSTRING
+    #endif // GTEST_HAS_STD_WSTRING
 
     namespace internal {
 
@@ -1501,8 +1502,7 @@ namespace testing {
         //   RawType: the raw floating-point type (either float or double)
         //
         // INTERNAL IMPLEMENTATION - DO NOT USE IN A USER PROGRAM.
-        template<typename RawType>
-        AssertionResult CmpHelperFloatingPointEQ(
+        template<typename RawType> AssertionResult CmpHelperFloatingPointEQ(
             const char* lhs_expression, const char* rhs_expression, RawType lhs_value, RawType rhs_value
         ) {
             const FloatingPoint<RawType> lhs(lhs_value), rhs(rhs_value);
@@ -1631,58 +1631,58 @@ namespace testing {
 
     template<typename T> class TestWithParam : public Test, public WithParamInterface<T> { };
 
-// Macros for indicating success/failure in test code.
+    // Macros for indicating success/failure in test code.
 
-// Skips test in runtime.
-// Skipping test aborts current function.
-// Skipped tests are neither successful nor failed.
-#define GTEST_SKIP()               GTEST_SKIP_("")
+    // Skips test in runtime.
+    // Skipping test aborts current function.
+    // Skipped tests are neither successful nor failed.
+    #define GTEST_SKIP()               GTEST_SKIP_("")
 
-// ADD_FAILURE unconditionally adds a failure to the current test.
-// SUCCEED generates a success - it doesn't automatically make the
-// current test successful, as a test is only successful when it has
-// no failure.
-//
-// EXPECT_* verifies that a certain condition is satisfied.  If not,
-// it behaves like ADD_FAILURE.  In particular:
-//
-//   EXPECT_TRUE  verifies that a Boolean condition is true.
-//   EXPECT_FALSE verifies that a Boolean condition is false.
-//
-// FAIL and ASSERT_* are similar to ADD_FAILURE and EXPECT_*, except
-// that they will also abort the current function on failure.  People
-// usually want the fail-fast behavior of FAIL and ASSERT_*, but those
-// writing data-driven tests often find themselves using ADD_FAILURE
-// and EXPECT_* more.
+    // ADD_FAILURE unconditionally adds a failure to the current test.
+    // SUCCEED generates a success - it doesn't automatically make the
+    // current test successful, as a test is only successful when it has
+    // no failure.
+    //
+    // EXPECT_* verifies that a certain condition is satisfied.  If not,
+    // it behaves like ADD_FAILURE.  In particular:
+    //
+    //   EXPECT_TRUE  verifies that a Boolean condition is true.
+    //   EXPECT_FALSE verifies that a Boolean condition is false.
+    //
+    // FAIL and ASSERT_* are similar to ADD_FAILURE and EXPECT_*, except
+    // that they will also abort the current function on failure.  People
+    // usually want the fail-fast behavior of FAIL and ASSERT_*, but those
+    // writing data-driven tests often find themselves using ADD_FAILURE
+    // and EXPECT_* more.
 
-// Generates a nonfatal failure with a generic message.
-#define ADD_FAILURE()              GTEST_NONFATAL_FAILURE_("Failed")
+    // Generates a nonfatal failure with a generic message.
+    #define ADD_FAILURE()              GTEST_NONFATAL_FAILURE_("Failed")
 
-// Generates a nonfatal failure at the given source file location with
-// a generic message.
-#define ADD_FAILURE_AT(file, line) GTEST_MESSAGE_AT_(file, line, "Failed", ::testing::TestPartResult::kNonFatalFailure)
+    // Generates a nonfatal failure at the given source file location with
+    // a generic message.
+    #define ADD_FAILURE_AT(file, line) GTEST_MESSAGE_AT_(file, line, "Failed", ::testing::TestPartResult::kNonFatalFailure)
 
-// Generates a fatal failure with a generic message.
-#define GTEST_FAIL()               GTEST_FATAL_FAILURE_("Failed")
+    // Generates a fatal failure with a generic message.
+    #define GTEST_FAIL()               GTEST_FATAL_FAILURE_("Failed")
 
-// Like GTEST_FAIL(), but at the given source file location.
-#define GTEST_FAIL_AT(file, line)  return GTEST_MESSAGE_AT_(file, line, "Failed", ::testing::TestPartResult::kFatalFailure)
+    // Like GTEST_FAIL(), but at the given source file location.
+    #define GTEST_FAIL_AT(file, line)  return GTEST_MESSAGE_AT_(file, line, "Failed", ::testing::TestPartResult::kFatalFailure)
 
-// Define this macro to 1 to omit the definition of FAIL(), which is a
-// generic name and clashes with some other libraries.
-#if !(defined(GTEST_DONT_DEFINE_FAIL) && GTEST_DONT_DEFINE_FAIL)
-    #define FAIL()              GTEST_FAIL()
-    #define FAIL_AT(file, line) GTEST_FAIL_AT(file, line)
-#endif
+    // Define this macro to 1 to omit the definition of FAIL(), which is a
+    // generic name and clashes with some other libraries.
+    #if !(defined(GTEST_DONT_DEFINE_FAIL) && GTEST_DONT_DEFINE_FAIL)
+        #define FAIL()              GTEST_FAIL()
+        #define FAIL_AT(file, line) GTEST_FAIL_AT(file, line)
+    #endif
 
-// Generates a success with a generic message.
-#define GTEST_SUCCEED() GTEST_SUCCESS_("Succeeded")
+    // Generates a success with a generic message.
+    #define GTEST_SUCCEED() GTEST_SUCCESS_("Succeeded")
 
-// Define this macro to 1 to omit the definition of SUCCEED(), which
-// is a generic name and clashes with some other libraries.
-#if !(defined(GTEST_DONT_DEFINE_SUCCEED) && GTEST_DONT_DEFINE_SUCCEED)
-    #define SUCCEED() GTEST_SUCCEED()
-#endif
+    // Define this macro to 1 to omit the definition of SUCCEED(), which
+    // is a generic name and clashes with some other libraries.
+    #if !(defined(GTEST_DONT_DEFINE_SUCCEED) && GTEST_DONT_DEFINE_SUCCEED)
+        #define SUCCEED() GTEST_SUCCEED()
+    #endif
 
     // Macros for testing exceptions.
     //
@@ -1693,39 +1693,39 @@ namespace testing {
     //    * {ASSERT|EXPECT}_ANY_THROW(statement):
     //         Tests that the statement throws an exception.
 
-#define EXPECT_THROW(statement, expected_exception) GTEST_TEST_THROW_(statement, expected_exception, GTEST_NONFATAL_FAILURE_)
-#define EXPECT_NO_THROW(statement)                  GTEST_TEST_NO_THROW_(statement, GTEST_NONFATAL_FAILURE_)
-#define EXPECT_ANY_THROW(statement)                 GTEST_TEST_ANY_THROW_(statement, GTEST_NONFATAL_FAILURE_)
-#define ASSERT_THROW(statement, expected_exception) GTEST_TEST_THROW_(statement, expected_exception, GTEST_FATAL_FAILURE_)
-#define ASSERT_NO_THROW(statement)                  GTEST_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
-#define ASSERT_ANY_THROW(statement)                 GTEST_TEST_ANY_THROW_(statement, GTEST_FATAL_FAILURE_)
+    #define EXPECT_THROW(statement, expected_exception) GTEST_TEST_THROW_(statement, expected_exception, GTEST_NONFATAL_FAILURE_)
+    #define EXPECT_NO_THROW(statement)                  GTEST_TEST_NO_THROW_(statement, GTEST_NONFATAL_FAILURE_)
+    #define EXPECT_ANY_THROW(statement)                 GTEST_TEST_ANY_THROW_(statement, GTEST_NONFATAL_FAILURE_)
+    #define ASSERT_THROW(statement, expected_exception) GTEST_TEST_THROW_(statement, expected_exception, GTEST_FATAL_FAILURE_)
+    #define ASSERT_NO_THROW(statement)                  GTEST_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
+    #define ASSERT_ANY_THROW(statement)                 GTEST_TEST_ANY_THROW_(statement, GTEST_FATAL_FAILURE_)
 
-// Boolean assertions. Condition can be either a Boolean expression or an
-// AssertionResult. For more information on how to use AssertionResult with
-// these macros see comments on that class.
-#define GTEST_EXPECT_TRUE(condition)                GTEST_TEST_BOOLEAN_(condition, #condition, false, true, GTEST_NONFATAL_FAILURE_)
-#define GTEST_EXPECT_FALSE(condition)               GTEST_TEST_BOOLEAN_(!(condition), #condition, true, false, GTEST_NONFATAL_FAILURE_)
-#define GTEST_ASSERT_TRUE(condition)                GTEST_TEST_BOOLEAN_(condition, #condition, false, true, GTEST_FATAL_FAILURE_)
-#define GTEST_ASSERT_FALSE(condition)               GTEST_TEST_BOOLEAN_(!(condition), #condition, true, false, GTEST_FATAL_FAILURE_)
+    // Boolean assertions. Condition can be either a Boolean expression or an
+    // AssertionResult. For more information on how to use AssertionResult with
+    // these macros see comments on that class.
+    #define GTEST_EXPECT_TRUE(condition)                GTEST_TEST_BOOLEAN_(condition, #condition, false, true, GTEST_NONFATAL_FAILURE_)
+    #define GTEST_EXPECT_FALSE(condition)               GTEST_TEST_BOOLEAN_(!(condition), #condition, true, false, GTEST_NONFATAL_FAILURE_)
+    #define GTEST_ASSERT_TRUE(condition)                GTEST_TEST_BOOLEAN_(condition, #condition, false, true, GTEST_FATAL_FAILURE_)
+    #define GTEST_ASSERT_FALSE(condition)               GTEST_TEST_BOOLEAN_(!(condition), #condition, true, false, GTEST_FATAL_FAILURE_)
 
     // Define these macros to 1 to omit the definition of the corresponding
     // EXPECT or ASSERT, which clashes with some users' own code.
 
-#if !(defined(GTEST_DONT_DEFINE_EXPECT_TRUE) && GTEST_DONT_DEFINE_EXPECT_TRUE)
-    #define EXPECT_TRUE(condition) GTEST_EXPECT_TRUE(condition)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_EXPECT_TRUE) && GTEST_DONT_DEFINE_EXPECT_TRUE)
+        #define EXPECT_TRUE(condition) GTEST_EXPECT_TRUE(condition)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_EXPECT_FALSE) && GTEST_DONT_DEFINE_EXPECT_FALSE)
-    #define EXPECT_FALSE(condition) GTEST_EXPECT_FALSE(condition)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_EXPECT_FALSE) && GTEST_DONT_DEFINE_EXPECT_FALSE)
+        #define EXPECT_FALSE(condition) GTEST_EXPECT_FALSE(condition)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_TRUE) && GTEST_DONT_DEFINE_ASSERT_TRUE)
-    #define ASSERT_TRUE(condition) GTEST_ASSERT_TRUE(condition)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_TRUE) && GTEST_DONT_DEFINE_ASSERT_TRUE)
+        #define ASSERT_TRUE(condition) GTEST_ASSERT_TRUE(condition)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_FALSE) && GTEST_DONT_DEFINE_ASSERT_FALSE)
-    #define ASSERT_FALSE(condition) GTEST_ASSERT_FALSE(condition)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_FALSE) && GTEST_DONT_DEFINE_ASSERT_FALSE)
+        #define ASSERT_FALSE(condition) GTEST_ASSERT_FALSE(condition)
+    #endif
 
     // Macros for testing equalities and inequalities.
     //
@@ -1773,46 +1773,46 @@ namespace testing {
     //   ASSERT_LT(i, array_size);
     //   ASSERT_GT(records.size(), 0) << "There is no record left.";
 
-#define EXPECT_EQ(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::EqHelper::Compare, val1, val2)
-#define EXPECT_NE(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperNE, val1, val2)
-#define EXPECT_LE(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperLE, val1, val2)
-#define EXPECT_LT(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperLT, val1, val2)
-#define EXPECT_GE(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperGE, val1, val2)
-#define EXPECT_GT(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperGT, val1, val2)
+    #define EXPECT_EQ(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::EqHelper::Compare, val1, val2)
+    #define EXPECT_NE(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperNE, val1, val2)
+    #define EXPECT_LE(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperLE, val1, val2)
+    #define EXPECT_LT(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperLT, val1, val2)
+    #define EXPECT_GE(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperGE, val1, val2)
+    #define EXPECT_GT(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperGT, val1, val2)
 
-#define GTEST_ASSERT_EQ(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::EqHelper::Compare, val1, val2)
-#define GTEST_ASSERT_NE(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperNE, val1, val2)
-#define GTEST_ASSERT_LE(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperLE, val1, val2)
-#define GTEST_ASSERT_LT(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperLT, val1, val2)
-#define GTEST_ASSERT_GE(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperGE, val1, val2)
-#define GTEST_ASSERT_GT(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperGT, val1, val2)
+    #define GTEST_ASSERT_EQ(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::EqHelper::Compare, val1, val2)
+    #define GTEST_ASSERT_NE(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperNE, val1, val2)
+    #define GTEST_ASSERT_LE(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperLE, val1, val2)
+    #define GTEST_ASSERT_LT(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperLT, val1, val2)
+    #define GTEST_ASSERT_GE(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperGE, val1, val2)
+    #define GTEST_ASSERT_GT(val1, val2) ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperGT, val1, val2)
 
     // Define macro GTEST_DONT_DEFINE_ASSERT_XY to 1 to omit the definition of
     // ASSERT_XY(), which clashes with some users' own code.
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_EQ) && GTEST_DONT_DEFINE_ASSERT_EQ)
-    #define ASSERT_EQ(val1, val2) GTEST_ASSERT_EQ(val1, val2)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_EQ) && GTEST_DONT_DEFINE_ASSERT_EQ)
+        #define ASSERT_EQ(val1, val2) GTEST_ASSERT_EQ(val1, val2)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_NE) && GTEST_DONT_DEFINE_ASSERT_NE)
-    #define ASSERT_NE(val1, val2) GTEST_ASSERT_NE(val1, val2)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_NE) && GTEST_DONT_DEFINE_ASSERT_NE)
+        #define ASSERT_NE(val1, val2) GTEST_ASSERT_NE(val1, val2)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_LE) && GTEST_DONT_DEFINE_ASSERT_LE)
-    #define ASSERT_LE(val1, val2) GTEST_ASSERT_LE(val1, val2)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_LE) && GTEST_DONT_DEFINE_ASSERT_LE)
+        #define ASSERT_LE(val1, val2) GTEST_ASSERT_LE(val1, val2)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_LT) && GTEST_DONT_DEFINE_ASSERT_LT)
-    #define ASSERT_LT(val1, val2) GTEST_ASSERT_LT(val1, val2)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_LT) && GTEST_DONT_DEFINE_ASSERT_LT)
+        #define ASSERT_LT(val1, val2) GTEST_ASSERT_LT(val1, val2)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_GE) && GTEST_DONT_DEFINE_ASSERT_GE)
-    #define ASSERT_GE(val1, val2) GTEST_ASSERT_GE(val1, val2)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_GE) && GTEST_DONT_DEFINE_ASSERT_GE)
+        #define ASSERT_GE(val1, val2) GTEST_ASSERT_GE(val1, val2)
+    #endif
 
-#if !(defined(GTEST_DONT_DEFINE_ASSERT_GT) && GTEST_DONT_DEFINE_ASSERT_GT)
-    #define ASSERT_GT(val1, val2) GTEST_ASSERT_GT(val1, val2)
-#endif
+    #if !(defined(GTEST_DONT_DEFINE_ASSERT_GT) && GTEST_DONT_DEFINE_ASSERT_GT)
+        #define ASSERT_GT(val1, val2) GTEST_ASSERT_GT(val1, val2)
+    #endif
 
     // C-string Comparisons.  All tests treat NULL and any non-NULL string
     // as different.  Two NULLs are equal.
@@ -1830,15 +1830,15 @@ namespace testing {
     //
     // These macros evaluate their arguments exactly once.
 
-#define EXPECT_STREQ(s1, s2)               EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTREQ, s1, s2)
-#define EXPECT_STRNE(s1, s2)               EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTRNE, s1, s2)
-#define EXPECT_STRCASEEQ(s1, s2)           EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASEEQ, s1, s2)
-#define EXPECT_STRCASENE(s1, s2)           EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASENE, s1, s2)
+    #define EXPECT_STREQ(s1, s2)               EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTREQ, s1, s2)
+    #define EXPECT_STRNE(s1, s2)               EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTRNE, s1, s2)
+    #define EXPECT_STRCASEEQ(s1, s2)           EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASEEQ, s1, s2)
+    #define EXPECT_STRCASENE(s1, s2)           EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASENE, s1, s2)
 
-#define ASSERT_STREQ(s1, s2)               ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTREQ, s1, s2)
-#define ASSERT_STRNE(s1, s2)               ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTRNE, s1, s2)
-#define ASSERT_STRCASEEQ(s1, s2)           ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASEEQ, s1, s2)
-#define ASSERT_STRCASENE(s1, s2)           ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASENE, s1, s2)
+    #define ASSERT_STREQ(s1, s2)               ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTREQ, s1, s2)
+    #define ASSERT_STRNE(s1, s2)               ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTRNE, s1, s2)
+    #define ASSERT_STRCASEEQ(s1, s2)           ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASEEQ, s1, s2)
+    #define ASSERT_STRCASENE(s1, s2)           ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperSTRCASENE, s1, s2)
 
     // Macros for comparing floating-point numbers.
     //
@@ -1854,17 +1854,17 @@ namespace testing {
     // FloatingPoint template class in gtest-internal.h if you are
     // interested in the implementation details.
 
-#define EXPECT_FLOAT_EQ(val1, val2)        EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<float>, val1, val2)
+    #define EXPECT_FLOAT_EQ(val1, val2)        EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<float>, val1, val2)
 
-#define EXPECT_DOUBLE_EQ(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<double>, val1, val2)
+    #define EXPECT_DOUBLE_EQ(val1, val2)       EXPECT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<double>, val1, val2)
 
-#define ASSERT_FLOAT_EQ(val1, val2)        ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<float>, val1, val2)
+    #define ASSERT_FLOAT_EQ(val1, val2)        ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<float>, val1, val2)
 
-#define ASSERT_DOUBLE_EQ(val1, val2)       ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<double>, val1, val2)
+    #define ASSERT_DOUBLE_EQ(val1, val2)       ASSERT_PRED_FORMAT2(::testing::internal::CmpHelperFloatingPointEQ<double>, val1, val2)
 
-#define EXPECT_NEAR(val1, val2, abs_error) EXPECT_PRED_FORMAT3(::testing::internal::DoubleNearPredFormat, val1, val2, abs_error)
+    #define EXPECT_NEAR(val1, val2, abs_error) EXPECT_PRED_FORMAT3(::testing::internal::DoubleNearPredFormat, val1, val2, abs_error)
 
-#define ASSERT_NEAR(val1, val2, abs_error) ASSERT_PRED_FORMAT3(::testing::internal::DoubleNearPredFormat, val1, val2, abs_error)
+    #define ASSERT_NEAR(val1, val2, abs_error) ASSERT_PRED_FORMAT3(::testing::internal::DoubleNearPredFormat, val1, val2, abs_error)
 
     // These predicate format functions work on floating-point values, and
     // can be used in {ASSERT|EXPECT}_PRED_FORMAT2*(), e.g.
@@ -1876,39 +1876,39 @@ namespace testing {
     GTEST_API_ AssertionResult FloatLE(const char* expr1, const char* expr2, float val1, float val2);
     GTEST_API_ AssertionResult DoubleLE(const char* expr1, const char* expr2, double val1, double val2);
 
-#ifdef GTEST_OS_WINDOWS
+    #ifdef GTEST_OS_WINDOWS
 
-    // Macros that test for HRESULT failure and success, these are only useful
-    // on Windows, and rely on Windows SDK macros and APIs to compile.
+        // Macros that test for HRESULT failure and success, these are only useful
+        // on Windows, and rely on Windows SDK macros and APIs to compile.
+        //
+        //    * {ASSERT|EXPECT}_HRESULT_{SUCCEEDED|FAILED}(expr)
+        //
+        // When expr unexpectedly fails or succeeds, Google Test prints the
+        // expected result and the actual result with both a human-readable
+        // string representation of the error, if available, as well as the
+        // hex result code.
+        #define EXPECT_HRESULT_SUCCEEDED(expr) EXPECT_PRED_FORMAT1(::testing::internal::IsHRESULTSuccess, (expr))
+
+        #define ASSERT_HRESULT_SUCCEEDED(expr) ASSERT_PRED_FORMAT1(::testing::internal::IsHRESULTSuccess, (expr))
+
+        #define EXPECT_HRESULT_FAILED(expr)    EXPECT_PRED_FORMAT1(::testing::internal::IsHRESULTFailure, (expr))
+
+        #define ASSERT_HRESULT_FAILED(expr)    ASSERT_PRED_FORMAT1(::testing::internal::IsHRESULTFailure, (expr))
+
+    #endif // GTEST_OS_WINDOWS
+
+    // Macros that execute statement and check that it doesn't generate new fatal
+    // failures in the current thread.
     //
-    //    * {ASSERT|EXPECT}_HRESULT_{SUCCEEDED|FAILED}(expr)
+    //   * {ASSERT|EXPECT}_NO_FATAL_FAILURE(statement);
     //
-    // When expr unexpectedly fails or succeeds, Google Test prints the
-    // expected result and the actual result with both a human-readable
-    // string representation of the error, if available, as well as the
-    // hex result code.
-    #define EXPECT_HRESULT_SUCCEEDED(expr) EXPECT_PRED_FORMAT1(::testing::internal::IsHRESULTSuccess, (expr))
-
-    #define ASSERT_HRESULT_SUCCEEDED(expr) ASSERT_PRED_FORMAT1(::testing::internal::IsHRESULTSuccess, (expr))
-
-    #define EXPECT_HRESULT_FAILED(expr)    EXPECT_PRED_FORMAT1(::testing::internal::IsHRESULTFailure, (expr))
-
-    #define ASSERT_HRESULT_FAILED(expr)    ASSERT_PRED_FORMAT1(::testing::internal::IsHRESULTFailure, (expr))
-
-#endif // GTEST_OS_WINDOWS
-
-// Macros that execute statement and check that it doesn't generate new fatal
-// failures in the current thread.
-//
-//   * {ASSERT|EXPECT}_NO_FATAL_FAILURE(statement);
-//
-// Examples:
-//
-//   EXPECT_NO_FATAL_FAILURE(Process());
-//   ASSERT_NO_FATAL_FAILURE(Process()) << "Process() failed";
-//
-#define ASSERT_NO_FATAL_FAILURE(statement) GTEST_TEST_NO_FATAL_FAILURE_(statement, GTEST_FATAL_FAILURE_)
-#define EXPECT_NO_FATAL_FAILURE(statement) GTEST_TEST_NO_FATAL_FAILURE_(statement, GTEST_NONFATAL_FAILURE_)
+    // Examples:
+    //
+    //   EXPECT_NO_FATAL_FAILURE(Process());
+    //   ASSERT_NO_FATAL_FAILURE(Process()) << "Process() failed";
+    //
+    #define ASSERT_NO_FATAL_FAILURE(statement) GTEST_TEST_NO_FATAL_FAILURE_(statement, GTEST_FATAL_FAILURE_)
+    #define EXPECT_NO_FATAL_FAILURE(statement) GTEST_TEST_NO_FATAL_FAILURE_(statement, GTEST_NONFATAL_FAILURE_)
 
     // Causes a trace (including the given source file path and line number,
     // and the given message) to be included in every test failure message generated
@@ -1949,22 +1949,22 @@ namespace testing {
             ScopedTrace& operator=(const ScopedTrace&) = delete;
     };
 
-// Causes a trace (including the source file path, the current line
-// number, and the given message) to be included in every test failure
-// message generated by code in the current scope.  The effect is
-// undone when the control leaves the current scope.
-//
-// The message argument can be anything streamable to std::ostream.
-//
-// In the implementation, we include the current line number as part
-// of the dummy variable name, thus allowing multiple SCOPED_TRACE()s
-// to appear in the same block - as long as they are on different
-// lines.
-//
-// Assuming that each thread maintains its own stack of traces.
-// Therefore, a SCOPED_TRACE() would (correctly) only affect the
-// assertions in its own thread.
-#define SCOPED_TRACE(message) const ::testing::ScopedTrace GTEST_CONCAT_TOKEN_(gtest_trace_, __LINE__)(__FILE__, __LINE__, (message))
+    // Causes a trace (including the source file path, the current line
+    // number, and the given message) to be included in every test failure
+    // message generated by code in the current scope.  The effect is
+    // undone when the control leaves the current scope.
+    //
+    // The message argument can be anything streamable to std::ostream.
+    //
+    // In the implementation, we include the current line number as part
+    // of the dummy variable name, thus allowing multiple SCOPED_TRACE()s
+    // to appear in the same block - as long as they are on different
+    // lines.
+    //
+    // Assuming that each thread maintains its own stack of traces.
+    // Therefore, a SCOPED_TRACE() would (correctly) only affect the
+    // assertions in its own thread.
+    #define SCOPED_TRACE(message) const ::testing::ScopedTrace GTEST_CONCAT_TOKEN_(gtest_trace_, __LINE__)(__FILE__, __LINE__, (message))
 
     // Compile-time assertion for type equality.
     // StaticAssertTypeEq<type1, type2>() compiles if and only if type1 and type2
@@ -2001,70 +2001,70 @@ namespace testing {
         return true;
     }
 
-// Defines a test.
-//
-// The first parameter is the name of the test suite, and the second
-// parameter is the name of the test within the test suite.
-//
-// The convention is to end the test suite name with "Test".  For
-// example, a test suite for the Foo class can be named FooTest.
-//
-// Test code should appear between braces after an invocation of
-// this macro.  Example:
-//
-//   TEST(FooTest, InitializesCorrectly) {
-//     Foo foo;
-//     EXPECT_TRUE(foo.StatusIsOK());
-//   }
+    // Defines a test.
+    //
+    // The first parameter is the name of the test suite, and the second
+    // parameter is the name of the test within the test suite.
+    //
+    // The convention is to end the test suite name with "Test".  For
+    // example, a test suite for the Foo class can be named FooTest.
+    //
+    // Test code should appear between braces after an invocation of
+    // this macro.  Example:
+    //
+    //   TEST(FooTest, InitializesCorrectly) {
+    //     Foo foo;
+    //     EXPECT_TRUE(foo.StatusIsOK());
+    //   }
 
-// Note that we call GetTestTypeId() instead of GetTypeId<
-// ::testing::Test>() here to get the type ID of testing::Test.  This
-// is to work around a suspected linker bug when using Google Test as
-// a framework on Mac OS X.  The bug causes GetTypeId<
-// ::testing::Test>() to return different values depending on whether
-// the call is from the Google Test framework itself or from user test
-// code.  GetTestTypeId() is guaranteed to always return the same
-// value, as it always calls GetTypeId<>() from the Google Test
-// framework.
-#define GTEST_TEST(test_suite_name, test_name)                                                                                             \
-    GTEST_TEST_(test_suite_name, test_name, ::testing::Test, ::testing::internal::GetTestTypeId())
+    // Note that we call GetTestTypeId() instead of GetTypeId<
+    // ::testing::Test>() here to get the type ID of testing::Test.  This
+    // is to work around a suspected linker bug when using Google Test as
+    // a framework on Mac OS X.  The bug causes GetTypeId<
+    // ::testing::Test>() to return different values depending on whether
+    // the call is from the Google Test framework itself or from user test
+    // code.  GetTestTypeId() is guaranteed to always return the same
+    // value, as it always calls GetTypeId<>() from the Google Test
+    // framework.
+    #define GTEST_TEST(test_suite_name, test_name)                                                                                         \
+        GTEST_TEST_(test_suite_name, test_name, ::testing::Test, ::testing::internal::GetTestTypeId())
 
-// Define this macro to 1 to omit the definition of TEST(), which
-// is a generic name and clashes with some other libraries.
-#if !(defined(GTEST_DONT_DEFINE_TEST) && GTEST_DONT_DEFINE_TEST)
-    #define TEST(test_suite_name, test_name) GTEST_TEST(test_suite_name, test_name)
-#endif
+    // Define this macro to 1 to omit the definition of TEST(), which
+    // is a generic name and clashes with some other libraries.
+    #if !(defined(GTEST_DONT_DEFINE_TEST) && GTEST_DONT_DEFINE_TEST)
+        #define TEST(test_suite_name, test_name) GTEST_TEST(test_suite_name, test_name)
+    #endif
 
-// Defines a test that uses a test fixture.
-//
-// The first parameter is the name of the test fixture class, which
-// also doubles as the test suite name.  The second parameter is the
-// name of the test within the test suite.
-//
-// A test fixture class must be declared earlier.  The user should put
-// the test code between braces after using this macro.  Example:
-//
-//   class FooTest : public testing::Test {
-//    protected:
-//     void SetUp() override { b_.AddElement(3); }
-//
-//     Foo a_;
-//     Foo b_;
-//   };
-//
-//   TEST_F(FooTest, InitializesCorrectly) {
-//     EXPECT_TRUE(a_.StatusIsOK());
-//   }
-//
-//   TEST_F(FooTest, ReturnsElementCountCorrectly) {
-//     EXPECT_EQ(a_.size(), 0);
-//     EXPECT_EQ(b_.size(), 1);
-//   }
-#define GTEST_TEST_F(test_fixture, test_name)                                                                                              \
-    GTEST_TEST_(test_fixture, test_name, test_fixture, ::testing::internal::GetTypeId<test_fixture>())
-#if !(defined(GTEST_DONT_DEFINE_TEST_F) && GTEST_DONT_DEFINE_TEST_F)
-    #define TEST_F(test_fixture, test_name) GTEST_TEST_F(test_fixture, test_name)
-#endif
+    // Defines a test that uses a test fixture.
+    //
+    // The first parameter is the name of the test fixture class, which
+    // also doubles as the test suite name.  The second parameter is the
+    // name of the test within the test suite.
+    //
+    // A test fixture class must be declared earlier.  The user should put
+    // the test code between braces after using this macro.  Example:
+    //
+    //   class FooTest : public testing::Test {
+    //    protected:
+    //     void SetUp() override { b_.AddElement(3); }
+    //
+    //     Foo a_;
+    //     Foo b_;
+    //   };
+    //
+    //   TEST_F(FooTest, InitializesCorrectly) {
+    //     EXPECT_TRUE(a_.StatusIsOK());
+    //   }
+    //
+    //   TEST_F(FooTest, ReturnsElementCountCorrectly) {
+    //     EXPECT_EQ(a_.size(), 0);
+    //     EXPECT_EQ(b_.size(), 1);
+    //   }
+    #define GTEST_TEST_F(test_fixture, test_name)                                                                                          \
+        GTEST_TEST_(test_fixture, test_name, test_fixture, ::testing::internal::GetTypeId<test_fixture>())
+    #if !(defined(GTEST_DONT_DEFINE_TEST_F) && GTEST_DONT_DEFINE_TEST_F)
+        #define TEST_F(test_fixture, test_name) GTEST_TEST_F(test_fixture, test_name)
+    #endif
 
     // Returns a path to a temporary directory, which should be writable. It is
     // implementation-dependent whether or not the path is terminated by the
@@ -2137,8 +2137,7 @@ namespace testing {
     //   return RUN_ALL_TESTS();
     // }
     //
-    template<int&... ExplicitParameterBarrier, typename Factory>
-    TestInfo* RegisterTest(
+    template<int&... ExplicitParameterBarrier, typename Factory> TestInfo* RegisterTest(
         const char* test_suite_name,
         const char* test_name,
         const char* type_param,

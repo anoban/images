@@ -33,6 +33,9 @@
 // Sometimes it's desirable to build Google Test by compiling a single file.
 // This file serves this purpose.
 
+#pragma warning(disable : 4625 4626 5026 5027 5045 4061 4365 4623 4668) // some of these are useful warnings so do not copy paste this
+// into non-gtest sources
+
 // This line ensures that gtest.h can be compiled on its own, even
 // when it's fused.
 #include "gtest/gtest.h"
