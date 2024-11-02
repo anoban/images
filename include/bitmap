@@ -77,6 +77,9 @@ static constexpr inline bool operator==( // NOLINT(readability-redundant-inline-
     return left.rgbBlue == right.rgbBlue && left.rgbGreen == right.rgbGreen && left.rgbRed == right.rgbRed;
 }
 
+// that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
+static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
+
 class bitmap final {
         // clang-format off
 #ifdef __TEST__
@@ -91,6 +94,8 @@ class bitmap final {
         unsigned long    file_size;   // file size
         unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
 
+        friend class canvas;
+
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)
         // 2) now that the buffer only holds pixels, we'll need to serialize the metadata structs separately when serializing the image
@@ -104,9 +109,6 @@ class bitmap final {
 
         // the best (admittedly less elegant) way to circumnavigate this is to hold an alias pointer that points to the beginning of the pixel buffer
         // inside the raw file buffer - no additional heap allocations and we could just sink the buffer to the disk when a serialization is needed
-
-        // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
-        static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
         // NOLINTBEGIN(readability-redundant-inline-specifier)
 
@@ -206,7 +208,9 @@ class bitmap final {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         inline explicit bitmap(_In_ const wchar_t* const filename) noexcept : // construct a bitmap from a file on disk
             buffer { internal::open(filename, file_size) },                   // a little unorthodox but okay lol
-            pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) },               // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            pixels {
+                reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
+            }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             file_header { __parse_file_header(buffer, file_size) },
             info_header { __parse_info_header(buffer, file_size) },
             // file_size {}, we want to preserve size's previous state materialized by internal::open()
@@ -224,7 +228,9 @@ class bitmap final {
             _In_ const unsigned long       _size
         ) noexcept :
             buffer { new (std::nothrow) unsigned char[_size] }, // cannot take ownership of the incoming buffer, so let's copy it
-            pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            pixels {
+                reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
+            }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             // if _buffer is nullptr, the __parse_xxx family of helpers will default initialize the cognate header structs
             file_header { __parse_file_header(_buffer, _size) },
             info_header { __parse_info_header(_buffer, _size) },
@@ -251,12 +257,16 @@ class bitmap final {
             file_size { size },
             buffer_size { size } { }
 
+        inline bitmap(_In_ const unsigned long height, _In_ const unsigned long width) noexcept : { }
+
     public:
         // copy constructor
         inline bitmap(_In_ const bitmap& other) noexcept :
             buffer { new (std::nothrow
-            ) unsigned char[other.file_size] },                 // don't copy the trailing unused bytes from the bitmap, if present
-            pixels { reinterpret_cast<RGBQUAD*>(buffer + 54) }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            ) unsigned char[other.file_size] }, // don't copy the trailing unused bytes from the bitmap, if present
+            pixels {
+                reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
+            }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             file_header { other.file_header },
             info_header { other.info_header },
             file_size { other.file_size },
@@ -289,7 +299,9 @@ class bitmap final {
                 file_size = other.file_size;               // keep the existing buffer_size as we are reusing the existing buffer
 
             ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
-            pixels      = reinterpret_cast<RGBQUAD*>(buffer + 54); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            pixels = reinterpret_cast<RGBQUAD*>(
+                buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)
+            ); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             file_header = other.file_header;
             info_header = other.info_header;
 
@@ -386,46 +398,37 @@ class bitmap final {
             return pixels[offset];
         }
 
-        // since this mutates the internal buffer this cannot be used with const bitmap instances
+        // NOLINTEND(readability-redundant-inline-specifier)
+};
+
+class canvas final {
+    private:
+        bitmap image;
+
+    public:
+        inline canvas() noexcept = default;
+
+        inline canvas(_In_ const unsigned long height, _In_ const unsigned long width) noexcept : image(height, width) { }
+
+        inline explicit canvas(_In_ const bitmap& _image) noexcept : image { _image } { }
+
+        inline explicit canvas(_In_ bitmap&& _image) noexcept : image { std::move(_image) } { }
+
         inline void to_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) noexcept {
             switch (mapper) {
-                case BW_TRANSFORMATION::AVERAGE          : std::for_each(begin(), end(), rgb_transformers::average); break;
-                case BW_TRANSFORMATION::WEIGHTED_AVERAGE : std::for_each(begin(), end(), rgb_transformers::weighted_average); break;
-                case BW_TRANSFORMATION::LUMINOSITY       : std::for_each(begin(), end(), rgb_transformers::luminosity); break;
-                case BW_TRANSFORMATION::BINARY           : std::for_each(begin(), end(), rgb_transformers::binary); break;
-            }
-        }
-
-        inline bitmap make_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) const noexcept {
-            auto copy { *this };
-            switch (mapper) {
-                case BW_TRANSFORMATION::AVERAGE : std::for_each(copy.begin(), copy.end(), rgb_transformers::average); break;
+                case BW_TRANSFORMATION::AVERAGE : std::for_each(image.begin(), image.end(), rgb_transformers::average); break;
                 case BW_TRANSFORMATION::WEIGHTED_AVERAGE :
-                    std::for_each(copy.begin(), copy.end(), rgb_transformers::weighted_average);
+                    std::for_each(image.begin(), image.end(), rgb_transformers::weighted_average);
                     break;
-                case BW_TRANSFORMATION::LUMINOSITY : std::for_each(copy.begin(), copy.end(), rgb_transformers::luminosity); break;
-                case BW_TRANSFORMATION::BINARY     : std::for_each(copy.begin(), copy.end(), rgb_transformers::binary); break;
+                case BW_TRANSFORMATION::LUMINOSITY : std::for_each(image.begin(), image.end(), rgb_transformers::luminosity); break;
+                case BW_TRANSFORMATION::BINARY     : std::for_each(image.begin(), image.end(), rgb_transformers::binary); break;
             }
-            return copy;
         }
 
-        // since this mutates the internal buffer this cannot be used with const bitmap instances
-        inline void to_negative() noexcept { std::for_each(begin(), end(), rgb_transformers::negative); }
-
-        inline bitmap make_negative() const noexcept {
-            auto copy { *this };
-            std::for_each(copy.begin(), copy.end(), rgb_transformers::negative);
-            return copy;
-        }
+        inline void to_negative() noexcept { std::for_each(image.begin(), image.end(), rgb_transformers::negative); }
 
         template<RGB_TAG _TyColComb> inline void to_decoloured() noexcept {
-            std::for_each(begin(), end(), colour_removers::remove<_TyColComb> {});
-        }
-
-        template<RGB_TAG _TyColComb> inline bitmap make_decoloured() const noexcept {
-            auto copy { *this };
-            std::for_each(copy.begin(), copy.end(), colour_removers::remove<_TyColComb> {});
-            return copy;
+            std::for_each(image.begin(), image.end(), colour_removers::remove<_TyColComb> {});
         }
 
         // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
@@ -451,7 +454,7 @@ class bitmap final {
             }
 
             // preparation of the metadata structs
-            const BITMAPFILEHEADER file { SOI, fsize, 54, 0, 0 };
+            const BITMAPFILEHEADER file { SOI, fsize, sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), 0, 0 };
 
             const BITMAPINFOHEADER info { 40,
                                           static_cast<long>(width),
@@ -501,8 +504,6 @@ class bitmap final {
         static inline bitmap make_mandelbrot_set(_In_ const unsigned long height, _In_ const unsigned long width) noexcept { }
 
         static inline bitmap make_julia_set(_In_ const unsigned long height, _In_ const unsigned long width) noexcept { }
-
-        // NOLINTEND(readability-redundant-inline-specifier)
 };
 
 static_assert(std::is_standard_layout<bitmap>::value, "");

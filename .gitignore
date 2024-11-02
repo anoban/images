@@ -235,6 +235,7 @@ dkms.conf
 # image files
 *.bmp
 *.jpeg
+*.jpg
 *.png
 *.ico
 
