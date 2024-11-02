@@ -60,7 +60,8 @@ namespace rgb_transformers {
 
 } // namespace rgb_transformers
 
-namespace crc {
+namespace cyclic_redundancy_check {
+
     // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
 
     // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
@@ -109,7 +110,7 @@ namespace crc {
             for (size_t j = 0; j < 8; ++j) {
                 unsigned b   = (byte ^ crc) & 1;
                 crc        >>= 1;
-                if (b) crc = crc ^ IEEE;
+                if (b) crc = crc ^ IEEE; // uses the IEEE polynomial
                 byte >>= 1;
             }
             CRC32_LOOKUPTABLE[i] = crc; // would have to remove the const qualifier of CRC32_LOOKUPTABLE to allow write access
@@ -127,6 +128,7 @@ namespace crc {
         for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE[(bytestream[i] ^ crc) & 0xFF];
         return ~crc;
     }
-} // namespace crc
+
+} // namespace cyclic_redundancy_check
 
 // NOLINTEND(readability-redundant-inline-specifier)

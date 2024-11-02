@@ -9,13 +9,14 @@ static constexpr size_t MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
 // (an .ico file can contain one or more images, hence the name icon directory), these bitmap images are stored contiguously, following the ICONDIR structure.
 // each bitmap is defined by an ICONDIRENTRY struct in the ICONDIR struct
 // the bitmap data can be in the format of a Windows BMP without the BITMAPFILEHEADER struct or a PNG image in its entirety i.e uncompressed.
+// https://handwiki.org/wiki/ICO_(file_format)
 
 // in summary, the binary representation of an .ico file looks like
 // ICONDIR = { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
 
-enum class IMAGETYPE { ICO = 0x11 /* icon */, CUR = 0x21 /* cursor */ };
+enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR };
 
-enum class BITMAPTYPE { BMP = 0xAA, PNG = 0xBA }; // needs to be a signed integer
+enum class IMAGE_TYPE : int { BITMAP, PNG }; // needs to be a signed integer
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
 
@@ -54,91 +55,77 @@ static_assert(std::is_standard_layout<ICONDIRENTRY>::value, "");
 //      GRPICONDIRENTRY idEntries[];
 //  } GRPICONDIR;
 
-struct ICONDIR {
-        // id prefix for IconDirectory, classic Win32 stuff
-        unsigned short idReserved; // reserved field, must always be 0
-        unsigned short idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
-        unsigned short idCount;    // number of resources (images) stored in the given .ico file
-        ICONDIRENTRY   idEntries[MAX_ALLOWED_ICONDIRENTRIES_PER_FILE]; // not going to the heap for this
-        // if a .ico or .cur file is suspected to store more than 10 bitmaps, manually adjust MAXICNDRENTRYS to a higher value!
+struct ICONDIR final {
+        unsigned short __;        // reserved field, must always be 0
+        FILE_TYPE      type;      // specifies the type of the resources contained, values other than 1 and 2 are invalid
+                                  // a given ICONDIR can store one or more of either icon or cursor type images
+                                  // heterogeneous types aren't allowed inside an ICONDIR
+        unsigned short count;     // number of resources (images) stored in the given .ico file
+        ICONDIRENTRY*  resources; //
 };
 
-static_assert(
-    sizeof(ICONDIR) == sizeof(unsigned short) * 3 + 2 /* 2 bytes padding after the three words */ +
-                           sizeof(ICONDIRENTRY) * MAX_ALLOWED_ICONDIRENTRIES_PER_FILE,
-    ""
-);
+static_assert(sizeof(ICONDIR) == 16, "");
+static_assert(std::is_standard_layout<ICONDIR>::value, "");
 
-class ico final { // represents an .ico file object
+class ico final { // represents an .ico or .cur file object
     private:
-        unsigned char* buffer;                                       // the raw byte buffer
-        ICONDIR        icIconDir;                                    // parsed ICONDIR struct
-        BITMAPTYPE     icTypes[MAX_ALLOWED_ICONDIRENTRIES_PER_FILE]; // type of the bitmaps stored in the file
+        unsigned char*                                                buffer;         // the raw byte buffer
+        ICONDIR                                                       icon_directory; // parsed ICONDIR struct
+        std::array<ICONDIRENTRY, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE> entries;        // entries stored in the file
+        std::array<unsigned, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE>     entry_offsets;  // offsets of each entry in the file buffer
+
+        // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a ICONDIRENTRY
+        constexpr inline ICONDIRENTRY __parse_icondir_entry( // NOLINT(readability-convert-member-functions-to-static)
+            _In_count_(size) const unsigned char* const buffer,
+            _In_ const unsigned long                    size
+        ) noexcept {
+            if (!buffer) return {};
+            ICONDIRENTRY temp {};
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            temp.width       = *buffer;
+            temp.height      = *(buffer + 1);
+            temp.color_count = *(buffer + 2);
+            temp.__          = *(buffer + 3);
+
+            assert(!temp.__); // must always be 0
+
+            temp.planes    = *reinterpret_cast<const unsigned short*>(buffer + 4);
+            temp.bit_count = *reinterpret_cast<const unsigned short*>(buffer + 6);
+            temp.size      = *reinterpret_cast<const unsigned long*>(buffer + 8);
+            temp.offset    = *reinterpret_cast<const unsigned long*>(buffer + 12);
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+            return temp;
+        }
+
+        inline ICONDIR __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
+            _In_reads_bytes_(size) const unsigned char* const buffer,
+            _In_ const unsigned long                          size
+        ) noexcept {
+            if (!buffer) return {};
+
+            const unsigned short reserved { *reinterpret_cast<const unsigned short*>(buffer) }; // must be 0
+            if (reserved) {
+                fputws(L"Error in " __FUNCTIONW__ ", a non zero value encountered as idReserved!\n", stderr);
+                return {};
+            }
+
+            const unsigned short file_type =
+                *reinterpret_cast<const unsigned short*>(buffer + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (file_type != ::to_underlying(FILE_TYPE::ICON) &&
+                file_type != ::to_underlying(FILE_TYPE::CURSOR)) { // cannot be anything else
+                fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
+                return {};
+            }
+
+            // we're 6 bytes past the beginning of the buffer now
+            const unsigned short resource_count =
+                *reinterpret_cast<const unsigned short*>(buffer + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+            // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
+            if (resource_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) { }
+
+            // process the first ICONDIRENTRY in the buffer
+        }
 };
-
-// make sure caller validates that `bytestream` is not empty before calling ParseIconDir()
-static __forceinline ICONDIR __stdcall ParseIconDir(_In_ const uint8_t* const restrict bytestream) {
-    assert(bytestream); // won't help in release builds, caller is responsible!
-
-    ICONDIR tmp = { 0 }; // making this static could improve performance but residuals from previous calls might affect the return
-    // values in subsequent invocations :(
-
-    const uint16_t idReserved = *((uint16_t*) (bytestream));
-    if (idReserved) { // must be 0
-        fputws(L"Error in ParseIconDir():: Non zero value encountered for idReserved!", stderr);
-        return tmp;
-    }
-
-    const uint16_t idType = *((uint16_t*) (bytestream + 2));
-    if (idType != ICO && idType != CUR) { // cannot be anything else
-        fputws(L"Error in ParseIconDir():: File found not to be of type ICON or CURSOR!", stderr);
-        return tmp;
-    }
-
-    const uint16_t idCount = *((const uint16_t*) (bytestream + 4));
-    // we're 6 bytes past the beginning of the buffer now.
-
-    // handle if the file contains more bitmaps than MAX_ICONDIRENTRIES
-    if (idCount > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) { }
-
-    for (size_t i = 0; i < idCount; ++i) // taking adavantage of tmp here, instead of declaring and using a new array of ICONDIRENTRYs
-        tmp.idEntries[i] = ParseIconDirEntry(bytestream + 6 /* first three words */ + i * sizeof(ICONDIRENTRY));
-
-    return (ICONDIR) { .idReserved = idReserved, .idType = idType, .idCount = idCount, .idEntries = tmp.idEntries };
-}
-
-// bytestream buffer needs to be correctly offsetted to the parse start point
-static __forceinline ICONDIRENTRY __stdcall ParseIconDirEntry(_In_ const uint8_t* const restrict bytestream /* where the parsing begins */
-) {
-    assert(bytestream); // make sure this is valid
-    static ICONDIRENTRY tmp = { 0 };
-
-    tmp.bWidth              = *bytestream;
-    tmp.bHeight             = *(bytestream + 1);
-    tmp.bColorCount         = *(bytestream + 2);
-    tmp.bReserved           = *(bytestream + 3);
-    assert(!tmp.bReserved); // must always be 0
-
-    tmp.wPlanes       = *((unsigned short*) (bytestream + 4));
-    tmp.wBitCount     = *((unsigned short*) (bytestream + 6));
-    tmp.dwBytesInRes  = *((unsigned long*) (bytestream + 8));
-    tmp.dwImageOffset = *((unsigned long*) (bytestream + 12));
-
-    return tmp;
-}
-
-ico_t IcoRead(_In_ const wchar_t* const restrict filename) {
-    static ico_t         tmp    = { 0 };
-    size_t               imsize = 0;
-    const uint8_t* const buffer = Open(filename, &imsize);
-
-    if (!buffer) {
-        // handle it, no need for error reporting, Open() will take care of that!
-    }
-
-    tmp.icBuffer = buffer;
-}
-
-bool IcoWrite(_In_ const ico_t* const restrict image) { }
-
-void IcoInfo(_In_ const ico_t* const restrict image) { }
