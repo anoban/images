@@ -146,4 +146,9 @@ namespace cyclic_redundancy_check {
 
 } // namespace cyclic_redundancy_check
 
+// clang-format off
+#include <Winsock2.h> // for the byte order reversal routines
+#pragma comment(lib, "Ws2_32.lib")
+// clang-format on
+
 // NOLINTEND(readability-redundant-inline-specifier)

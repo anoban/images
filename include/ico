@@ -2,11 +2,6 @@
 #include <helpers>
 #include <imageio>
 
-// clang-format off
-#include <Winsock2.h>
-#pragma comment(lib, "Ws2_32.lib")
-// clang-format on
-
 // most .ico files will have only one bitmap in them, so 4 is generous enough
 static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
 
@@ -16,7 +11,7 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
 // the bitmap data can be in the format of a Windows BMP without the BITMAPFILEHEADER struct or a PNG image in its entirety i.e uncompressed.
 // https://handwiki.org/wiki/ICO_(file_format)
 
-// MULTIBYTE INTEGERS IN ICO FILES USE LITTLE ENDIAN BYTE ORDER
+// multibyte integers in .ico files are stored LSB first (using little endian byte order), just like .bmp files
 
 // in summary, the binary representation of an .ico file looks like
 // ICONDIR = { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
@@ -96,14 +91,14 @@ class icon_directory final { // represents an .ico or .cur file object
         ) noexcept {
             if (!buffer) return;
 
-            const unsigned short reserved { ::ntohs(*reinterpret_cast<const unsigned short*>(buffer)) }; // must be 0
+            const unsigned short reserved { *reinterpret_cast<const unsigned short*>(buffer) }; // must be 0
             if (reserved) {
                 ::fputws(L"Error in " __FUNCTIONW__ ", a non zero value encountered as idReserved!\n", stderr);
                 return;
             }
 
             const unsigned short file_type =
-                ::ntohs(*reinterpret_cast<const unsigned short*>(buffer + 2)); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                *reinterpret_cast<const unsigned short*>(buffer + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (file_type != ::to_underlying(FILE_TYPE::ICON) &&
                 file_type != ::to_underlying(FILE_TYPE::CURSOR)) { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
@@ -112,7 +107,7 @@ class icon_directory final { // represents an .ico or .cur file object
 
             // we're 6 bytes past the beginning of the buffer now
             const unsigned short resource_count =
-                ::ntohs(*reinterpret_cast<const unsigned short*>(buffer + 4)); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                *reinterpret_cast<const unsigned short*>(buffer + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
             // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
             if (resource_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) { }
