@@ -20,8 +20,11 @@
 #endif
 
 template<
-    typename _TyFrom /* only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary */,
-    typename _TyTo /* the underlying type */ = // std::is_scoped_enum requires C++23
+    typename _TyFrom /* only for scoped enum types, plain C style enums support
+                        implicit type conversions so this isn't necessary */
+    ,
+    typename _TyTo /* the underlying type */ = // std::is_scoped_enum requires
+                                               // C++23
     typename std::enable_if<std::is_enum<_TyFrom>::value, typename std::underlying_type<_TyFrom>::type>::type>
 static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noexcept {
     return static_cast<_TyTo>(enumeration);
@@ -45,13 +48,15 @@ namespace rgb_transformers {
             static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L);
     }
 
-    // every colour value gets scaled down to 0 or scaled up to 255 depending on the average value of colours in a pixel
+    // every colour value gets scaled down to 0 or scaled up to 255 depending on the
+    // average value of colours in a pixel
     static inline constexpr void binary(_Inout_ RGBQUAD& pixel) noexcept {
         pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
             (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8;
     }
 
-    // each colour value gets scaled down to 0 or scaled up to 255 depending on the corresponding value
+    // each colour value gets scaled down to 0 or scaled up to 255 depending on the
+    // corresponding value
     static inline constexpr void negative(_Inout_ RGBQUAD& pixel) noexcept {
         pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255 : 0;
         pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255 : 0;
@@ -62,15 +67,19 @@ namespace rgb_transformers {
 
 namespace cyclic_redundancy_check {
 
-    // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
+    // for implementation details, refer
+    // https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
 
-    // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
+    // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE
+    // 802.3), v.42, fddi, gzip, zip, png, ...
     static constexpr unsigned IEEE       = 0xEDB88320;
 
-    // Castagnoli's polynomial, used in iSCSI, has better error detection characteristics than IEEE. https://dx.doi.org/10.1109/26.231911
+    // Castagnoli's polynomial, used in iSCSI, has better error detection
+    // characteristics than IEEE. https://dx.doi.org/10.1109/26.231911
     static constexpr unsigned CASTAGNOLI = 0x82F63B78;
 
-    // Koopman's polynomial, also has better error detection characteristics than IEEE. https://dx.doi.org/10.1109/DSN.2002.1028931
+    // Koopman's polynomial, also has better error detection characteristics than
+    // IEEE. https://dx.doi.org/10.1109/DSN.2002.1028931
     static constexpr unsigned KOOPMAN    = 0xEB31D82E;
 
     // computed and stored using the IEEE variant of the polynomial
@@ -113,14 +122,20 @@ namespace cyclic_redundancy_check {
                 if (b) crc = crc ^ IEEE; // uses the IEEE polynomial
                 byte >>= 1;
             }
+#if 0
             CRC32_LOOKUPTABLE[i] = crc; // would have to remove the const qualifier of CRC32_LOOKUPTABLE to allow write access
+#endif
         }
     }
 
-    // when using runtime population of the lookup table, __get_crc32 will also need to be modofied to check whether CRC32_LOOKUPTABLE has been initialized
-    // use a global boolean to register the initialization state
+    // when using runtime population of the lookup table, __get_crc32 will also need
+    // to be modofied to check whether CRC32_LOOKUPTABLE has been initialized use a
+    // global boolean to register the initialization state
 
-    static constexpr inline unsigned __stdcall __get_crc32( // works great, tested :) produces same results as Python's binascii.crc32() :)
+    static constexpr inline unsigned __stdcall __get_crc32( // works great, tested
+                                                            // :) produces same
+                                                            // results as Python's
+                                                            // binascii.crc32() :)
         _In_count_(length) const unsigned char* const bytestream,
         _In_ const size_t                             length
     ) noexcept {

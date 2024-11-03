@@ -2,8 +2,13 @@
 #include <helpers>
 #include <imageio>
 
+// clang-format off
+#include <Winsock2.h>
+#pragma comment(lib, "Ws2_32.lib")
+// clang-format on
+
 // most .ico files will have only one bitmap in them, so 4 is generous enough
-static constexpr size_t MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
+static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
 
 // an ICO file can be imagined as a meta-info struct, called ICONDIR, for ICON DIRectory followed by a bitmap or an array of bitmaps
 // (an .ico file can contain one or more images, hence the name icon directory), these bitmap images are stored contiguously, following the ICONDIR structure.
@@ -11,12 +16,14 @@ static constexpr size_t MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
 // the bitmap data can be in the format of a Windows BMP without the BITMAPFILEHEADER struct or a PNG image in its entirety i.e uncompressed.
 // https://handwiki.org/wiki/ICO_(file_format)
 
+// MULTIBYTE INTEGERS IN ICO FILES USE LITTLE ENDIAN BYTE ORDER
+
 // in summary, the binary representation of an .ico file looks like
 // ICONDIR = { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
 
-enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR };
+enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR }; // NOLINT(performance-enum-size) deliberate decision
 
-enum class IMAGE_TYPE : int { BITMAP, PNG }; // needs to be a signed integer
+enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) deliberate decision, needs to be a signed integer
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
 
@@ -36,10 +43,10 @@ struct ICONDIRENTRY final {
         unsigned char  height;      // height of the associated bitmap in pixels (must be in the range of 0 to 256)
         unsigned char  color_count; // number of colours in the colur palette, must be 0 if the bitmap doesn't use a colour palette.
         unsigned char  __;          // reserved byte, must always be 0.
-        unsigned short planes;      // specifies the colour planes (should be 0 or 1) - for ICO bitmaps
-        // wPlanes specifies the horizontal coordinate of the hotspot as offset from the left, in pixels - for CUR bitmaps
-        unsigned short bit_count; // specifies pixel depth - for ICO bitmaps
-        // bit_count specifies the vertical coordinate of the hotspot as offset from the top, in pixels - for CUR bitmaps
+        unsigned short planes;      // specifies the colour planes (should be 0 or 1) - for ICON
+        // planes specifies the horizontal coordinate of the hotspot as offset from the left, in pixels - for CURSOR
+        unsigned short bit_count; // specifies pixel depth - for ICON
+        // bit_count specifies the vertical coordinate of the hotspot as offset from the top, in pixels - for CURSOR
         // Windows cursors have a hotspot location, that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
         unsigned long  size;   // size of the associated bitmap in bytes
         unsigned long  offset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
@@ -67,12 +74,51 @@ struct ICONDIR final {
 static_assert(sizeof(ICONDIR) == 16, "");
 static_assert(std::is_standard_layout<ICONDIR>::value, "");
 
-class ico final { // represents an .ico or .cur file object
-    private:
-        unsigned char*                                                buffer;         // the raw byte buffer
-        ICONDIR                                                       icon_directory; // parsed ICONDIR struct
-        std::array<ICONDIRENTRY, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE> entries;        // entries stored in the file
-        std::array<unsigned, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE>     entry_offsets;  // offsets of each entry in the file buffer
+class icon_directory final { // represents an .ico or .cur file object
+
+        // clang-format off
+#ifdef __TEST__
+    public:
+#endif
+        // clang-format on
+
+        unsigned char*                                                buffer; // the raw byte buffer
+        FILE_TYPE                                                     type;
+        unsigned short                                                entry_count;
+        std::array<unsigned, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE>     entry_offsets; // offsets of each entry in the file buffer
+        std::array<ICONDIRENTRY, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE> entries;       // entries stored in the file
+
+        // NOLINTBEGIN(readability-redundant-inline-specifier)
+
+        inline void __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
+            _In_reads_bytes_(size) const unsigned char* const buffer,
+            _In_ const unsigned long                          size
+        ) noexcept {
+            if (!buffer) return;
+
+            const unsigned short reserved { ::ntohs(*reinterpret_cast<const unsigned short*>(buffer)) }; // must be 0
+            if (reserved) {
+                ::fputws(L"Error in " __FUNCTIONW__ ", a non zero value encountered as idReserved!\n", stderr);
+                return;
+            }
+
+            const unsigned short file_type =
+                ::ntohs(*reinterpret_cast<const unsigned short*>(buffer + 2)); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (file_type != ::to_underlying(FILE_TYPE::ICON) &&
+                file_type != ::to_underlying(FILE_TYPE::CURSOR)) { // cannot be anything else
+                ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
+                return;
+            }
+
+            // we're 6 bytes past the beginning of the buffer now
+            const unsigned short resource_count =
+                ::ntohs(*reinterpret_cast<const unsigned short*>(buffer + 4)); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+            // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
+            if (resource_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) { }
+
+            // process the first ICONDIRENTRY in the buffer
+        }
 
         // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a ICONDIRENTRY
         constexpr inline ICONDIRENTRY __parse_icondir_entry( // NOLINT(readability-convert-member-functions-to-static)
@@ -99,33 +145,7 @@ class ico final { // represents an .ico or .cur file object
             return temp;
         }
 
-        inline ICONDIR __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
-            _In_reads_bytes_(size) const unsigned char* const buffer,
-            _In_ const unsigned long                          size
-        ) noexcept {
-            if (!buffer) return {};
-
-            const unsigned short reserved { *reinterpret_cast<const unsigned short*>(buffer) }; // must be 0
-            if (reserved) {
-                fputws(L"Error in " __FUNCTIONW__ ", a non zero value encountered as idReserved!\n", stderr);
-                return {};
-            }
-
-            const unsigned short file_type =
-                *reinterpret_cast<const unsigned short*>(buffer + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            if (file_type != ::to_underlying(FILE_TYPE::ICON) &&
-                file_type != ::to_underlying(FILE_TYPE::CURSOR)) { // cannot be anything else
-                fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
-                return {};
-            }
-
-            // we're 6 bytes past the beginning of the buffer now
-            const unsigned short resource_count =
-                *reinterpret_cast<const unsigned short*>(buffer + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
-            // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
-            if (resource_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) { }
-
-            // process the first ICONDIRENTRY in the buffer
-        }
+        // NOLINTEND(readability-redundant-inline-specifier)
 };
+
+static_assert(std::is_standard_layout<icon_directory>::value, "");
