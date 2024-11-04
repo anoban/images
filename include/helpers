@@ -20,8 +20,10 @@
 #endif
 
 template<
-    typename _TyFrom, // only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary
-    typename _TyTo =  // the underlying type // std::is_scoped_enum requires C++23
+    typename _TyFrom, // only for scoped enum types, plain C style enums support
+                      // implicit type conversions so this isn't necessary
+    typename _TyTo =  // the underlying type // std::is_scoped_enum requires
+                      // C++23
     typename std::enable_if<std::is_enum<_TyFrom>::value, typename std::underlying_type<_TyFrom>::type>::type>
 static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noexcept {
     return static_cast<_TyTo>(enumeration);
@@ -67,17 +69,17 @@ inline namespace cyclic_redundancy_check {
     // for implementation details, refer
     // https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
 
-    // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE
-    // 802.3), v.42, fddi, gzip, zip, png, ...
-    static constexpr unsigned IEEE { 0xEDB88320 };
-
-    // Castagnoli's polynomial, used in iSCSI, has better error detection
-    // characteristics than IEEE. https://dx.doi.org/10.1109/26.231911
-    static constexpr unsigned CASTAGNOLI { 0x82F63B78 };
-
-    // Koopman's polynomial, also has better error detection characteristics than
-    // IEEE. https://dx.doi.org/10.1109/DSN.2002.1028931
-    static constexpr unsigned KOOPMAN { 0xEB31D82E };
+    enum POLYNOMIALS : unsigned {
+        // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE
+        // 802.3), v.42, fddi, gzip, zip, png, ...
+        IEEE       = 0xEDB88320,
+        // Castagnoli's polynomial, used in iSCSI, has better error detection
+        // characteristics than IEEE https://dx.doi.org/10.1109/26.231911
+        CASTAGNOLI = 0x82F63B78,
+        // Koopman's polynomial, also has better error detection characteristics than
+        // IEEE https://dx.doi.org/10.1109/DSN.2002.1028931
+        KOOPMAN    = 0xEB31D82E
+    };
 
     // computed and stored using the IEEE variant of the polynomial
     static constexpr std::array<unsigned, 256> CRC32_LOOKUPTABLE {
@@ -109,7 +111,7 @@ inline namespace cyclic_redundancy_check {
          1567103746, 711928724,  3020668471, 3272380065, 1510334235, 755167117 }
     };
 
-    static constexpr inline void __stdcall __populate_crc32_lookuptable() noexcept {
+    static constexpr inline void __stdcall __populate_crc32_lookup_table() noexcept {
         unsigned byte {};
         unsigned crc {};
         for (unsigned i = 0; i < 256; ++i) {
@@ -118,7 +120,7 @@ inline namespace cyclic_redundancy_check {
             for (size_t j = 0; j < 8; ++j) {
                 unsigned b   = (byte ^ crc) & 1;
                 crc        >>= 1;
-                if (b) crc = crc ^ IEEE; // uses the IEEE polynomial
+                if (b) crc = crc ^ POLYNOMIALS::IEEE; // uses the IEEE polynomial
                 byte >>= 1;
             }
 #if 0
@@ -128,14 +130,18 @@ inline namespace cyclic_redundancy_check {
     }
 
     // when using runtime population of the lookup table, __get_crc32 will also need
-    // to be modified to check whether CRC32_LOOKUPTABLE has been initialized, use a global boolean to register the initialization state
+    // to be modified to check whether CRC32_LOOKUPTABLE has been initialized, use a
+    // global boolean to register the initialization state
 
-    static constexpr inline unsigned __stdcall __get_crc32( // works great, tested :) produces same results as Python's binascii.crc32() :)
+    static constexpr inline unsigned __stdcall __get_crc32( // works great, tested
+                                                            // :) produces same
+                                                            // results as Python's
+                                                            // binascii.crc32() :)
         _In_count_(length) const unsigned char* const bytestream,
         _In_ const size_t                             length
     ) noexcept {
         unsigned crc { 0xFFFFFFFF };
-        for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE[(bytestream[i] ^ crc) & 0xFF];
+        for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE.at((bytestream[i] ^ crc) & 0xFF);
         return ~crc;
     }
 
