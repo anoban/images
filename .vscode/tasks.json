@@ -5,8 +5,6 @@
             "label": "C/C++: cl.exe build active file",
             "command": "cl.exe",
             "args": [
-                "./tests/main.cpp", // contains the main() function
-                "./googletest/src/gtest-all.cc", // convenience source file that bundles all the necessary gtest sources
                 "/arch:AVX512",
                 "/diagnostics:caret",
                 "/DDEBUG",
@@ -21,8 +19,6 @@
                 "/GL",
                 "/Gw",
                 "/I./include/",
-                "/I./googletest/",
-                "/I./googletest/include/",
                 "/jumptablerdata",
                 "/MP",
                 "/MTd", // statically link the multithreaded debug version of Windows libs

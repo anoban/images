@@ -20,17 +20,14 @@
 #endif
 
 template<
-    typename _TyFrom /* only for scoped enum types, plain C style enums support
-                        implicit type conversions so this isn't necessary */
-    ,
-    typename _TyTo /* the underlying type */ = // std::is_scoped_enum requires
-                                               // C++23
+    typename _TyFrom, // only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary
+    typename _TyTo =  // the underlying type // std::is_scoped_enum requires C++23
     typename std::enable_if<std::is_enum<_TyFrom>::value, typename std::underlying_type<_TyFrom>::type>::type>
 static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noexcept {
     return static_cast<_TyTo>(enumeration);
 }
 
-namespace rgb_transformers {
+inline namespace rgb_transformers {
 
     // each colour value in the pixel is updated to their arithmetic average
     static inline constexpr void average(_Inout_ RGBQUAD& pixel) noexcept {
@@ -65,7 +62,7 @@ namespace rgb_transformers {
 
 } // namespace rgb_transformers
 
-namespace cyclic_redundancy_check {
+inline namespace cyclic_redundancy_check {
 
     // for implementation details, refer
     // https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
@@ -131,13 +128,9 @@ namespace cyclic_redundancy_check {
     }
 
     // when using runtime population of the lookup table, __get_crc32 will also need
-    // to be modofied to check whether CRC32_LOOKUPTABLE has been initialized use a
-    // global boolean to register the initialization state
+    // to be modified to check whether CRC32_LOOKUPTABLE has been initialized, use a global boolean to register the initialization state
 
-    static constexpr inline unsigned __stdcall __get_crc32( // works great, tested
-                                                            // :) produces same
-                                                            // results as Python's
-                                                            // binascii.crc32() :)
+    static constexpr inline unsigned __stdcall __get_crc32( // works great, tested :) produces same results as Python's binascii.crc32() :)
         _In_count_(length) const unsigned char* const bytestream,
         _In_ const size_t                             length
     ) noexcept {
