@@ -58,12 +58,12 @@ static_assert(std::is_standard_layout<ICONDIRENTRY>::value, "");
 //  } GRPICONDIR;
 
 struct ICONDIR final {
-        unsigned short __;        // reserved field, must always be 0
+        unsigned short reserved;  // reserved field, must always be 0
         FILE_TYPE      type;      // specifies the type of the resources contained, values other than 1 and 2 are invalid
                                   // a given ICONDIR can store one or more of either icon or cursor type images
                                   // heterogeneous types aren't allowed inside an ICONDIR
         unsigned short count;     // number of resources (images) stored in the given .ico file
-        ICONDIRENTRY*  resources; //
+        ICONDIRENTRY*  resources; // marks the beginning of the first ICONDIRENTRY struct in the ICONDIR
 };
 
 static_assert(sizeof(ICONDIR) == 16, "");
@@ -77,70 +77,109 @@ class icon_directory final { // represents an .ico or .cur file object
 #endif
         // clang-format on
 
-        unsigned char*                                                buffer; // the raw byte buffer
-        FILE_TYPE                                                     type;
-        unsigned short                                                entry_count;
+        unsigned char* buffer;      // the raw byte buffer
+        unsigned long  file_size;   // file size
+        unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+        unsigned short reserved;
+        FILE_TYPE      type;
+        unsigned short entry_count;
         std::array<unsigned, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE>     entry_offsets; // offsets of each entry in the file buffer
         std::array<ICONDIRENTRY, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE> entries;       // entries stored in the file
 
         // NOLINTBEGIN(readability-redundant-inline-specifier)
 
-        inline void __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
-            _In_reads_bytes_(size) const unsigned char* const buffer,
+        inline bool __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
+            _In_reads_bytes_(size) const unsigned char* const imstream,
             _In_ const unsigned long                          size
         ) noexcept {
-            if (!buffer) return;
+            UNREFERENCED_PARAMETER(size);
 
-            const unsigned short reserved { *reinterpret_cast<const unsigned short*>(buffer) }; // must be 0
-            if (reserved) {
+            if (!imstream) {
+                ::fputws(L"Error in " __FUNCTIONW__ ", the received buffer is empty!\n", stderr);
+                return false;
+            }
+
+            reserved = *reinterpret_cast<const unsigned short*>(imstream);
+            if (reserved) { // must be 0
                 ::fputws(L"Error in " __FUNCTIONW__ ", a non zero value encountered as idReserved!\n", stderr);
-                return;
+                return false;
             }
 
-            const unsigned short file_type =
-                *reinterpret_cast<const unsigned short*>(buffer + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            if (file_type != ::to_underlying(FILE_TYPE::ICON) &&
-                file_type != ::to_underlying(FILE_TYPE::CURSOR)) { // cannot be anything else
+            type = static_cast<FILE_TYPE>(
+                *reinterpret_cast<const unsigned short*>(imstream + 2) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            );
+            if (type != FILE_TYPE::ICON && type != FILE_TYPE::CURSOR) { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
-                return;
+                return false;
             }
 
-            // we're 6 bytes past the beginning of the buffer now
-            const unsigned short resource_count =
-                *reinterpret_cast<const unsigned short*>(buffer + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
+            // we're 4 bytes past the beginning of the buffer now
+            entry_count = *reinterpret_cast<const unsigned short*>(imstream + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
-            if (resource_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) { }
+            if (entry_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) {
+                ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
+                return false;
+            }
 
-            // process the first ICONDIRENTRY in the buffer
+            return true;
         }
 
         // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a ICONDIRENTRY
         constexpr inline ICONDIRENTRY __parse_icondir_entry( // NOLINT(readability-convert-member-functions-to-static)
-            _In_count_(size) const unsigned char* const buffer,
+            _In_count_(size) const unsigned char* const imstream,
             _In_ const unsigned long                    size
         ) noexcept {
-            if (!buffer) return {};
+            UNREFERENCED_PARAMETER(size);
+
+            if (!imstream) return {};
             ICONDIRENTRY temp {};
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            temp.width       = *buffer;
-            temp.height      = *(buffer + 1);
-            temp.color_count = *(buffer + 2);
-            temp.__          = *(buffer + 3);
+            temp.width       = *imstream;
+            temp.height      = *(imstream + 1);
+            temp.color_count = *(imstream + 2);
+            temp.__          = *(imstream + 3);
 
             assert(!temp.__); // must always be 0
 
-            temp.planes    = *reinterpret_cast<const unsigned short*>(buffer + 4);
-            temp.bit_count = *reinterpret_cast<const unsigned short*>(buffer + 6);
-            temp.size      = *reinterpret_cast<const unsigned long*>(buffer + 8);
-            temp.offset    = *reinterpret_cast<const unsigned long*>(buffer + 12);
+            temp.planes    = *reinterpret_cast<const unsigned short*>(imstream + 4);
+            temp.bit_count = *reinterpret_cast<const unsigned short*>(imstream + 6);
+            temp.size      = *reinterpret_cast<const unsigned long*>(imstream + 8);
+            temp.offset    = *reinterpret_cast<const unsigned long*>(imstream + 12);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
             return temp;
         }
 
+    public:
+        inline icon_directory() noexcept = default;
+
+        inline explicit icon_directory(_In_ const wchar_t* const filename) noexcept :
+            buffer { internal::open(filename, file_size) }, buffer_size { file_size } {
+            if (!buffer) {
+                ::fputws(L"Error inside " __FUNCTIONW__ ", parsing failed, object is default initialized as a fallback\n", stderr);
+                return;
+            }
+
+            if (!__parse_icon_directory(buffer, file_size)) { // will initialize reserved, type and entry count
+                ::fputws(L"Error inside " __FUNCTIONW__ ", parsing failed, object is default initialized as a fallback\n", stderr);
+                ::memset(this, 0U, sizeof(icon_directory)); // NOLINT(bugprone-undefined-memory-manipulation)
+                return;
+            }
+
+            for (unsigned i = 0; i < entry_count; ++i) { // try and parse all the ICONDIRENTRYs in the file
+                //
+            }
+        }
+
+        inline ~icon_directory() noexcept {
+            delete[] buffer;
+            ::memset(this, 0U, sizeof(icon_directory)); // NOLINT(bugprone-undefined-memory-manipulation)
+        }
+
+        inline bool to_file() const noexcept { }
         // NOLINTEND(readability-redundant-inline-specifier)
 };
 
 static_assert(std::is_standard_layout<icon_directory>::value, "");
+static_assert(sizeof(icon_directory) == 104, "");

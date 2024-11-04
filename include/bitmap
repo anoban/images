@@ -94,8 +94,6 @@ class bitmap final {
         unsigned long    file_size;   // file size
         unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
 
-        friend class canvas;
-
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)
         // 2) now that the buffer only holds pixels, we'll need to serialize the metadata structs separately when serializing the image
@@ -200,7 +198,7 @@ class bitmap final {
         using const_reference    = const value_type&;
         using iterator           = value_type*;
         using const_iterator     = const value_type*;
-        using size_type          = unsigned long long;
+        using size_type          = long long; // because BMP files use signed long as the type for sizes
         using difference_type    = long long;
 
         inline bitmap() noexcept = default; // that's good enough
@@ -208,9 +206,8 @@ class bitmap final {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         inline explicit bitmap(_In_ const wchar_t* const filename) noexcept : // construct a bitmap from a file on disk
             buffer { internal::open(filename, file_size) },                   // a little unorthodox but okay lol
-            pixels {
-                reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
-            }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { __parse_file_header(buffer, file_size) },
             info_header { __parse_info_header(buffer, file_size) },
             // file_size {}, we want to preserve size's previous state materialized by internal::open()
@@ -224,49 +221,50 @@ class bitmap final {
         // construct a bitmap from a stream of bytes
         inline bitmap(
             _In_reads_bytes_(_size)
-                const unsigned char* const _buffer, // this buffer is expected to contain the metadata preceding bitmap pixel buffer too
-            _In_ const unsigned long       _size
+                const unsigned char* const imstream, // this buffer is expected to contain the metadata preceding bitmap pixel buffer too
+            _In_ const unsigned long       size
         ) noexcept :
-            buffer { new (std::nothrow) unsigned char[_size] }, // cannot take ownership of the incoming buffer, so let's copy it
-            pixels {
-                reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
-            }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            buffer { new (std::nothrow) unsigned char[size] }, // cannot take ownership of the incoming buffer, so let's copy it
+                                                               // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             // if _buffer is nullptr, the __parse_xxx family of helpers will default initialize the cognate header structs
-            file_header { __parse_file_header(_buffer, _size) },
-            info_header { __parse_info_header(_buffer, _size) },
-            file_size { _size },
-            buffer_size { _size } {
+            file_header { __parse_file_header(imstream, size) },
+            info_header { __parse_info_header(imstream, size) },
+            file_size { size },
+            buffer_size { size } {
             if (!buffer) {                          // has the allocation failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
 
-            ::memcpy_s(buffer, file_size, _buffer, _size);
+            ::memcpy_s(buffer, file_size, imstream, size);
         }
 
     private:
         // an aggregate initializer style private constructor
         inline bitmap(
-            _In_ unsigned char* const buff, _In_ const BITMAPFILEHEADER& file, _In_ const BITMAPINFOHEADER& info, _In_ const unsigned size
+            _In_ unsigned char* const    imstream,
+            _In_ const BITMAPFILEHEADER& file,
+            _In_ const BITMAPINFOHEADER& info,
+            _In_ const unsigned          size
         ) noexcept :
-            buffer { buff },
-            pixels { reinterpret_cast<RGBQUAD*>(buff) },
+            buffer { imstream },
+            pixels { reinterpret_cast<RGBQUAD*>(imstream) },
             file_header { file },
             info_header { info },
             file_size { size },
             buffer_size { size } { }
-
-        inline bitmap(_In_ const unsigned long height, _In_ const unsigned long width) noexcept : { }
 
     public:
         // copy constructor
         inline bitmap(_In_ const bitmap& other) noexcept :
             buffer { new (std::nothrow
             ) unsigned char[other.file_size] }, // don't copy the trailing unused bytes from the bitmap, if present
-            pixels {
-                reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
-            }, // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+
+            pixels { // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                     reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
+            },
             file_header { other.file_header },
             info_header { other.info_header },
             file_size { other.file_size },
@@ -299,9 +297,9 @@ class bitmap final {
                 file_size = other.file_size;               // keep the existing buffer_size as we are reusing the existing buffer
 
             ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
-            pixels = reinterpret_cast<RGBQUAD*>(
+            pixels      = reinterpret_cast<RGBQUAD*>( // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)
-            ); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+            );
             file_header = other.file_header;
             info_header = other.info_header;
 
@@ -341,7 +339,7 @@ class bitmap final {
             ::memset(this, 0, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
-        inline void __cdecl info() const noexcept {
+        friend inline std::wostream& operator<<(_Inout_ std::wostream& ostr, _In_ const bitmap& image) noexcept {
             ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
                 L"|---------------------------------------------------------------------------|\n"
                 L"%15s bitmap image (%3.4Lf MiBs)\n"
@@ -367,10 +365,6 @@ class bitmap final {
                     default                                           : break;
                 }
             }
-        }
-
-        friend inline std::wostream& operator<<(_Inout_ std::wostream& ostr, _In_ const bitmap& image) noexcept {
-            //
             return ostr;
         }
 
@@ -390,120 +384,18 @@ class bitmap final {
 
         inline reference operator[](_In_ const size_type offset) noexcept {
             assert(offset < info_header.biHeight * info_header.biWidth);
-            return pixels[offset];
+            return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
         inline const_reference operator[](_In_ const size_type offset) const noexcept {
             assert(offset < info_header.biHeight * info_header.biWidth);
-            return pixels[offset];
+            return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
+
+        inline std::pair<size_type, size_type> dim() const noexcept { return { info_header.biHeight, info_header.biWidth }; }
 
         // NOLINTEND(readability-redundant-inline-specifier)
 };
 
-class canvas final {
-    private:
-        bitmap image;
-
-    public:
-        inline canvas() noexcept = default;
-
-        inline canvas(_In_ const unsigned long height, _In_ const unsigned long width) noexcept : image(height, width) { }
-
-        inline explicit canvas(_In_ const bitmap& _image) noexcept : image { _image } { }
-
-        inline explicit canvas(_In_ bitmap&& _image) noexcept : image { std::move(_image) } { }
-
-        inline void to_blacknwhite(_In_ const BW_TRANSFORMATION& mapper) noexcept {
-            switch (mapper) {
-                case BW_TRANSFORMATION::AVERAGE : std::for_each(image.begin(), image.end(), rgb_transformers::average); break;
-                case BW_TRANSFORMATION::WEIGHTED_AVERAGE :
-                    std::for_each(image.begin(), image.end(), rgb_transformers::weighted_average);
-                    break;
-                case BW_TRANSFORMATION::LUMINOSITY : std::for_each(image.begin(), image.end(), rgb_transformers::luminosity); break;
-                case BW_TRANSFORMATION::BINARY     : std::for_each(image.begin(), image.end(), rgb_transformers::binary); break;
-            }
-        }
-
-        inline void to_negative() noexcept { std::for_each(image.begin(), image.end(), rgb_transformers::negative); }
-
-        template<RGB_TAG _TyColComb> inline void to_decoloured() noexcept {
-            std::for_each(image.begin(), image.end(), colour_removers::remove<_TyColComb> {});
-        }
-
-        // TODO: Implementation works fine only when width and height are divisible by 256 without remainders. SORT THIS OUT!
-        static inline bitmap make_gradient(_In_ const unsigned long height, _In_ const unsigned long width) noexcept {
-            if ((height % 256) || (width % 256)) {
-                ::fwprintf_s(
-                    stderr,
-                    L"Error inside " __FUNCTIONW__ ", image dimensions need to be multiples of 256! Received (%5zu,%5zu)\n",
-                    height,
-                    width
-                );
-                return {};
-            }
-
-            const unsigned long fsize {
-                static_cast<unsigned long>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width)
-            };
-            unsigned char* const buffer = new (std::nothrow) unsigned char[fsize];
-
-            if (!buffer) {
-                ::fputws(L"Error inside " __FUNCTIONW__ ", memory allocation failed\n", stderr);
-                return {};
-            }
-
-            // preparation of the metadata structs
-            const BITMAPFILEHEADER file { SOI, fsize, sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), 0, 0 };
-
-            const BITMAPINFOHEADER info { 40,
-                                          static_cast<long>(width),
-                                          static_cast<long>(height),
-                                          1,
-                                          sizeof(RGBQUAD) * 8,
-                                          ::to_underlying(COMPRESSION_KIND::RGB),
-                                          0,
-                                          0,
-                                          0,
-                                          0,
-                                          0 };
-
-            RGBQUAD* const pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD)) };
-
-            // jump through the pixel matrix, using a window frame
-            // within the rows of a window frame, gradually increment the RED value
-            // along columns of a window, gradually increment the GREEN value.
-            // increment the BLUE pixel across subsequent frames.
-
-            // the deal here is that we must keep at least one RGB component constant within these stride windows. (our pick is BLUE)
-            const size_t  hstride = width / 256, vstride = height / 256; // NOLINT(readability-isolate-declaration)
-            unsigned char red = 0xFF, green = 0xFF, blue = 0x00;         // NOLINT(readability-isolate-declaration)
-
-            // for moving across pixel rows, by a select stride, captures row frames, stride by stride.
-            for (size_t v = 0; v < height; /* for all pixels in a column */ v += vstride) {
-                // for each pixel row within that vertical stride window (a row frame with vstride rows in it, one below another)
-                for (size_t j = v; j < vstride; ++j) {
-                    // for moving across pixel columns, partitions rows horizontally into pixel frames with hstride columns in each of them
-                    for (size_t h = 0; h < width /* for all pixels in a row */; h += hstride) { // NOLINT(readability-identifier-length)
-                        red++;
-                        // for each pixel within the captured pixel frame with hstride columns and vstride rows
-                        for (size_t i = h; i < hstride; ++i) {
-                            pixels[(j * width) + i].rgbBlue     = blue;
-                            pixels[(j * width) + i].rgbGreen    = green;
-                            pixels[(j * width) + i].rgbRed      = red;
-                            pixels[(j * width) + i].rgbReserved = 0xFF;
-                        }
-                    }
-                    green--;
-                }
-                blue++;
-            }
-            return { buffer, file, info, fsize }; // uses the private constructor
-        }
-
-        static inline bitmap make_mandelbrot_set(_In_ const unsigned long height, _In_ const unsigned long width) noexcept { }
-
-        static inline bitmap make_julia_set(_In_ const unsigned long height, _In_ const unsigned long width) noexcept { }
-};
-
 static_assert(std::is_standard_layout<bitmap>::value, "");
+static_assert(sizeof(bitmap) == 80, "");
