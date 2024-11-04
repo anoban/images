@@ -87,6 +87,8 @@ class bitmap final {
 #endif
         // clang-format on
 
+        friend class icon_directory;
+
         unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER file_header;
