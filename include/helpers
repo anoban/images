@@ -1,3 +1,4 @@
+#pragma once
 #include <array>
 #include <type_traits>
 
@@ -20,11 +21,11 @@
 #endif
 
 template<
-    typename _TyFrom, // only for scoped enum types, plain C style enums support
-                      // implicit type conversions so this isn't necessary
-    typename _TyTo =  // the underlying type // std::is_scoped_enum requires
-                      // C++23
-    typename std::enable_if<std::is_enum<_TyFrom>::value, typename std::underlying_type<_TyFrom>::type>::type>
+    typename _TyFrom, /* only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary */
+    typename _TyTo =  /* the underlying type */
+    typename std::enable_if<
+        std::is_enum<_TyFrom>::value, /* std::is_scoped_enum type trait requires C++23 */
+        typename std::underlying_type<_TyFrom>::type>::type>
 static inline constexpr _TyTo to_underlying(_In_ const _TyFrom& enumeration) noexcept {
     return static_cast<_TyTo>(enumeration);
 }
