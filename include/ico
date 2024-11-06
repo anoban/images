@@ -2,9 +2,10 @@
 #include <bitmap>
 #include <helpers>
 #include <imageio>
+#include <vector>
 
 // most .ico files will have only one bitmap in them, so 4 is generous enough
-static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
+static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 5 };
 
 // an ICO file can be imagined as a meta-info struct, called ICONDIR, for ICON DIRectory followed by a bitmap or an array of bitmaps
 // (an .ico file can contain one or more images, hence the name icon directory), these bitmap images are stored contiguously, following the ICONDIR structure.
@@ -17,7 +18,7 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 4 };
 // in summary, the binary representation of an .ico file looks like
 // ICONDIR = { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
 
-enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR }; // NOLINT(performance-enum-size) deliberate decision
+enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
 enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) deliberate decision, needs to be a signed integer
 
@@ -70,7 +71,7 @@ struct ICONDIR final {
 static_assert(sizeof(ICONDIR) == 16, "");
 static_assert(std::is_standard_layout<ICONDIR>::value, "");
 
-class icon_directory final { // represents an .ico or .cur file object
+class icon_directory final { // represents an .ico file
 
         // clang-format off
 #ifdef __TEST__
@@ -84,11 +85,12 @@ class icon_directory final { // represents an .ico or .cur file object
         unsigned short reserved;
         FILE_TYPE      type;
         unsigned short entry_count;
-        std::array<unsigned, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE>     entry_offsets; // offsets of each entry in the file buffer
-        std::array<ICONDIRENTRY, MAX_ALLOWED_ICONDIRENTRIES_PER_FILE> entries;       // entries stored in the file
+        std::vector<unsigned>     entry_offsets; // offsets of each entry in the file buffer
+        std::vector<ICONDIRENTRY> entries;       // entries stored in the file
 
         // NOLINTBEGIN(readability-redundant-inline-specifier)
 
+        // will initialize reserved, type and entry_count members of the class
         inline bool __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
             _In_reads_bytes_(size) const unsigned char* const imstream,
             _In_ const unsigned long                          size
@@ -117,10 +119,10 @@ class icon_directory final { // represents an .ico or .cur file object
             // we're 4 bytes past the beginning of the buffer now
             entry_count = *reinterpret_cast<const unsigned short*>(imstream + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
-            if (entry_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) {
-                ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
-                return false;
-            }
+            // if (entry_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) {
+            //     ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
+            //     return false;
+            // }
 
             return true;
         }
@@ -163,20 +165,25 @@ class icon_directory final { // represents an .ico or .cur file object
         using size_type                  = unsigned long long;
         using difference_type            = long long;
 
-        inline icon_directory() noexcept = default;
+        inline icon_directory() noexcept = default; // will be good enough
 
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
         inline explicit icon_directory(_In_ const wchar_t* const filename) noexcept :
             buffer { internal::open(filename, file_size) }, buffer_size { file_size } {
             if (!buffer) {
-                ::fputws(L"Error inside " __FUNCTIONW__ ", parsing failed, object is default initialized as a fallback\n", stderr);
+                file_size = 0;
+                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
 
-            if (!__parse_icon_directory(buffer, file_size)) { // will initialize reserved, type and entry count
+            if (!__parse_icon_directory(buffer, file_size)) {
                 ::fputws(L"Error inside " __FUNCTIONW__ ", parsing failed, object is default initialized as a fallback\n", stderr);
                 ::memset(this, 0U, sizeof(icon_directory)); // NOLINT(bugprone-undefined-memory-manipulation)
                 return;
             }
+
+            entry_offsets.resize(entry_count);
+            entries.resize(entry_count);
 
             for (unsigned i = 0; i < entry_count; ++i) { // try and parse all the ICONDIRENTRYs in the file
                 //
@@ -207,4 +214,3 @@ class icon_directory final { // represents an .ico or .cur file object
 };
 
 static_assert(std::is_standard_layout<icon_directory>::value, "");
-static_assert(sizeof(icon_directory) == 104, "");
