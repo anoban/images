@@ -73,18 +73,18 @@ namespace critical { // there are 4 critical chunks each PNG file is expected to
     static constexpr std::array<char, 4> IEND { 'I', 'E', 'N', 'D' }; // image trailer, the last chunk in a PNG data stream
 } // namespace critical
 
-template<unsigned long long size> static constexpr typename std::enable_if<size == 4, bool>::type
-operator==(                        // this overloaded operator== is only intended to compare PNG chunk names!
-    _In_ const char (&left)[size], // NOLINT(modernize-avoid-c-arrays)
-    _In_ const std::array<char, size>& right
+template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type
+operator==(                          // this overloaded operator== is only intended to compare PNG chunk names!
+    _In_ const char (&left)[length], // NOLINT(modernize-avoid-c-arrays)
+    _In_ const std::array<char, length>& right
 ) noexcept {
     return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
 }
 
-template<unsigned long long size> static constexpr typename std::enable_if<size == 4, bool>::type
+template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type
 operator==( // this overloaded operator== is only intended to compare PNG chunk names!
-    _In_ const std::array<char, size>& left,
-    _In_ const char (&right)[size] // NOLINT(modernize-avoid-c-arrays)
+    _In_ const std::array<char, length>& left,
+    _In_ const char (&right)[length] // NOLINT(modernize-avoid-c-arrays)
 ) noexcept {
     return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
 }
@@ -97,6 +97,8 @@ enum class PIXEL_KIND : unsigned char { GREYSCALE = 0, RGBTRIPLE = 2, COLOURPALE
 
 enum class INTERLACING_KIND : unsigned char { NONE /* the image is not interlaced */, ADAM /* image uses Adam 7 interlacing */ };
 
+enum class CHUNK_KIND : unsigned char { IHDR, PLTE, IDAT, IEND, bKGD /* background */, cHRM, gAMA };
+
 struct IHDR final {                 // layout of the IHDR chunk data, i.e the data buffer of an IHDR chunk should be in the following format
         unsigned         width;     // width in pixels
         unsigned         height;    // height in pixels
@@ -107,7 +109,31 @@ struct IHDR final {                 // layout of the IHDR chunk data, i.e the da
         INTERLACING_KIND interlacing;
 };
 
+struct cHRM final { // layout of the cHRM chunk data
+        unsigned white_x;
+        unsigned white_y;
+        unsigned red_x;
+        unsigned red_y;
+        unsigned green_x;
+        unsigned green_y;
+        unsigned blue_x;
+        unsigned blue_y;
+};
+
+struct gAMA final { // layout of the gAMA chunk data
+        unsigned gamma;
+};
+
+// the PLTE chunks (colour palettes) in PNG images use the RGBTRIPLE pixel format, also known as "palette entries"
+struct RGB final { // unlike bitmaps (B, G & R), the colour values are ordered in the same sequence implied by the name - R, G & B
+        unsigned char red;
+        unsigned char green;
+        unsigned char blue;
+};
+
 class png final {
+    private:
+
     public:
         png() noexcept = default;
 };

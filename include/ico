@@ -34,7 +34,7 @@ enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) ne
 //     DWORD dwImageOffset;
 // }
 
-class ICONDIRENTRY final {
+struct ICONDIRENTRY final {
         unsigned char  width;       // width of the associated bitmap in pixels (must be in the range of 0 to 256)
         unsigned char  height;      // height of the associated bitmap in pixels (must be in the range of 0 to 256)
         unsigned char  color_count; // number of colours in the colur palette, must be 0 if the bitmap doesn't use a colour palette.
@@ -59,7 +59,7 @@ static_assert(std::is_standard_layout<ICONDIRENTRY>::value, "");
 //      GRPICONDIRENTRY idEntries[];
 //  } GRPICONDIR;
 
-class ICONDIR final {
+struct ICONDIR final {
         unsigned short reserved;  // reserved field, must always be 0
         FILE_TYPE      type;      // specifies the type of the resources contained, values other than 1 and 2 are invalid
                                   // a given ICONDIR can store one or more of either icon or cursor type images
@@ -187,11 +187,19 @@ class icondirectory final { // represents an .ico file
 
         icondirectory(_In_ const icondirectory& other) noexcept { }
 
-        icondirectory& operator=(_In_ const icondirectory& other) noexcept { }
+        icondirectory& operator=(_In_ const icondirectory& other) noexcept {
+            if (std::addressof(other) == this) return *this;
+
+            return *this;
+        }
 
         icondirectory(_In_ icondirectory&& other) noexcept { }
 
-        icondirectory& operator=(_In_ icondirectory&& other) noexcept { }
+        icondirectory& operator=(_In_ icondirectory&& other) noexcept {
+            if (std::addressof(other) == this) return *this;
+
+            return *this;
+        }
 
         ~icondirectory() noexcept {
             delete[] buffer;

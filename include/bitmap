@@ -39,6 +39,8 @@ static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const 
 // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
 static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
+class bottomup_scanline_iterator final { };
+
 class bitmap final { // this class is designed to represent what Windows calls as DIBs (Device Independent Bitmap)
         // clang-format off
 #ifdef __TEST__
@@ -309,34 +311,34 @@ class bitmap final { // this class is designed to represent what Windows calls a
             ::memset(this, 0, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
-        // friend  std::wostream& operator<<(_Inout_ std::wostream& ostr, _In_ const bitmap& image) noexcept {
-        //     ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-        //         L"|---------------------------------------------------------------------------|\n"
-        //         L"%15s bitmap image (%3.4Lf MiBs)\n"
-        //         L"Pixel ordering: %10s\n"
-        //         L"Width: %5lu pixels, Height: %5lu pixels\n"
-        //         L"Bit depth: %3u\n"
-        //         L"|---------------------------------------------------------------------------|\n",
-        //         info_header.biSizeImage ? L"Compressed" : L"Uncompressed",
-        //         file_header.bfSize / (1024.0L * 1024.0L),
-        //         __get_scanline_order(info_header) == SCANLINE_ORDERING::BOTTOMUP ? L"bottom-up" : L"top-down",
-        //         info_header.biWidth,
-        //         info_header.biHeight,
-        //         info_header.biBitCount
-        //     );
-        //
-        //     if (info_header.biSizeImage) { // don't bother if the image isn't compressed
-        //         switch (info_header.biCompression) {
-        //             case ::to_underlying(COMPRESSION_KIND::RGB)       : ::_putws(L"RGB"); break;
-        //             case ::to_underlying(COMPRESSION_KIND::RLE8)      : ::_putws(L"RLE8"); break;
-        //             case ::to_underlying(COMPRESSION_KIND::RLE4)      : ::_putws(L"RLE4"); break;
-        //             case ::to_underlying(COMPRESSION_KIND::BITFIELDS) : ::_putws(L"BITFIELDS"); break;
-        //             case ::to_underlying(COMPRESSION_KIND::UNKNOWN)   : ::_putws(L"UNKNOWN"); break;
-        //             default                                           : break;
-        //         }
-        //     }
-        //     return ostr;
-        // }
+        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const bitmap& image) noexcept {
+            //     ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
+            //         L"|---------------------------------------------------------------------------|\n"
+            //         L"%15s bitmap image (%3.4Lf MiBs)\n"
+            //         L"Pixel ordering: %10s\n"
+            //         L"Width: %5lu pixels, Height: %5lu pixels\n"
+            //         L"Bit depth: %3u\n"
+            //         L"|---------------------------------------------------------------------------|\n",
+            //         info_header.biSizeImage ? L"Compressed" : L"Uncompressed",
+            //         file_header.bfSize / (1024.0L * 1024.0L),
+            //         __get_scanline_order(info_header) == SCANLINE_ORDERING::BOTTOMUP ? L"bottom-up" : L"top-down",
+            //         info_header.biWidth,
+            //         info_header.biHeight,
+            //         info_header.biBitCount
+            //     );
+            //
+            //     if (info_header.biSizeImage) { // don't bother if the image isn't compressed
+            //         switch (info_header.biCompression) {
+            //             case ::to_underlying(COMPRESSION_KIND::RGB)       : ::_putws(L"RGB"); break;
+            //             case ::to_underlying(COMPRESSION_KIND::RLE8)      : ::_putws(L"RLE8"); break;
+            //             case ::to_underlying(COMPRESSION_KIND::RLE4)      : ::_putws(L"RLE4"); break;
+            //             case ::to_underlying(COMPRESSION_KIND::BITFIELDS) : ::_putws(L"BITFIELDS"); break;
+            //             case ::to_underlying(COMPRESSION_KIND::UNKNOWN)   : ::_putws(L"UNKNOWN"); break;
+            //             default                                           : break;
+            //         }
+            //     }
+            return wostr;
+        }
 
         bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
 

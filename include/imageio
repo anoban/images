@@ -1,5 +1,4 @@
 #pragma once
-
 #define _AMD64_ // architecture
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_MEAN
@@ -16,13 +15,13 @@
 
 namespace internal {
 
-    // a generic file reading routine, that reads in an existing binary file and returns the buffer. (nullptr in case of a failure)
-    // returned memory needs to be freed (`delete[]` ed)
+    // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
+    // returned memory needs to be freed (`delete[]` ed) by the caller
     static inline unsigned char* __cdecl open( // NOLINT(readability-redundant-inline-specifier)
         _In_ const wchar_t* const filename,
         _Inout_ unsigned long&    size
     ) noexcept {
-        assert(filename);
+        assert(filename); // ????
 
         unsigned char* buffer {};
         LARGE_INTEGER  fsize {
@@ -79,7 +78,7 @@ INVALID_HANDLE_ERROR:
     static inline bool __cdecl serialize( // NOLINT(readability-redundant-inline-specifier)
         _In_ const wchar_t* const                         filename,
         _In_reads_bytes_(size) const unsigned char* const buffer,
-        _In_ const unsigned long&                         size
+        _In_ const unsigned long                          size
     ) noexcept {
         assert(filename);          // too much??
         if (!buffer) return false; // fail if the buffer is a nullptr
