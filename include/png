@@ -1,57 +1,74 @@
 #pragma once
 
+#include <algorithm>
 #include <helpers>
 #include <imageio>
 
-/*
-    PNG (Portable Network Graphics) is the newest image format compared to JPEG, BMP and GIF
-    PNG uses loseless compression and supports:
-        1) Usage of up to 48 bits to represent a pixel
-        2) 1, 2, 4, 8, 16 bit sample precisions
-        3) Alpha channel for full colour transparency
-        4) Complicated colour matching ??
+// PNG (Portable Network Graphics) is the newest image format compared to JPEG, BMP and GIF
+// PNG uses loseless compression and supports:
+// 1) up to 48 bits pixel depth
+// 2) 1, 2, 4, 8, 16 bit sample precisions
+// 3) alpha channel for full colour transparency
+// 4) complicated colour matching ??
 
-    PNG stores multibyte integers in MSB first order (Big Endian)
-    Bit strings are read from the least to the most significant bit ??
-    When a bit string steps over a byte boundary, bits in the second byte become the most significant ??
+// PNG stores multibyte integers in MSB first order (Big Endian)
+// bit strings are read from the least to the most significant bit ?? (related to Huffman codes), when a bit string steps over a byte boundary,
+// bits in the second byte become the most significant ?? (Huffman codes)
 
-    Huffman codes within the compressed data are stored with their bits reversed.
-    MSB of the Huffman codes will be the LSB of the data byte and vice versa.
+// huffman codes within the compressed data are stored with their bits reversed.
+// MSB of the Huffman codes will be the LSB of the data byte and vice versa.
 
-    A PNG file is composed of a string of chunks.
-    PNG chunks can be defined by three entities:
-        1) The PNG standard - most important chunks any decoder must be capable of parsing
-        2) Public - A list of chunk specs submitted by the public and accepted by the PNG standard
-        3) Private - Chunks defined by applications e.g. Adobe PhotoShop (often intended for their own use)
+// a PNG file is composed of a array of chunks.
+// PNG chunks can be defined by three entities:
+// 1) PNG standard - most important chunks all PNG decoders must be able of parse
+// 2) public - a list of chunk specs submitted by the public and accepted by the PNG standard
+// 3) private - chunks defined by applications e.g. Adobe PhotoShop (these chunks are often used internally by these applications)
 
-    A PNG chunk consists of 4 parts:
-        1) Length - Number of bytes in the data segment (BE byteorder, uint32_t)
-        2) Type - Chunk name (4 characters)
-        3) Data - a series of bytes (Length number of bytes in a sequence)
-        4) CRC - A Cyclic Redundancy Check checksum value (BE byteorder, uint32_t)
+// every PNG chunk consists of 4 parts:
+// 1) length - Number of bytes in the data segment (BE, unsigned)
+// 2) type - chunk name/identifier (a string literal of 4 characters)
+// 3) data - a series of bytes (contiguous array of length number of bytes)
+// 4) CRC - a Cyclic Redundancy Check (CRC32) checksum value (BE, unsigned)
 
-    A decoder only needs to parse standard defined PNG chunks that follow the above structure.
-    It shall ignore chunks that are not in compliance with the above specified format, private chunks and newly incorporated public chunks.
+class png_chunk final {
+        unsigned       length;
+        char           type[4]; // NOLINT(modernize-avoid-c-arrays)
+        unsigned char* data;
+        unsigned       checksum;
 
-    CHUNK NAMES
+        // a PNG chunk name consist of 4 ASCII characters
 
-    PNG chunk names consist of 4 ASCII characters
-    First, second and the fourth character in the name can be an uppercase or a lowercase ASCII character
-    Third character must be a uppercase ASCII character
-    Any chunks with non printing ASCII characters in its name must be deemed invalid.
+        static constexpr bool is_character(_In_ const char character) noexcept {
+            return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
+        }
 
-*/
+        static constexpr bool is_upper(_In_ const char character) noexcept {
+            return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
+        }
 
-struct png_chunk final {
-        unsigned length;  // size of the data segment of a given chunk, in bytes (Big Endian format)
-                          // doesn't include any other parts of the chunk
-        char     type[4]; // PNG chunk type, usually encoded as 4 consecutive ASCII characters
-        unsigned offset;
-        unsigned checksum;
+        static constexpr bool is_lower(_In_ const char character) noexcept {
+            return character >= 97 && character <= 122; /* a - 97 and z - 122 */
+        }
+
+        constexpr bool is_critical() const noexcept { return png_chunk::is_upper(type[0]); }
+
+        constexpr bool is_valid() const noexcept {
+            // any chunk with non printing ASCII characters in its name must be deemed invalid
+            // first, second and the fourth character in the name can be an uppercase or a lowercase letter
+            // third character MUST be an uppercase ASCII letter
+            return std::all_of(std::begin(type), std::end(type), is_character) && png_chunk::is_upper(type[2]);
+        }
 };
 
-// are all the characters in pcType, valid ASCII characters?.
-bool __stdcall IsValidPngChunk(_In_ const chunk_t* const restrict chunk);
+// A decoder only needs to parse standard defined PNG chunks that follow the above structure.
+//    It shall ignore chunks that are not in compliance with the above specified format, private chunks and newly incorporated public chunks.
+//
+//    CHUNK NAMES
+//
+//
+//
+//
+//
 
 /*
     If the first alphabet of a chunk type is in capital, it is a CRITICAL chunk, that all decoders must be able to parse
@@ -72,3 +89,5 @@ bool __stdcall IsValidPngChunk(_In_ const chunk_t* const restrict chunk);
     e.g.
 
 */
+
+class png final { };

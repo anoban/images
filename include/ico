@@ -35,7 +35,7 @@ enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) de
 //     DWORD dwImageOffset;
 // }
 
-struct ICONDIRENTRY final {
+class ICONDIRENTRY final {
         unsigned char  width;       // width of the associated bitmap in pixels (must be in the range of 0 to 256)
         unsigned char  height;      // height of the associated bitmap in pixels (must be in the range of 0 to 256)
         unsigned char  color_count; // number of colours in the colur palette, must be 0 if the bitmap doesn't use a colour palette.
@@ -47,6 +47,8 @@ struct ICONDIRENTRY final {
         // Windows cursors have a hotspot location, that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
         unsigned long  size;   // size of the associated bitmap in bytes
         unsigned long  offset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
+
+        friend class icon_directory;
 };
 
 static_assert(sizeof(ICONDIRENTRY) == 16, "");
@@ -59,13 +61,15 @@ static_assert(std::is_standard_layout<ICONDIRENTRY>::value, "");
 //      GRPICONDIRENTRY idEntries[];
 //  } GRPICONDIR;
 
-struct ICONDIR final {
+class ICONDIR final {
         unsigned short reserved;  // reserved field, must always be 0
         FILE_TYPE      type;      // specifies the type of the resources contained, values other than 1 and 2 are invalid
                                   // a given ICONDIR can store one or more of either icon or cursor type images
                                   // heterogeneous types aren't allowed inside an ICONDIR
         unsigned short count;     // number of resources (images) stored in the given .ico file
         ICONDIRENTRY*  resources; // marks the beginning of the first ICONDIRENTRY struct in the ICONDIR
+
+        friend class icon_directory;
 };
 
 static_assert(sizeof(ICONDIR) == 16, "");
@@ -213,5 +217,3 @@ class icon_directory final { // represents an .ico file
         inline bitmap image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
         // NOLINTEND(readability-redundant-inline-specifier)
 };
-
-static_assert(std::is_standard_layout<icon_directory>::value, "");
