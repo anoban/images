@@ -15,12 +15,11 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 <
 
 // multibyte integers in .ico files are stored LSB first (using little endian byte order), just like .bmp files
 
-// in summary, the binary representation of an .ico file looks like
-// ICONDIR = { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
+// in summary, the binary representation of an .ico file looks like { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
 
 enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
-enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) deliberate decision, needs to be a signed integer
+enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
 
@@ -47,7 +46,7 @@ class ICONDIRENTRY final {
         // Windows cursors have a hotspot location, that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
         unsigned long  size;   // size of the associated bitmap in bytes
         unsigned long  offset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
-        friend class icon_directory;
+        friend class icondirectory;
 };
 
 static_assert(sizeof(ICONDIRENTRY) == 16, "");
@@ -67,13 +66,13 @@ class ICONDIR final {
                                   // heterogeneous types aren't allowed inside an ICONDIR
         unsigned short count;     // number of resources (images) stored in the given .ico file
         ICONDIRENTRY*  resources; // marks the beginning of the first ICONDIRENTRY struct in the ICONDIR
-        friend class icon_directory;
+        friend class icondirectory;
 };
 
 static_assert(sizeof(ICONDIR) == 16, "");
 static_assert(std::is_standard_layout<ICONDIR>::value, "");
 
-class icon_directory final { // represents an .ico file
+class icondirectory final { // represents an .ico file
 
         // clang-format off
 #ifdef __TEST__
@@ -89,13 +88,8 @@ class icon_directory final { // represents an .ico file
         unsigned short entry_count;        // number of ICONDIRENTRYs in the file
         std::vector<ICONDIRENTRY> entries; // entries stored in the file
 
-        // NOLINTBEGIN(readability-redundant-inline-specifier)
-
         // will initialize reserved, type and entry_count members of the class
-        inline bool __parse_icon_directory( // NOLINT(readability-convert-member-functions-to-static)
-            _In_reads_bytes_(size) const unsigned char* const imstream,
-            _In_ const unsigned long                          size
-        ) noexcept {
+        bool parse_icondirectory(_In_reads_bytes_(size) const unsigned char* const imstream, _In_ const unsigned long size) noexcept {
             UNREFERENCED_PARAMETER(size);
 
             if (!imstream) {
@@ -129,13 +123,13 @@ class icon_directory final { // represents an .ico file
         }
 
         // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a ICONDIRENTRY
-        constexpr inline ICONDIRENTRY __parse_icondir_entry( // NOLINT(readability-convert-member-functions-to-static)
-            _In_count_(size) const unsigned char* const imstream,
-            _In_ const unsigned long                    size
+        static constexpr ICONDIRENTRY parse_icondirectory_entry(
+            _In_count_(size) const unsigned char* const imstream, _In_ const unsigned long size
         ) noexcept {
             UNREFERENCED_PARAMETER(size);
 
             if (!imstream) return {};
+            if (*(imstream + 3)) return {}; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic) must always be 0
             ICONDIRENTRY temp {};
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -144,12 +138,10 @@ class icon_directory final { // represents an .ico file
             temp.color_count = *(imstream + 2);
             temp.__          = *(imstream + 3);
 
-            assert(!temp.__); // must always be 0
-
-            temp.planes    = *reinterpret_cast<const unsigned short*>(imstream + 4);
-            temp.bit_count = *reinterpret_cast<const unsigned short*>(imstream + 6);
-            temp.size      = *reinterpret_cast<const unsigned long*>(imstream + 8);
-            temp.offset    = *reinterpret_cast<const unsigned long*>(imstream + 12);
+            temp.planes      = *reinterpret_cast<const unsigned short*>(imstream + 4);
+            temp.bit_count   = *reinterpret_cast<const unsigned short*>(imstream + 6);
+            temp.size        = *reinterpret_cast<const unsigned long*>(imstream + 8);
+            temp.offset      = *reinterpret_cast<const unsigned long*>(imstream + 12);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
             return temp;
@@ -163,13 +155,13 @@ class icon_directory final { // represents an .ico file
         // using const_reference            = const value_type&;
         // using iterator                   = value_type*;
         // using const_iterator             = const value_type*;
-        using size_type                  = unsigned long long;
-        using difference_type            = long long;
+        using size_type          = unsigned long long;
+        using difference_type    = long long;
 
-        inline icon_directory() noexcept = default; // will be good enough
+        icondirectory() noexcept = default; // will be good enough
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
-        inline explicit icon_directory(_In_ const wchar_t* const filename) noexcept :
+        explicit icondirectory(_In_ const wchar_t* const filename) noexcept :
             buffer { internal::open(filename, file_size) }, buffer_size { file_size } {
             if (!buffer) {
                 file_size = 0;
@@ -177,9 +169,9 @@ class icon_directory final { // represents an .ico file
                 return;
             }
 
-            if (!__parse_icon_directory(buffer, file_size)) {
+            if (!parse_icondirectory(buffer, file_size)) {
                 ::fputws(L"Error inside " __FUNCTIONW__ ", parsing failed, object is default initialized as a fallback\n", stderr);
-                ::memset(this, 0U, sizeof(icon_directory)); // NOLINT(bugprone-undefined-memory-manipulation)
+                ::memset(this, 0U, sizeof(icondirectory)); // NOLINT(bugprone-undefined-memory-manipulation)
                 return;
             }
 
@@ -187,31 +179,28 @@ class icon_directory final { // represents an .ico file
             unsigned long long caret { 6 };              // skip the first six bytes and jump to the first ICONDIRENTRY
             for (unsigned i = 0; i < entry_count; ++i) { // try and parse all the ICONDIRENTRYs in the file
                                                          //
-                entries.at(i)  = __parse_icondir_entry(buffer + caret, file_size);
+                entries.at(i)  = icondirectory::parse_icondirectory_entry(buffer + caret, file_size);
                 // update caret
                 caret         += sizeof(ICONDIRENTRY) + entries.at(i).size;
             }
         }
 
-        inline icon_directory(_In_ const icon_directory& other) noexcept { }
+        icondirectory(_In_ const icondirectory& other) noexcept { }
 
-        inline icon_directory& operator=(_In_ const icon_directory& other) noexcept { }
+        icondirectory& operator=(_In_ const icondirectory& other) noexcept { }
 
-        inline icon_directory(_In_ icon_directory&& other) noexcept { }
+        icondirectory(_In_ icondirectory&& other) noexcept { }
 
-        inline icon_directory& operator=(_In_ icon_directory&& other) noexcept { }
+        icondirectory& operator=(_In_ icondirectory&& other) noexcept { }
 
-        inline ~icon_directory() noexcept {
+        ~icondirectory() noexcept {
             delete[] buffer;
-            ::memset(this, 0U, sizeof(icon_directory)); // NOLINT(bugprone-undefined-memory-manipulation)
+            ::memset(this, 0U, sizeof(icondirectory)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
-        inline size_type image_count() const noexcept { return entry_count; }
+        size_type image_count() const noexcept { return entry_count; }
 
-        inline bool to_file(_In_ const wchar_t* const filename) const noexcept {
-            return internal::serialize(filename, buffer, buffer_size);
-        }
+        bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
 
-        inline bitmap image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
-        // NOLINTEND(readability-redundant-inline-specifier)
+        bitmap image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
 };

@@ -209,6 +209,22 @@ class bitmap final { // this class is designed to represent what Windows calls a
             file_size { size },
             buffer_size { size } { }
 
+        bitmap(_In_ const unsigned long long width, _In_ const unsigned long long height) noexcept :
+            buffer { new (std::nothrow
+            ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
+            file_header {
+                SOI,
+                static_cast<unsigned long>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)),
+                0,
+                0,
+                static_cast<unsigned long>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
+            },
+            info_header {}, // TODO
+            file_size { file_header.bfSize },
+            buffer_size { file_header.bfSize } { }
+
     public:
         // copy constructor
         bitmap(_In_ const bitmap& other) noexcept :

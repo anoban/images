@@ -107,6 +107,13 @@ inline namespace ascii {
         return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
     }
 
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    template<unsigned long long size> static constexpr bool __stdcall is_character_array(_In_ const char (&array)[size]) noexcept {
+        bool result {};
+        for (unsigned i = 0; i < size; ++i) result &= ascii::is_character(array[i]);
+        return result;
+    }
+
     static constexpr bool __stdcall is_upper(_In_ const char character) noexcept {
         return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
     }

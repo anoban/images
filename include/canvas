@@ -1,7 +1,14 @@
 #pragma once
 #include <bitmap>
 
-class canvas final { // a drawing canvass that uses bitmaps as their internal resource
+class canvas final { // a drawing canvas that uses bitmaps as their internal resource
     private:
         bitmap pane;
+
+    public:
+        canvas(_In_ const unsigned long long width, _In_ const unsigned long long height) noexcept : { }
+
+        explicit canvas(_In_ const bitmap& image) noexcept : pane { image } { }
+
+        void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(pane.begin(), pane.end(), pixel); }
 };

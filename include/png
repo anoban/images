@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <helpers>
 #include <imageio>
+#include <string_view>
 
 #include <Winsock2.h> // for the byte order reversal routines
 #pragma comment(lib, "Ws2_32.lib")
@@ -32,6 +33,9 @@
 // 3) data - a series of bytes (contiguous array of length number of bytes)
 // 4) CRC - a Cyclic Redundancy Check (CRC32) checksum value (BE, unsigned)
 
+// a decoder only needs to parse standard defined PNG chunks that follow the above structure
+// it shall ignore chunks that are not in compliance with the above specified format, private chunks and newly incorporated public chunks
+
 class png_chunk final {
         unsigned       length;
         char           type[4]; // NOLINT(modernize-avoid-c-arrays)
@@ -39,7 +43,7 @@ class png_chunk final {
         unsigned       checksum;
 
         constexpr bool is_critical() const noexcept {
-            // a chunk with uppercase first letter is considered a critical chunk, all decoders must be able to parse the critical chunks
+            // a chunk with uppercase first letter is considered a critical chunk, all PNG decoders must be able to parse the critical chunks
             return ascii::is_upper(type[0]);
         }
 
@@ -47,7 +51,7 @@ class png_chunk final {
             // any chunk with non printing ASCII characters in its name must be deemed invalid
             // first, second and the fourth character in the name can be an uppercase or a lowercase letter
             // third character MUST be an uppercase ASCII letter
-            return std::all_of(std::begin(type), std::end(type), is_character) && ascii::is_upper(type[2]);
+            return ::is_character_array(type) && ascii::is_upper(type[2]);
         }
 
         constexpr bool is_private() const noexcept {
@@ -60,19 +64,34 @@ class png_chunk final {
         // a decoder shall not attempt to copy a non-copy-safe chunk if it doesn't recognize it
         // i.e there are chunks with uppercase last letter that are safe to copy, like the PNG standards defined IHDR, IDAT, IEND ... chunks
         // this lowercase rule applies as a fallback only when the decoder cannot recognize a chunk
+
+    public:
 };
 
-// A decoder only needs to parse standard defined PNG chunks that follow the above structure.
-//    It shall ignore chunks that are not in compliance with the above specified format, private chunks and newly incorporated public chunks.
+namespace critical { // there are 4 critical chunks each PNG file is expected to contain - IHDR, PLTE, IDAT and IEND
+    static constexpr std::array<char, 4> IHDR { 'I', 'H', 'D', 'R' }; // image header, the first chunk in a PNG data stream
+    static constexpr std::array<char, 4> PLTE { 'P', 'L', 'T', 'E' }; // palette table
+    static constexpr std::array<char, 4> IDAT { 'I', 'D', 'A', 'T' }; // image chunk
+    static constexpr std::array<char, 4> IEND { 'I', 'E', 'N', 'D' }; // image trailer, the last chunk in a PNG data stream
+} // namespace critical
 
-/*
+template<unsigned long long size> static constexpr typename std::enable_if<size == 4, bool>::type
+operator==(                        // this overloaded operator== is only intended to compare PNG chunk names!
+    _In_ const char (&left)[size], // NOLINT(modernize-avoid-c-arrays)
+    _In_ const std::array<char, size>& right
+) noexcept {
+    return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
+}
 
-    There are 4 critical chunks each PNG file is expected to contain:
-        1) IHDR
-        2) PLTE
-        3) IDAT
-        4) IEND
+template<unsigned long long size> static constexpr typename std::enable_if<size == 4, bool>::type
+operator==( // this overloaded operator== is only intended to compare PNG chunk names!
+    _In_ const std::array<char, size>& left,
+    _In_ const char (&right)[size] // NOLINT(modernize-avoid-c-arrays)
+) noexcept {
+    return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
+}
 
-*/
-
-class png final { };
+class png final {
+    public:
+        png() noexcept = default;
+};
