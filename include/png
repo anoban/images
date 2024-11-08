@@ -37,10 +37,22 @@ class png_chunk final {
         char           type[4]; // NOLINT(modernize-avoid-c-arrays)
         unsigned char* data;
         unsigned       checksum;
-        friend class png;
 
-        // if the first alphabet of a chunk name is capital, it is a CRITICAL chunk, all decoders must be able to parse it
-        constexpr bool is_critical() const noexcept { return ascii::is_upper(type[0]); }
+        // a PNG chunk name consist of 4 ASCII characters
+
+        static constexpr bool is_character(_In_ const char character) noexcept {
+            return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
+        }
+
+        static constexpr bool is_upper(_In_ const char character) noexcept {
+            return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
+        }
+
+        static constexpr bool is_lower(_In_ const char character) noexcept {
+            return character >= 97 && character <= 122; /* a - 97 and z - 122 */
+        }
+
+        constexpr bool is_critical() const noexcept { return png_chunk::is_upper(type[0]); }
 
         constexpr bool is_valid() const noexcept {
             // any chunk with non printing ASCII characters in its name must be deemed invalid
@@ -54,10 +66,6 @@ class png_chunk final {
             // private chunks defined by applications must have a lowercase second character, in order not to conflict with publicly defined chunks
             return ascii::is_lower(type[1]);
         }
-
-        // if the chunk is safe to copy, last alphabet of the chunk name will be in lowercase
-        // a decoder shall not attempt to copy a non-copy-safe chunk if it doesn't recognize it (i.e there are safe to copy chunks with upercase last letters)
-        // e.g the standard PNG defined chunks IHDR, PLTE, IDAT and IEND all have uppercase last letters but are safe to copy
 };
 
 // A decoder only needs to parse standard defined PNG chunks that follow the above structure.
@@ -77,6 +85,16 @@ class png_chunk final {
         2) PLTE
         3) IDAT
         4) IEND
+
+    Second character of public chunk types and chunk types approved by the PNG development group will be in uppercase.
+    Private chunks defined by applications must have a lowercase second character, in order not to conflict with publicly defined chunks.
+
+    COPY SAFE CHUNKS
+
+    The last alphabet of the chunk name will be in lowercase, if the chunk is safe to copy.
+    A decoder shall not attempt to copy non copy-safe chunks if it doesn't recognize them.
+
+    e.g.
 
 */
 
