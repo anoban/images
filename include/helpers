@@ -65,6 +65,42 @@ inline namespace rgb_transformers {
 
 } // namespace rgb_transformers
 
+// combinations of colours to remove from pixels
+enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
+
+// mechanism to be used in converting the pixels to black and white.
+enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
+
+namespace colour_removers { // this ir really verbose but makes mutating the pixel buffers possible with a single std::for_each call
+
+    template<RGB_TAG colour> struct remove;
+
+    template<> struct remove<RGB_TAG::RED> final {
+            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
+    };
+
+    template<> struct remove<RGB_TAG::GREEN> final {
+            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
+    };
+
+    template<> struct remove<RGB_TAG::BLUE> final {
+            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
+    };
+
+    template<> struct remove<RGB_TAG::REDGREEN> final {
+            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
+    };
+
+    template<> struct remove<RGB_TAG::GREENBLUE> final {
+            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
+    };
+
+    template<> struct remove<RGB_TAG::REDBLUE> final {
+            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
+    };
+
+} // namespace colour_removers
+
 inline namespace cyclic_redundancy_check {
 
     // for implementation details, refer

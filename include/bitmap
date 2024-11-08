@@ -26,47 +26,11 @@
 // however there are no markers to identify the type of the image header present in the bmp image, the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct
 // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes
 
-// combinations of colours to remove from pixels
-enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
-
 // order of pixels in the BMP buffer.
 enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
 
-// mechanism to be used in converting the pixels to black and white.
-enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
-
 // types of compressions used in BMP files.
 enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
-
-namespace colour_removers { // this ir really verbose but makes mutating the pixel buffers possible with a single std::for_each call
-
-    template<RGB_TAG colour> struct remove;
-
-    template<> struct remove<RGB_TAG::RED> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::GREEN> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::BLUE> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::REDGREEN> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::GREENBLUE> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::REDBLUE> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
-    };
-
-} // namespace colour_removers
 
 // for the sake of convenience
 static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {

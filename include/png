@@ -1,8 +1,7 @@
 #pragma once
 
-#include <ctype.h> // isupper()
-#include <stdbool.h>
-#include <stdint.h>
+#include <helpers>
+#include <imageio>
 
 /*
     PNG (Portable Network Graphics) is the newest image format compared to JPEG, BMP and GIF
@@ -43,13 +42,13 @@
 
 */
 
-typedef struct chunk {
-        uint32_t pcLength;  // size of the data segment of a given chunk, in bytes (Big Endian format)
-                            // doesn't include any other parts of the chunk
-        char     pcType[4]; // PNG chunk type, usually encoded as 4 consecutive ASCII characters
-        uint32_t pcOffset;
-        uint32_t pcChecksum;
-} chunk_t;
+struct png_chunk final {
+        unsigned length;  // size of the data segment of a given chunk, in bytes (Big Endian format)
+                          // doesn't include any other parts of the chunk
+        char     type[4]; // PNG chunk type, usually encoded as 4 consecutive ASCII characters
+        unsigned offset;
+        unsigned checksum;
+};
 
 // are all the characters in pcType, valid ASCII characters?.
 bool __stdcall IsValidPngChunk(_In_ const chunk_t* const restrict chunk);
