@@ -119,7 +119,6 @@ inline namespace ascii {
 
 inline namespace crc { // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
 
-<<<<<<< HEAD
     enum class POLYNOMIALS : unsigned {
         // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
         IEEE       = 0xEDB88320,
@@ -167,50 +166,3 @@ inline namespace crc { // for implementation details, refer https://lxp32.github
     }
 
 } // namespace crc
-=======
-} // namespace rgb_transformers
-
-// combinations of colours to remove from pixels
-enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
-
-// mechanism to be used in converting the pixels to black and white.
-enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
-
-namespace colour_removers { // this ir really verbose but makes mutating the pixel buffers possible with a single std::for_each call
-
-    template<RGB_TAG colour> struct remove;
-
-    template<> struct remove<RGB_TAG::RED> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::GREEN> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::BLUE> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::REDGREEN> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::GREENBLUE> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
-    };
-
-    template<> struct remove<RGB_TAG::REDBLUE> final {
-            constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
-    };
-
-} // namespace colour_removers
-
-
-// clang-format off
-#include <Winsock2.h> // for the byte order reversal routines
-#pragma comment(lib, "Ws2_32.lib")
-// clang-format on
-
-// NOLINTEND(readability-redundant-inline-specifier)
->>>>>>> ad066b405dd8feeb8e670966534522afcc8814f1
