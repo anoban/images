@@ -2,9 +2,9 @@
 #include <algorithm>
 #include <helpers>
 #include <imageio>
-#include <string_view>
 
 #include <Winsock2.h> // for the byte order reversal routines
+
 #pragma comment(lib, "Ws2_32.lib")
 
 // PNG (Portable Network Graphics) is the newest image format compared to JPEG, BMP and GIF
@@ -36,7 +36,7 @@
 // a decoder only needs to parse standard defined PNG chunks that follow the above structure
 // it shall ignore chunks that are not in compliance with the above specified format, private chunks and newly incorporated public chunks
 
-class png_chunk final {
+struct png_chunk final {
         unsigned       length;
         char           type[4]; // NOLINT(modernize-avoid-c-arrays)
         unsigned char* data;
@@ -64,8 +64,6 @@ class png_chunk final {
         // a decoder shall not attempt to copy a non-copy-safe chunk if it doesn't recognize it
         // i.e there are chunks with uppercase last letter that are safe to copy, like the PNG standards defined IHDR, IDAT, IEND ... chunks
         // this lowercase rule applies as a fallback only when the decoder cannot recognize a chunk
-
-    public:
 };
 
 namespace critical { // there are 4 critical chunks each PNG file is expected to contain - IHDR, PLTE, IDAT and IEND
@@ -90,6 +88,24 @@ operator==( // this overloaded operator== is only intended to compare PNG chunk 
 ) noexcept {
     return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
 }
+
+// every PNG data stream must begin with the bytes :: {137, 'P', 'N', 'G', 13, 10, 26, 10}
+static constexpr std::array<unsigned char, 8> SIGNATURE_LE { 10, 26, 10, 13, 'G', 'N', 'P', 137 };
+static const unsigned long long               PNG_SIGNATURE { *reinterpret_cast<const unsigned long long*>(SIGNATURE_LE.data()) };
+
+enum class PIXEL_KIND : unsigned char { GREYSCALE = 0, RGBTRIPLE = 2, COLOURPALETTE = 3, GREYSCALEALPHA = 4, RGBALPHA = 6 };
+
+enum class INTERLACING_KIND : unsigned char { NONE /* the image is not interlaced */, ADAM /* image uses Adam 7 interlacing */ };
+
+struct IHDR final {                 // layout of the IHDR chunk data, i.e the data buffer of an IHDR chunk should be in the following format
+        unsigned         width;     // width in pixels
+        unsigned         height;    // height in pixels
+        unsigned char    bit_depth; // can be 1, 2, 4, 8 or 16
+        PIXEL_KIND       colour_type;
+        unsigned char    compression_method; // must be 0
+        unsigned char    filter_method;      // must be 0
+        INTERLACING_KIND interlacing;
+};
 
 class png final {
     public:

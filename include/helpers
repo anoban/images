@@ -108,9 +108,9 @@ inline namespace ascii {
     }
 
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    template<unsigned long long size> static constexpr bool __stdcall is_character_array(_In_ const char (&array)[size]) noexcept {
-        bool result {};
-        for (unsigned i = 0; i < size; ++i) result &= ascii::is_character(array[i]);
+    template<unsigned long long length> static constexpr bool __stdcall is_character_array(_In_ const char (&array)[length]) noexcept {
+        bool result { true };
+        for (unsigned i = 0; i < length; ++i) result &= ascii::is_character(array[i]);
         return result;
     }
 

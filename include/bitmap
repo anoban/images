@@ -53,6 +53,7 @@ class bitmap final { // this class is designed to represent what Windows calls a
         unsigned long    file_size;   // file size
         unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
         friend class icon_directory;  // to serialize ico objects as bitmaps, we need access to this class's internals
+        friend class canvas;
 
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)

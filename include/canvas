@@ -6,7 +6,7 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
         bitmap pane;
 
     public:
-        canvas(_In_ const unsigned long long width, _In_ const unsigned long long height) noexcept : { }
+        canvas(_In_ const unsigned long long width, _In_ const unsigned long long height) noexcept : pane(width, height) { }
 
         explicit canvas(_In_ const bitmap& image) noexcept : pane { image } { }
 
