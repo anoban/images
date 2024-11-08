@@ -47,7 +47,6 @@ class ICONDIRENTRY final {
         // Windows cursors have a hotspot location, that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
         unsigned long  size;   // size of the associated bitmap in bytes
         unsigned long  offset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
-
         friend class icon_directory;
 };
 
@@ -68,7 +67,6 @@ class ICONDIR final {
                                   // heterogeneous types aren't allowed inside an ICONDIR
         unsigned short count;     // number of resources (images) stored in the given .ico file
         ICONDIRENTRY*  resources; // marks the beginning of the first ICONDIRENTRY struct in the ICONDIR
-
         friend class icon_directory;
 };
 

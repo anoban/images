@@ -1,3 +1,4 @@
+#pragma once
 #include <bitmap>
 
 class canvas final { // a drawing canvass that uses bitmaps as their internal resource
