@@ -28,6 +28,14 @@ static constexpr _TyTo __stdcall to_underlying(_In_ const _TyFrom& enumeration) 
     return static_cast<_TyTo>(enumeration);
 }
 
+// for the sake of convenience
+static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
+    return left.rgbBlue == right.rgbBlue && left.rgbGreen == right.rgbGreen && left.rgbRed == right.rgbRed;
+}
+
+static constexpr bool __stdcall operator!=(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
+    return left.rgbBlue != right.rgbBlue || left.rgbGreen != right.rgbGreen || left.rgbRed != right.rgbRed;
+}
 inline namespace rgb {
 
     // RGB combinations of colours

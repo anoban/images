@@ -31,11 +31,6 @@ enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
 // types of compressions used in BMP files.
 enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
 
-// for the sake of convenience
-static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
-    return left.rgbBlue == right.rgbBlue && left.rgbGreen == right.rgbGreen && left.rgbRed == right.rgbRed;
-}
-
 // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
 static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 

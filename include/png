@@ -66,29 +66,6 @@ struct png_chunk final {
         // this lowercase rule applies as a fallback only when the decoder cannot recognize a chunk
 };
 
-namespace critical { // there are 4 critical chunks each PNG file is expected to contain - IHDR, PLTE, IDAT and IEND
-    static constexpr std::array<char, 4> IHDR { 'I', 'H', 'D', 'R' }; // image header, the first chunk in a PNG data stream
-    static constexpr std::array<char, 4> PLTE { 'P', 'L', 'T', 'E' }; // palette table
-    static constexpr std::array<char, 4> IDAT { 'I', 'D', 'A', 'T' }; // image chunk
-    static constexpr std::array<char, 4> IEND { 'I', 'E', 'N', 'D' }; // image trailer, the last chunk in a PNG data stream
-} // namespace critical
-
-template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type
-operator==(                          // this overloaded operator== is only intended to compare PNG chunk names!
-    _In_ const char (&left)[length], // NOLINT(modernize-avoid-c-arrays)
-    _In_ const std::array<char, length>& right
-) noexcept {
-    return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
-}
-
-template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type
-operator==( // this overloaded operator== is only intended to compare PNG chunk names!
-    _In_ const std::array<char, length>& left,
-    _In_ const char (&right)[length] // NOLINT(modernize-avoid-c-arrays)
-) noexcept {
-    return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
-}
-
 // every PNG data stream must begin with the bytes :: {137, 'P', 'N', 'G', 13, 10, 26, 10}
 static constexpr std::array<unsigned char, 8> SIGNATURE_LE { 10, 26, 10, 13, 'G', 'N', 'P', 137 };
 static const unsigned long long               PNG_SIGNATURE { *reinterpret_cast<const unsigned long long*>(SIGNATURE_LE.data()) };
@@ -97,7 +74,7 @@ enum class PIXEL_KIND : unsigned char { GREYSCALE = 0, RGBTRIPLE = 2, COLOURPALE
 
 enum class INTERLACING_KIND : unsigned char { NONE /* the image is not interlaced */, ADAM /* image uses Adam 7 interlacing */ };
 
-enum class CHUNK_KIND : unsigned char { IHDR, PLTE, IDAT, IEND, bKGD /* background */, cHRM, gAMA };
+enum class CHUNK_KIND : unsigned char { IHDR, PLTE, IDAT, IEND, bKGD /* background */, cHRM, gAMA, UNRECOGNIZED };
 
 struct IHDR final {                 // layout of the IHDR chunk data, i.e the data buffer of an IHDR chunk should be in the following format
         unsigned         width;     // width in pixels
@@ -130,6 +107,28 @@ struct RGB final { // unlike bitmaps (B, G & R), the colour values are ordered i
         unsigned char green;
         unsigned char blue;
 };
+
+namespace names { // there are 4 critical chunks each PNG file is expected to contain - IHDR, PLTE, IDAT and IEND
+    static constexpr std::array<char, 4> IHDR { 'I', 'H', 'D', 'R' }; // image header, the first chunk in a PNG data stream
+    static constexpr std::array<char, 4> PLTE { 'P', 'L', 'T', 'E' }; // palette table
+    static constexpr std::array<char, 4> IDAT { 'I', 'D', 'A', 'T' }; // image chunk
+    static constexpr std::array<char, 4> IEND { 'I', 'E', 'N', 'D' }; // image trailer, the last chunk in a PNG data stream
+} // namespace names
+
+// this overloaded operator== is only intended to compare PNG chunk names!
+template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type operator==(
+    _In_ const char (&left)[length], // NOLINT(modernize-avoid-c-arrays)
+    _In_ const std::array<char, length>& right
+) noexcept {
+    return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
+}
+
+template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type operator==(
+    _In_ const std::array<char, length>& left,
+    _In_ const char (&right)[length] // NOLINT(modernize-avoid-c-arrays)
+) noexcept {
+    return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
+}
 
 class png final {
     private:

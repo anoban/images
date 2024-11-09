@@ -1,1 +1,24 @@
+#include <helpers>
+
 #include <gtest/gtest.h>
+
+struct RgbQuadFixture : public testing::Test {
+        RGBQUAD pixel;
+
+        void SetUp() noexcept override { pixel = { 0xFF, 0xFF, 0xFF, 0xFF }; }
+
+        void TearDown() noexcept override { pixel = { 0x00, 0x00, 0x00, 0x00 }; }
+};
+
+namespace bitmaps {
+
+    TEST(BITMAP, RGBQUAD_EQUALITY_OPERATOR) {
+        // operator==() does not consider .rgbReserved member for comparisons
+        EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+        EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA }));
+        EXPECT_NE((RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+        EXPECT_NE((RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+        EXPECT_NE((RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    }
+
+} // namespace bitmaps
