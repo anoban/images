@@ -84,6 +84,10 @@ struct IHDR final {                 // layout of the IHDR chunk data, i.e the da
         unsigned char    compression_method; // must be 0
         unsigned char    filter_method;      // must be 0
         INTERLACING_KIND interlacing;
+
+        IHDR(_In_reads_bytes_(size) const unsigned char* const bytestream, _In_ const unsigned long size) noexcept { }
+
+        bool is_valid() const noexcept { }
 };
 
 struct cHRM final { // layout of the cHRM chunk data

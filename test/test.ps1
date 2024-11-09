@@ -21,8 +21,8 @@ $cflags = @(
     "./googletest/src/gtest-all.cc",
     "/arch:AVX512",
     "/diagnostics:caret",
-    "/DNDEBUG",
-    "/D_NDEBUG",
+    "/DDEBUG",
+    "/D_DEBUG",
     "/D__TEST__",
     "/EHa",
     "/F0x10485100",
@@ -31,12 +31,12 @@ $cflags = @(
     "/fpcvt:IA",
     "/GL",
     "/Gw",
-    "/I./googletest/",
-    "/I./googletest/include/",
-    "/I./../include/",
+    "/I./googletest",
+    "/I./googletest/include",
+    "/I./../include",
     "/jumptablerdata",
     "/MP",
-    "/MTd", # statically link the multithreaded version of Windows libs
+    "/MTd",
     "/O2",
     "/Ob3",
     "/Oi",
@@ -50,17 +50,17 @@ $cflags = @(
     "/wd4710",      # not inlined
     "/wd4711",      # selected for inline expansion
     "/wd4820",      # struct padding
-    "/wd4061",
-    "/wd4623",
-    "/wd4625",
-    "/wd4626",
-    "/wd4668",
-    "/wd5026",
-    "/wd5027",
-    "/wd5045",
+    "/wd4061",      # gtest
+    "/wd4623",      # gtest
+    "/wd4625",      # gtest
+    "/wd4626",      # gtest
+    "/wd4668",      # gtest
+    "/wd5026",      # gtest
+    "/wd5027",      # gtest
+    "/wd5045",      # gtest
     "/Zc:__cplusplus",
     "/Zc:preprocessor",
-    "/link /DEBUG:NONE"
+    "/link /DEBUG:FULL"
 )
 
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan

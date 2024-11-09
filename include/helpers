@@ -181,3 +181,13 @@ inline namespace crc { // for implementation details, refer https://lxp32.github
     }
 
 } // namespace crc
+
+namespace endian {
+
+    constexpr unsigned short usreverse(_In_ const unsigned char* const bytestream) noexcept { }
+
+    constexpr unsigned long ulreverse(_In_ const unsigned char* const bytestream) noexcept { }
+
+    constexpr unsigned long long ullreverse(_In_ const unsigned char* const bytestream) noexcept { }
+
+} // namespace endian
