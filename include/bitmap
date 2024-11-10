@@ -6,11 +6,13 @@
 #include <helpers>
 #include <imageio>
 #include <iostream>
+#include <iterators>
 #include <numeric>
 #include <type_traits>
 
 #include <windef.h>
 #include <wingdi.h>
+
 #pragma comment(lib, "Gdi32.lib")
 
 // Windows .bmp format supports 1, 4, 8, 16, 24 and 32 bits pixel depths
@@ -37,6 +39,17 @@ static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 class bottomup_scanline_iterator final { };
 
 class bitmap final { // this class is designed to represent what Windows calls as DIBs (Device Independent Bitmap)
+    public:
+        using value_type      = RGBQUAD; // pixel type
+        using pointer         = value_type*;
+        using const_pointer   = const value_type*;
+        using reference       = value_type&;
+        using const_reference = const value_type&;
+        using iterator        = ::random_access_iterator<value_type>;
+        using const_iterator  = ::random_access_iterator<const value_type>;
+        using size_type       = long long; // because BMP files use signed long as the type for sizes
+        using difference_type = long long;
+
         // clang-format off
 #ifdef __TEST__
    public:
@@ -142,17 +155,7 @@ class bitmap final { // this class is designed to represent what Windows calls a
         }
 
     public:
-        using value_type      = RGBQUAD; // pixel type
-        using pointer         = value_type*;
-        using const_pointer   = const value_type*;
-        using reference       = value_type&;
-        using const_reference = const value_type&;
-        using iterator        = value_type*;
-        using const_iterator  = const value_type*;
-        using size_type       = long long; // because BMP files use signed long as the type for sizes
-        using difference_type = long long;
-
-        bitmap() noexcept     = default; // that's good enough
+        bitmap() noexcept = default; // that's good enough
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         explicit bitmap(_In_ const wchar_t* const filename) noexcept : // construct a bitmap from a file on disk
