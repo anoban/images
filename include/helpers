@@ -184,10 +184,37 @@ inline namespace crc { // for implementation details, refer https://lxp32.github
 
 namespace endian {
 
-    constexpr unsigned short usreverse(_In_ const unsigned char* const bytestream) noexcept { }
+    // clang-format off
+#define _M_IX86 // needed by <intrin.h>
+#define _M_X64  // needed by <intrin.h>
+#include <mmintrin.h> // __m64
+#include <intrin.h>
+    // clang-format on
 
-    constexpr unsigned long ulreverse(_In_ const unsigned char* const bytestream) noexcept { }
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    static constexpr unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2) const unsigned char* const bytestream) noexcept {
+        return static_cast<unsigned short>(bytestream[0]) >> 8 | (bytestream[1]) << 8;
+    }
 
-    constexpr unsigned long long ullreverse(_In_ const unsigned char* const bytestream) noexcept { }
+    static unsigned long __stdcall ulong_from_be_bytes(_In_reads_bytes_(4) const unsigned char* const bytestream) noexcept {
+        static constexpr __m64 mask { 0b00000100'00000101'00000110'00000111'0000000'00000001'00000010'00000011 };
+#if defined(__llvm__) && defined(__clang__)
+        return endian::_mm_shuffle_pi8(
+            *reinterpret_cast<const __m64*>(bytestream), mask
+        )[0]; // LLVM defines __m64 as a vector of 1 long long
+#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
+        return endian::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask).m64_u32[0]; // MSVC defines __m64 as a union
+#endif
+    }
+
+    static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8) const unsigned char* const bytestream) noexcept {
+        static constexpr __m64 mask { 0b0000000'00000001'00000010'00000011'00000100'00000101'00000110'00000111 };
+#if defined(__llvm__) && defined(__clang__)
+        return endian::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask)[0];
+#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
+        return endian::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask).m64_u64;
+#endif
+    }
+    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
 } // namespace endian
