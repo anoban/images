@@ -36,28 +36,29 @@
 // a decoder only needs to parse standard defined PNG chunks that follow the above structure
 // it shall ignore chunks that are not in compliance with the above specified format, private chunks and newly incorporated public chunks
 
-struct png_chunk final {
+class png_chunk final {
         unsigned       length;
         char           type[4]; // NOLINT(modernize-avoid-c-arrays)
         unsigned char* data;
         unsigned       checksum;
 
+    public:
         constexpr bool is_critical() const noexcept {
             // a chunk with uppercase first letter is considered a critical chunk, all PNG decoders must be able to parse the critical chunks
-            return ascii::is_upper(type[0]);
+            return ascii::is_uppercase(type[0]);
         }
 
         constexpr bool is_valid() const noexcept {
             // any chunk with non printing ASCII characters in its name must be deemed invalid
             // first, second and the fourth character in the name can be an uppercase or a lowercase letter
             // third character MUST be an uppercase ASCII letter
-            return ::is_character_array(type) && ascii::is_upper(type[2]);
+            return ascii::is_alphabet_array(type) && ascii::is_uppercase(type[2]);
         }
 
         constexpr bool is_private() const noexcept {
             // second character of public chunk types and chunk types approved by the PNG development group will be in uppercase
             // private chunks defined by applications must have a lowercase second character, in order not to conflict with publicly defined chunks
-            return ascii::is_lower(type[1]);
+            return ascii::is_lowercase(type[1]);
         }
 
         // if a chunk is safe to copy, the last alphabet of the chunk name shall be in lowercase (NOT ALWAYS)
@@ -76,7 +77,7 @@ enum class INTERLACING_KIND : unsigned char { NONE /* the image is not interlace
 
 enum class CHUNK_KIND : unsigned char { IHDR, PLTE, IDAT, IEND, bKGD /* background */, cHRM, gAMA, UNRECOGNIZED };
 
-struct IHDR final {                 // layout of the IHDR chunk data, i.e the data buffer of an IHDR chunk should be in the following format
+class IHDR final {                  // layout of the IHDR chunk data, i.e the data buffer of an IHDR chunk should be in the following format
         unsigned         width;     // width in pixels
         unsigned         height;    // height in pixels
         unsigned char    bit_depth; // can be 1, 2, 4, 8 or 16
@@ -85,7 +86,8 @@ struct IHDR final {                 // layout of the IHDR chunk data, i.e the da
         unsigned char    filter_method;      // must be 0
         INTERLACING_KIND interlacing;
 
-        IHDR(_In_reads_bytes_(size) const unsigned char* const bytestream, _In_ const unsigned long size) noexcept { }
+    public:
+        IHDR(_In_reads_bytes_(size) const unsigned char* const chunkdata, _In_ const unsigned long size) noexcept { }
 
         bool is_valid() const noexcept { }
 };

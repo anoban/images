@@ -62,7 +62,7 @@ class bitmap final { // this class is designed to represent what Windows calls a
         BITMAPINFOHEADER info_header;
         unsigned long    file_size;   // file size
         unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
-        friend class icon_directory;  // to serialize ico objects as bitmaps, we need access to this class's internals
+        friend class icondirectory;   // to serialize ico objects as bitmaps, we need access to this class's internals
         friend class canvas;
 
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
@@ -340,19 +340,37 @@ class bitmap final { // this class is designed to represent what Windows calls a
 
         bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
 
-        iterator begin() noexcept { return pixels; }
+        iterator begin() noexcept { // NOLINT(readability-make-member-function-const)
+            return { pixels, static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
+        }
 
-        const_iterator begin() const noexcept { return pixels; }
+        const_iterator begin() const noexcept {
+            return { pixels, static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) };
+        }
 
-        iterator end() noexcept {
-            return pixels + info_header.biHeight * info_header.biWidth; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        const_iterator cbegin() const noexcept {
+            return { pixels, static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) };
+        }
+
+        iterator end() noexcept { // NOLINT(readability-make-member-function-const)
+            return { pixels,
+                     static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth),
+                     static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
         }
 
         const_iterator end() const noexcept {
-            return pixels + info_header.biHeight * info_header.biWidth; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            return { pixels,
+                     static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth),
+                     static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) };
         }
 
-        reference operator[](_In_ const size_type offset) noexcept {
+        const_iterator cend() const noexcept {
+            return { pixels,
+                     static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth),
+                     static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) };
+        }
+
+        reference operator[](_In_ const size_type offset) noexcept { // NOLINT(readability-make-member-function-const)
             assert(offset < info_header.biHeight * info_header.biWidth);
             return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
@@ -361,6 +379,10 @@ class bitmap final { // this class is designed to represent what Windows calls a
             assert(offset < info_header.biHeight * info_header.biWidth);
             return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
+
+        pointer data() noexcept { return pixels; } // NOLINT(readability-make-member-function-const)
+
+        const_pointer data() const noexcept { return pixels; }
 
         // returns the height and width of the bitmap, in that order
         std::pair<size_type, size_type> dim() const noexcept { return { info_header.biHeight, info_header.biWidth }; }
