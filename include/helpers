@@ -30,12 +30,16 @@ static constexpr _TyTo __stdcall to_underlying(_In_ const _TyFrom& enumeration) 
 }
 
 template<typename _TyCandidate, typename _Ty>
-static constexpr bool is_in(_In_ const _TyCandidate& candidate, _In_ const _Ty& last) noexcept {
+static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_Ty>::value, bool>::type is_in(
+    _In_ const _TyCandidate& candidate, _In_ const _Ty& last
+) noexcept {
     return candidate == last;
 }
 
 template<typename _TyCandidate, typename _TyFirst, typename... _TyList>
-static constexpr bool is_in(_In_ const _TyCandidate& candidate, _In_ const _TyFirst& first, _In_ const _TyList&... list) noexcept {
+static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_TyFirst>::value, bool>::type is_in(
+    _In_ const _TyCandidate& candidate, _In_ const _TyFirst& first, _In_ const _TyList&... list
+) noexcept {
     return candidate == first || ::is_in(candidate, list...);
 }
 
@@ -220,7 +224,7 @@ namespace endian {
             .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
         };
 
-        __m128i operand_epi8 {
+        const __m128i operand_epi8 {
             .m128i_u8 { bytestream[0],
                        bytestream[1],
                        bytestream[2],
@@ -249,7 +253,7 @@ namespace endian {
             .m128i_u8 { 7, 6, 5, 4, 3, 2, 1, 0, /* we don't care about the rest */ 8, 9, 10, 11, 12, 13, 14, 15 }
         };
 
-        __m128i operand_epi8 {
+        const __m128i operand_epi8 {
             .m128i_u8 { bytestream[0],
                        bytestream[1],
                        bytestream[2],
