@@ -17,33 +17,34 @@ if ($unrecognized.Count -ne 0) {
 }
 
 $cflags = @(
-    "./main.cpp",
-    "./googletest/src/gtest-all.cc",
+    "./test/main.cpp",
+    "./test/googletest/src/gtest-all.cc",
     "/arch:AVX512",
     "/diagnostics:caret",
-    "/DDEBUG",
-    "/D_DEBUG",
+    "/DNDEBUG",
+    "/D_NDEBUG",
     "/D__TEST__",
     "/EHa",
     "/F0x10485100",
     "/favor:INTEL64",
+    "/Fe:./test.exe",
     "/fp:strict",
     "/fpcvt:IA",
     "/GL",
     "/Gw",
-    "/I./googletest",
-    "/I./googletest/include",
-    "/I./../include",
+    "/I./include",
+    "/I./test/googletest",
+    "/I./test/googletest/include",
     "/jumptablerdata",
     "/MP",
-    "/MTd",
+    "/MT",
     "/O2",
     "/Ob3",
     "/Oi",
     "/Ot",
     "/Qpar",
     "/Qspectre",
-    "/std:c++14",
+    "/std:c++20",
     "/TP",
     "/Wall",
     "/wd4514",      # removed unreferenced inline function
@@ -60,16 +61,17 @@ $cflags = @(
     "/wd5045",      # gtest
     "/Zc:__cplusplus",
     "/Zc:preprocessor",
-    "/link /DEBUG:FULL"
+    "/link /DEBUG:NONE"
 )
 
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan
 cl.exe $cfiles $cflags
 
-# If cl.exe returned 0, (i.e if the compilation succeeded,)
-
-if ($? -eq $True){
-    foreach($file in $cfiles){
-        Remove-Item $file.Replace(".cpp", ".obj") -Force
-    }
-}
+Get-ChildItem *.obj -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.o   -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.pdb -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.exp -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.dll -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.lib -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.ilk -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.i   -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}

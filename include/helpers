@@ -6,6 +6,7 @@
 #define _AMD64_
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_MEAN
+#include <intrin.h>
 #include <windef.h>
 #include <wingdi.h>
 // clang-format on
@@ -46,6 +47,7 @@ static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const 
 static constexpr bool __stdcall operator!=(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
     return left.rgbBlue != right.rgbBlue || left.rgbGreen != right.rgbGreen || left.rgbRed != right.rgbRed;
 }
+
 inline namespace rgb {
 
     // RGB combinations of colours
@@ -195,8 +197,11 @@ inline namespace crc { // for implementation details, refer https://lxp32.github
 
 } // namespace crc
 
+#if !defined(__llvm__) && !defined(_MSC_FULL_VER)
+    #error functions inside namespace endian liberally rely on LLVM and MSVC compiler intrinsics, hence probably won't compile with other compilers!
+#endif
+
 namespace endian {
-#include <intrin.h>
 
     static constexpr unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2) const unsigned char* const bytestream) noexcept {
         return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -207,10 +212,15 @@ namespace endian {
 #if defined(__llvm__) && defined(__clang__)                     // LLVM defines __m64 as a vector of 1 long long
         static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slots
         // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
-        return endian::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
+        return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
 
 #elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-        const __m128i operand_epi8 {
+
+        static constexpr __m128i mask_epi8 {
+            .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
+        };
+
+        __m128i operand_epi8 {
             .m128i_u8 { bytestream[0],
                        bytestream[1],
                        bytestream[2],
@@ -222,21 +232,24 @@ namespace endian {
                        0, 0,
                        0, 0 }
         };
-        static constexpr __m128i mask_epi8 {
-            .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
-        };
+
         // unlike LLVM, MSVC offers the SSSE3 intrinsic _mm_shuffle_pi8 only in x86 mode, in x64 mode we could only use the AVX1 intrinsic _mm_shuffle_epi8
-        return endian::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u32[0]; // MSVC defines __m128i as a union
+        return ::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u32[0]; // MSVC defines __m128i as a union
 #endif
     }
 
     static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8) const unsigned char* const bytestream) noexcept {
 #if defined(__llvm__) && defined(__clang__)
         static constexpr __m64 mask_pi8 { 0x01020304050607 };
-        return endian::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
+        return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
 
 #elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-        const __m128i operand_epi8 {
+
+        static constexpr __m128i mask_epi8 {
+            .m128i_u8 { 7, 6, 5, 4, 3, 2, 1, 0, /* we don't care about the rest */ 8, 9, 10, 11, 12, 13, 14, 15 }
+        };
+
+        __m128i operand_epi8 {
             .m128i_u8 { bytestream[0],
                        bytestream[1],
                        bytestream[2],
@@ -251,12 +264,9 @@ namespace endian {
                        0, 0,
                        0 }
         };
-        static constexpr __m128i mask_epi8 {
-            .m128i_u8 { 7, 6, 5, 4, 3, 2, 1, 0, /* we don't care about the rest */ 8, 9, 10, 11, 12, 13, 14, 15 }
-        };
-        return endian::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u64[0];
+
+        return ::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u64[0];
 #endif
     }
-    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
 } // namespace endian

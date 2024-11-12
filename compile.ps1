@@ -38,7 +38,7 @@ $cflags = @(
     "/Oi",
     "/Ot",
     "/Qpar",
-    "/std:c++14",
+    "/std:c++20",
     "/TP",
     "/Wall",
     "/wd4514",      # removed unreferenced inline function
@@ -53,10 +53,11 @@ $cflags = @(
 Write-Host "cl.exe ${cfiles} ${cflags}" -ForegroundColor Cyan
 cl.exe $cfiles $cflags
 
-# If cl.exe returned 0, (i.e if the compilation succeeded,)
-
-if ($? -eq $True){
-    foreach($file in $cfiles){
-        Remove-Item $file.Replace(".cpp", ".obj") -Force
-    }
-}
+Get-ChildItem *.obj -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.o   -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.pdb -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.exp -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.dll -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.lib -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.ilk -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
+Get-ChildItem *.i   -Recurse | Foreach-Object {Remove-Item $_.FullName -Force}
