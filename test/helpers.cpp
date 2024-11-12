@@ -1,8 +1,9 @@
+#include <algorithm>
 #include <helpers>
 
 #include <gtest/gtest.h>
 
-TEST(HELPERS, TO_UNDERLYING) {
+TEST(MISC, TO_UNDERLYING) {
     enum class TENS : unsigned long { ZERO = 0, TEN = 10, HUNDRED = 100, THOUSAND = 1000, TENTHOUSAND = 10'000 };
     enum class DAYS : long long { MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY };
 
@@ -21,7 +22,7 @@ TEST(HELPERS, TO_UNDERLYING) {
     EXPECT_EQ((::to_underlying(DAYS::SUNDAY)), 6);
 }
 
-TEST(HELPERS, ISIN) {
+TEST(MISC, IS_IN) {
     EXPECT_TRUE(::is_in(10, 10U));
     EXPECT_TRUE(::is_in(0, 0L, 1, 2LL, 3LLU, 4, 'Z', 6, 7, 8, 9, 10));
     EXPECT_TRUE(::is_in(10, 0L, 1, 2LLU, 3, '{', 5, '%', 9LL, 10U));
@@ -50,3 +51,58 @@ struct RgbQuadFixture : public testing::Test {
             pixel = { .rgbBlue { 0x00 }, .rgbGreen { 0x00 }, .rgbRed { 0x00 }, .rgbReserved { 0x00 } };
         }
 };
+
+static constexpr char ASCII_UPPERCASE[] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                                          'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+
+static constexpr char ASCII_LOWERCASE[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                                          'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+
+static constexpr char ASCII_LETTERS[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+                                        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                                        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+
+static constexpr char ASCII_PRINTABLE[] { '0',  '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a',  'b',  'c',  'd',    'e',   'f', 'g',
+                                          'h',  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',  's',  't',  'u',    'v',   'w', 'x',
+                                          'y',  'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',  'J',  'K',  'L',    'M',   'N', 'O',
+                                          'P',  'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',  '!',  '"',  '#',    '$',   '%', '&',
+                                          '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';',  '<',  '=',  '>',    '?',   '@', '[',
+                                          '\"', ']', '^', '_', '`', '{', '|', '}', '~', ' ', '\t', '\n', '\r', '\x0b', '\x0c' };
+
+TEST(ASCII, IS_ALPHABET) {
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_alphabet));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), ascii::is_alphabet));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_alphabet));
+
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_alphabet));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_alphabet));
+}
+
+TEST(ASCII, IS_ALPHABETARRAY) {
+    EXPECT_TRUE(ascii::is_alphabet_array(ASCII_UPPERCASE));
+    EXPECT_TRUE(ascii::is_alphabet_array(ASCII_LOWERCASE));
+    EXPECT_TRUE(ascii::is_alphabet_array(ASCII_LETTERS));
+    EXPECT_FALSE(ascii::is_alphabet_array(ASCII_PRINTABLE));
+}
+
+TEST(ASCII, IS_UPPERCASE) {
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_uppercase));
+    EXPECT_FALSE(std::any_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), ascii::is_uppercase));
+
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_uppercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_uppercase));
+
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_uppercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_uppercase));
+}
+
+TEST(ASCII, IS_LOWERCASE) {
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), ascii::is_lowercase));
+    EXPECT_FALSE(std::any_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_lowercase));
+
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_lowercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_lowercase));
+
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_lowercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_lowercase));
+}
