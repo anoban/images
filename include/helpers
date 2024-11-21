@@ -128,7 +128,7 @@ inline namespace rgb {
 inline namespace ascii {
 
     // isalpha() from <cctype> is not constexpr :(
-    static constexpr bool __stdcall is_alphabet(_In_ const char character) noexcept {
+    static constexpr bool __stdcall is_alphabet(_In_ const char& character) noexcept {
         return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
     }
 
@@ -140,12 +140,12 @@ inline namespace ascii {
     }
 
     // isupper() from <cctype> is not constexpr
-    static constexpr bool __stdcall is_uppercase(_In_ const char character) noexcept {
+    static constexpr bool __stdcall is_uppercase(_In_ const char& character) noexcept {
         return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
     }
 
     // islower() from <cctype> is not constexpr
-    static constexpr bool __stdcall is_lowercase(_In_ const char character) noexcept {
+    static constexpr bool __stdcall is_lowercase(_In_ const char& character) noexcept {
         return character >= 97 && character <= 122; /* a - 97 and z - 122 */
     }
 
@@ -201,11 +201,11 @@ inline namespace crc { // for implementation details, refer https://lxp32.github
 
 } // namespace crc
 
-#if !defined(__llvm__) && !defined(_MSC_FULL_VER)
-    #error functions inside namespace endian liberally rely on LLVM and MSVC compiler intrinsics, hence probably won't compile with other compilers!
-#endif
-
 namespace endian {
+
+#if !defined(__llvm__) && !defined(_MSC_FULL_VER)
+    #error routines inside namespace endian liberally rely on LLVM and MSVC compiler intrinsics, hence probably won't compile with other compilers!
+#endif
 
     static constexpr unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2) const unsigned char* const bytestream) noexcept {
         return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
