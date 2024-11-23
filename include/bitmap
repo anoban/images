@@ -209,6 +209,7 @@ class bitmap final { // this class is designed to represent what Windows calls a
             file_size { size },
             buffer_size { size } { }
 
+        // this is likely to get more compilcated
         bitmap(_In_ const long width, _In_ const long height) noexcept :
             buffer { new (std::nothrow
             ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
@@ -227,8 +228,8 @@ class bitmap final { // this class is designed to represent what Windows calls a
                           .biBitCount      = 32,
                           .biCompression   = BI_RGB, // uncompressed RGB
                           .biSizeImage     = 0,
-                          .biXPelsPerMeter = 0, // resolution in pixels per meter along the x axis
-                          .biYPelsPerMeter = 0, // resolution in pixels per meter along the y axis
+                          .biXPelsPerMeter = 3780, // ???????????
+                          .biYPelsPerMeter = 3780, // ???????????
                           .biClrUsed       = 0,
                           .biClrImportant  = 0 },
             file_size { file_header.bfSize },
@@ -240,7 +241,7 @@ class bitmap final { // this class is designed to represent what Windows calls a
             }
 
             ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
-            ::memcpy_s(buffer + sizeof(BITMAPINFOHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
+            ::memcpy_s(buffer + sizeof(BITMAPFILEHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
         }
 
     public:
@@ -329,31 +330,22 @@ class bitmap final { // this class is designed to represent what Windows calls a
         }
 
         friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const bitmap& image) noexcept {
-            //     ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-            //         L"|---------------------------------------------------------------------------|\n"
-            //         L"%15s bitmap image (%3.4Lf MiBs)\n"
-            //         L"Pixel ordering: %10s\n"
-            //         L"Width: %5lu pixels, Height: %5lu pixels\n"
-            //         L"Bit depth: %3u\n"
-            //         L"|---------------------------------------------------------------------------|\n",
-            //         info_header.biSizeImage ? L"Compressed" : L"Uncompressed",
-            //         file_header.bfSize / (1024.0L * 1024.0L),
-            //         __get_scanline_order(info_header) == SCANLINE_ORDERING::BOTTOMUP ? L"bottom-up" : L"top-down",
-            //         info_header.biWidth,
-            //         info_header.biHeight,
-            //         info_header.biBitCount
-            //     );
-            //
-            //     if (info_header.biSizeImage) { // don't bother if the image isn't compressed
-            //         switch (info_header.biCompression) {
-            //             case ::to_underlying(COMPRESSION_KIND::RGB)       : ::_putws(L"RGB"); break;
-            //             case ::to_underlying(COMPRESSION_KIND::RLE8)      : ::_putws(L"RLE8"); break;
-            //             case ::to_underlying(COMPRESSION_KIND::RLE4)      : ::_putws(L"RLE4"); break;
-            //             case ::to_underlying(COMPRESSION_KIND::BITFIELDS) : ::_putws(L"BITFIELDS"); break;
-            //             case ::to_underlying(COMPRESSION_KIND::UNKNOWN)   : ::_putws(L"UNKNOWN"); break;
-            //             default                                           : break;
-            //         }
-            //     }
+            wostr << L"bfType          " << image.file_header.bfType << L'\n';
+            wostr << L"bfSize          " << image.file_header.bfSize << L'\n';
+            wostr << L"bfOffBits       " << image.file_header.bfOffBits << L'\n';
+
+            wostr << L"biSize          " << image.info_header.biSize << L'\n';
+            wostr << L"biWidth         " << image.info_header.biWidth << L'\n';
+            wostr << L"biHeight        " << image.info_header.biHeight << L'\n';
+            wostr << L"biPlanes        " << image.info_header.biPlanes << L'\n';
+            wostr << L"biBitCount      " << image.info_header.biBitCount << L'\n';
+            wostr << L"biCompression   " << image.info_header.biCompression << L'\n';
+            wostr << L"biSizeImage     " << image.info_header.biSizeImage << L'\n';
+            wostr << L"biXPelsPerMeter " << image.info_header.biXPelsPerMeter << L'\n';
+            wostr << L"biYPelsPerMeter " << image.info_header.biYPelsPerMeter << L'\n';
+            wostr << L"biClrUsed       " << image.info_header.biClrUsed << L'\n';
+            wostr << L"biClrImportant  " << image.info_header.biClrImportant << L'\n';
+
             return wostr;
         }
 

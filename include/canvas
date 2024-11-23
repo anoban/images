@@ -79,4 +79,9 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
         [[nodiscard]] bitmap unwrap() const noexcept { return pane; }
 
         decltype(auto) to_file(const wchar_t* const filepath) const noexcept { return pane.to_file(filepath); }
+
+        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const canvas& image) noexcept {
+            wostr << image.pane;
+            return wostr;
+        };
 };

@@ -1,8 +1,9 @@
 #include <canvas>
-#include <ico>
 
 int wmain() {
-    // bitmap       image { LR"(./sydney_sweeney.bmp)" };
+    bitmap image { LR"(./sydney_sweeney.bmp)" };
+    std::wcout << image;
+
     // const canvas board { std::move(image) };
     //
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
@@ -17,11 +18,13 @@ int wmain() {
     // board.remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(green.bmp)");
     // board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
     //
-    // std::wcout << board.shape() << L'\n';
+    std::wcout << L'\n';
 
     canvas board { 1024, 1024 };
     board.fill({ 0xFF, 0x00, 0x00, 0xFF });
-    board.to_file(LR"(./board.bmp)");
+    board.to_file(LR"(board.bmp)");
+    //
+    std::wcout << board;
 
     return EXIT_SUCCESS;
 }
