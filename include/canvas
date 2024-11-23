@@ -36,6 +36,42 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
 
         void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(pane.begin(), pane.end(), pixel); }
 
+        template<rgb::BW_TRANSFORMATION method> void to_blacknwhite() noexcept {
+            switch (method) {
+                case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(pane.begin(), pane.end(), rgb::transformers::average); break;
+                case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE :
+                    std::for_each(pane.begin(), pane.end(), rgb::transformers::weighted_average);
+                    break;
+                case rgb::BW_TRANSFORMATION::LUMINOSITY : std::for_each(pane.begin(), pane.end(), rgb::transformers::luminosity); break;
+                case rgb::BW_TRANSFORMATION::BINARY     : std::for_each(pane.begin(), pane.end(), rgb::transformers::binary); break;
+            }
+        }
+
+        template<rgb::BW_TRANSFORMATION method> [[nodiscard]] canvas to_blacknwhite() const noexcept {
+            auto copy { *this };
+            switch (method) {
+                case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::average); break;
+                case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE :
+                    std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::weighted_average);
+                    break;
+                case rgb::BW_TRANSFORMATION::LUMINOSITY :
+                    std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::luminosity);
+                    break;
+                case rgb::BW_TRANSFORMATION::BINARY : std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::binary); break;
+            }
+            return copy;
+        }
+
+        template<rgb::RGB_TAG colour_combination> void remove_colour() noexcept {
+            std::for_each(pane.begin(), pane.end(), rgb::removers::zero<colour_combination> {});
+        }
+
+        template<rgb::RGB_TAG colour_combination> [[nodiscard]] canvas remove_colour() const noexcept {
+            auto copy { *this };
+            std::for_each(copy.pane.begin(), copy.pane.end(), rgb::removers::zero<colour_combination> {});
+            return copy;
+        }
+
         decltype(auto) shape() const noexcept { return pane.dim(); }
 
         [[nodiscard]] canvas copy() const noexcept { return *this; }

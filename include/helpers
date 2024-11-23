@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <iostream>
 #include <type_traits>
 
 // clang-format off
@@ -52,6 +53,13 @@ static constexpr bool __stdcall operator!=(_In_ const RGBQUAD& left, _In_ const 
     return left.rgbBlue != right.rgbBlue || left.rgbGreen != right.rgbGreen || left.rgbRed != right.rgbRed;
 }
 
+template<std::integral _Ty, typename _TyChar> requires(std::is_same_v<_TyChar, char> || std::is_same_v<_TyChar, wchar_t>)
+std::basic_ostream<_TyChar>& operator<<(_Inout_ std::basic_ostream<_TyChar>& ostr, _In_ const std::pair<_Ty, _Ty> pair) noexcept {
+    ostr << static_cast<_TyChar>('[') << pair.first << static_cast<_TyChar>(',') << static_cast<_TyChar>(' ') << pair.second
+         << static_cast<_TyChar>(']');
+    return ostr;
+}
+
 inline namespace rgb {
 
     // RGB combinations of colours
@@ -84,14 +92,14 @@ inline namespace rgb {
                 (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8;
         }
 
-        // each colour value gets scaled down to 0 or scaled up to 255 depending on the corresponding value
-        static constexpr void __stdcall negative(_Inout_ RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255Ui8 : 0Ui8;
-            pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255Ui8 : 0Ui8;
-            pixel.rgbRed   = pixel.rgbRed >= 128 ? 255Ui8 : 0Ui8;
-        }
-
     } // namespace transformers
+
+    // each colour value gets scaled down to 0 or scaled up to 255 depending on the corresponding value
+    static constexpr void __stdcall negative(_Inout_ RGBQUAD& pixel) noexcept {
+        pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255Ui8 : 0Ui8;
+        pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255Ui8 : 0Ui8;
+        pixel.rgbRed   = pixel.rgbRed >= 128 ? 255Ui8 : 0Ui8;
+    }
 
     namespace removers { // this is really verbose but makes mutating the pixel buffers possible with a single std::for_each call
 
