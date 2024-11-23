@@ -29,14 +29,14 @@ static constexpr _TyTo __stdcall to_underlying(_In_ const _TyFrom& enumeration) 
     return static_cast<_TyTo>(enumeration);
 }
 
-template<typename _TyCandidate, typename _Ty>
+template<typename _TyCandidate, typename _Ty> // NOLINTNEXTLINE(modernize-use-constraints)
 static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_Ty>::value, bool>::type is_in(
     _In_ const _TyCandidate& candidate, _In_ const _Ty& last
 ) noexcept {
     return candidate == last;
 }
 
-template<typename _TyCandidate, typename _TyFirst, typename... _TyList>
+template<typename _TyCandidate, typename _TyFirst, typename... _TyList> // NOLINTNEXTLINE(modernize-use-constraints)
 static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_TyFirst>::value, bool>::type is_in(
     _In_ const _TyCandidate& candidate, _In_ const _TyFirst& first, _In_ const _TyList&... list
 ) noexcept {

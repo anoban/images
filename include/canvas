@@ -12,9 +12,35 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
 
         explicit canvas(_In_ bitmap&& image) noexcept : pane { std::move(image) } { }
 
-        ~canvas() noexcept { }
+        ~canvas() noexcept = default;
+
+        decltype(auto) begin() noexcept { return pane.begin(); } // NOLINT(readability-make-member-function-const)
+
+        decltype(auto) begin() const noexcept { return pane.begin(); }
+
+        decltype(auto) cbegin() const noexcept { return pane.cbegin(); }
+
+        decltype(auto) end() noexcept { return pane.end(); } // NOLINT(readability-make-member-function-const)
+
+        decltype(auto) end() const noexcept { return pane.end(); }
+
+        decltype(auto) cend() const noexcept { return pane.cend(); }
+
+        decltype(auto) operator[](_In_ const bitmap::size_type offset) noexcept { // NOLINT(readability-make-member-function-const)
+            return pane[offset];                                                  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        }
+
+        decltype(auto) operator[](_In_ const bitmap::size_type offset) const noexcept {
+            return pane[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        }
 
         void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(pane.begin(), pane.end(), pixel); }
 
-        bool to_file(const wchar_t* const filepath) const noexcept { return pane.to_file(filepath); }
+        decltype(auto) shape() const noexcept { return pane.dim(); }
+
+        [[nodiscard]] canvas copy() const noexcept { return *this; }
+
+        [[nodiscard]] bitmap unwrap() const noexcept { return pane; }
+
+        decltype(auto) to_file(const wchar_t* const filepath) const noexcept { return pane.to_file(filepath); }
 };
