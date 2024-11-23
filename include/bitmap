@@ -12,11 +12,6 @@
 #include <imageio>
 #include <iterators>
 
-#include <windef.h>
-#include <wingdi.h>
-
-#pragma comment(lib, "Gdi32.lib")
-
 // Windows .bmp format supports 1, 4, 8, 16, 24 and 32 bits pixel depths
 // eventhough Windows bitmaps support simple run length compression for pixels with 4 or 8 bits depth, it's rarely used as this compression gives tangible
 // reductions only with large pixel blocks of identical colours, which is rare in real life images
@@ -99,8 +94,10 @@ class bitmap final { // this class is designed to represent what Windows calls a
                                       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             header.bfSize      = *reinterpret_cast<const unsigned int*>(imstream + 2); // file size in bytes
             header.bfReserved1 = header.bfReserved2 = 0;                               // 4 reserved bytes
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            header.bfOffBits = *reinterpret_cast<const unsigned int*>(imstream + 10); // offset to the start of pixel data
+            // offset from the beginning of BITMAPFILEHEADER struct to the start of pixel data
+            header.bfOffBits = *reinterpret_cast<const unsigned int*>( // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                imstream + 10
+            );
             return header;
         }
 
@@ -212,21 +209,39 @@ class bitmap final { // this class is designed to represent what Windows calls a
             file_size { size },
             buffer_size { size } { }
 
-        bitmap(_In_ const unsigned long long width, _In_ const unsigned long long height) noexcept :
+        bitmap(_In_ const long width, _In_ const long height) noexcept :
             buffer { new (std::nothrow
             ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
-            file_header {
-                SOI,
-                static_cast<unsigned long>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)),
-                0,
-                0,
-                static_cast<unsigned long>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
-            },
-            info_header {}, // TODO
+            file_header { .bfType = 0x4D42,
+                          .bfSize = static_cast<unsigned long>(
+                              sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)
+                          ),
+                          .bfReserved1 = 0,
+                          .bfReserved2 = 0,
+                          .bfOffBits   = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) },
+            info_header { .biSize          = sizeof(BITMAPINFOHEADER),
+                          .biWidth         = width,
+                          .biHeight        = height,
+                          .biPlanes        = 1,
+                          .biBitCount      = 32,
+                          .biCompression   = BI_RGB, // uncompressed RGB
+                          .biSizeImage     = 0,
+                          .biXPelsPerMeter = 0, // resolution in pixels per meter along the x axis
+                          .biYPelsPerMeter = 0, // resolution in pixels per meter along the y axis
+                          .biClrUsed       = 0,
+                          .biClrImportant  = 0 },
             file_size { file_header.bfSize },
-            buffer_size { file_header.bfSize } { }
+            buffer_size { file_header.bfSize } {
+            if (!buffer) [[unlikely]] {
+                ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
+                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                return;
+            }
+
+            ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
+            ::memcpy_s(buffer + sizeof(BITMAPINFOHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
+        }
 
     public:
         // copy constructor
