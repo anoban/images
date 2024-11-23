@@ -12,6 +12,8 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
 
         explicit canvas(_In_ bitmap&& image) noexcept : pane { std::move(image) } { }
 
+        ~canvas() noexcept { }
+
         void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(pane.begin(), pane.end(), pixel); }
 
         bool to_file(const wchar_t* const filepath) const noexcept { return pane.to_file(filepath); }

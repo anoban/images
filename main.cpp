@@ -1,14 +1,12 @@
 #include <canvas>
 #include <ico>
 
-int wmain(_In_ const int argc, _In_ const wchar_t** const argv) {
-    // if (argc == 1) return EXIT_FAILURE;
-
+int wmain() {
     bitmap image { LR"(./black.bmp)" };
     canvas board { std::move(image) };
 
-    board.fill({ 0x00, 0x0A, 0x0A, 0xFF });
-    board.to_file(LR"(canvas.bmp)");
+    board.fill({ 0x80, 0x80, 0x00, 0xFF });
+    board.to_file(LR"(yellow.bmp)");
 
     return EXIT_SUCCESS;
 }

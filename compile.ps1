@@ -41,7 +41,7 @@ $cflags = @(
     "/std:c++20",
     "/TP",
     "/Wall",
-    "/wd4514",      # removed unreferenced inline function
+    "/wd4505",      # removed unreferenced inline function
     "/wd4710",      # not inlined
     "/wd4711",      # selected for inline expansion
     "/wd4820",      # struct padding

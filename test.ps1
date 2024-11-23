@@ -52,6 +52,9 @@ $cflags = @(
     "/wd4711",      # selected for inline expansion
     "/wd4820",      # struct padding
     "/wd4061",      # gtest
+    "/wd4365",      # signed unsigned
+    "/wd4388",      # signed unsigned
+    "/wd4389",      # signed unsigned
     "/wd4623",      # gtest
     "/wd4625",      # gtest
     "/wd4626",      # gtest
