@@ -56,7 +56,7 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         void vflip() noexcept { // reverse the order of scanlines in the image
 
-            __m512i    top {}, bottom {};
+            __m512i    top {}, bottom {}; // NOLINT(readability-isolate-declaration)
             const auto residues { info_header.biWidth % sizeof(__m512i) };
 
             for (long row = 0; row < info_header.biHeight / 2; ++row) {

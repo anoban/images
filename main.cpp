@@ -20,7 +20,7 @@ int wmain() {
     // board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
 
     // ::create_mandelbrot_set();
-    fractals::tricorn(12000, 12000).to_file(LR"(.\tricorn.bmp)");
+    fractals::tricorn(2000, 2000).to_file(LR"(.\tricorn.bmp)");
 
     return EXIT_SUCCESS;
 }

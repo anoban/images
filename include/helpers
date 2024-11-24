@@ -286,3 +286,25 @@ namespace endian {
     }
 
 } // namespace endian
+
+template<typename _Ty> requires std::is_arithmetic_v<_Ty> class complex final {
+    private:
+        _Ty _real;
+        _Ty _imag;
+
+    public:
+        constexpr complex() noexcept : _real {}, _imag {} { }
+        constexpr explicit complex(const _Ty& v) noexcept : _real { v }, _imag { v } { }
+        constexpr complex(const _Ty& r, const _Ty& i) noexcept : _real { r }, _imag { i } { }
+
+        constexpr complex(const complex&)            = default;
+        constexpr complex(complex&&)                 = default;
+        constexpr complex& operator=(const complex&) = default;
+        constexpr complex& operator=(complex&&)      = default;
+        constexpr ~complex() noexcept                = default;
+
+        constexpr _Ty& real() noexcept { return _real; }
+        constexpr _Ty  real() const noexcept { return _real; }
+        constexpr _Ty& imag() noexcept { return _imag; }
+        constexpr _Ty  imag() const noexcept { return _imag; }
+};
