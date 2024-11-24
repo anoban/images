@@ -52,12 +52,14 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 #endif
         // clang-format on
 
+        // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
         unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER file_header;
         BITMAPINFOHEADER info_header;
         unsigned long    file_size;   // file size
         unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+                                      // NOLINTEND(misc-non-private-member-variables-in-classes)
         friend class icondirectory;   // to serialize ico objects as bitmaps, we need access to this class's internals
         friend class canvas;
 
@@ -212,6 +214,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         bitmap(_In_ const long width, _In_ const long height) noexcept :
             buffer { new (std::nothrow
             ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { .bfType = 0x4D42,
                           .bfSize = static_cast<unsigned long>(
@@ -240,6 +243,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             }
 
             ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             ::memcpy_s(buffer + sizeof(BITMAPFILEHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
         }
 
