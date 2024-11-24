@@ -4,17 +4,19 @@
 
 namespace fractals {
 
+    static constexpr RGBQUAD BLACK { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0xFF };
+
     // look up https://en.wikipedia.org/wiki/Mandelbrot_set
-    static canvas mandelbrot_set(_In_ const long& width, _In_ const long& height) noexcept {
+    static canvas mandelbrot(_In_ const long& width, _In_ const long& height) noexcept {
         canvas mandelbrot { width, height };
 
         double             cr {}, ci {}, nextr {}, nexti {}, prevr {}, previ {}; // NOLINT(readability-isolate-declaration)
         constexpr unsigned MAX_ITERATIONS { 1000 };
 
-        for (long y = 0; y < mandelbrot.height(); ++y) {
-            for (long x = 0; x < mandelbrot.width(); ++x) {
-                cr = 1.5 * (2.0 * x / mandelbrot.width() - 1.0) - 0.5;
-                ci = (2.0 * y / mandelbrot.height() - 1.0);
+        for (long row = 0; row < mandelbrot.height(); ++row) {
+            for (long col = 0; col < mandelbrot.width(); ++col) {
+                cr = 1.5 * (2.0 * col / mandelbrot.width() - 1.0) - 0.5;
+                ci = (2.0 * row / mandelbrot.height() - 1.0);
 
                 for (unsigned i = 0; i < MAX_ITERATIONS; ++i) {
                     prevr = nextr;
@@ -30,7 +32,7 @@ namespace fractals {
                         const unsigned int index =
                             static_cast<unsigned int>(1000.0 * log2(1.75 + i - log2(log2(z))) / log2(MAX_ITERATIONS));
 
-                        mandelbrot[x + y * mandelbrot.height()] = colourmaps::JET.at(index);
+                        mandelbrot[col + row * mandelbrot.height()] = colourmaps::JET.at(index);
 
                         break;
                     }
@@ -71,8 +73,7 @@ namespace fractals {
                     cmplx    = { realtemp, -2.000 * cmplx.real() * cmplx.imag() + scaled_y_coordinate };
                 }
 
-                tricorn[row * tricorn.height() + col] =
-                    (iterations == MAX_ITERATIONS) ? RGBQUAD { 0x00, 0x00, 0x00, 0xFF } : colourmaps::PRISM.at(iterations);
+                tricorn[row * tricorn.height() + col] = (iterations == MAX_ITERATIONS) ? BLACK : colourmaps::PRISM.at(iterations);
             }
         }
 
@@ -80,5 +81,38 @@ namespace fractals {
     }
 
     // look up https://en.wikipedia.org/wiki/Julia_set
-    static canvas julia_set(_In_ const long& width, _In_ const long& height) noexcept { }
+    static canvas julia(
+        _In_ const long&   width,
+        _In_ const long&   height,
+        _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
+    ) noexcept {
+        canvas               julia { width, height };
+        std::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+
+        const double   escaperadsq { escape_radius * escape_radius };
+        unsigned long  iterations {};
+        constexpr auto MAX_ITERATIONS { CMAPSIZE };
+        double         realtemp {}, realsq {}, imagsq {}; // NOLINT(readability-isolate-declaration)
+
+        // for each pixel in the image
+        for (long row = 0; row < julia.height(); ++row) {
+            for (long col = 0; col < julia.width(); ++col) {
+                // dividing col by width will scale the value (0, 1), multiplication by 2 shifts the scale to (0, 2)
+                // subtracting 1 shifts to (-1, 1) and the ultimate multiplication by escape_radius will shift it to (-escape_radius, escape_radius)
+                // same goes for the col too
+                scaled_coordinates = { (col / static_cast<double>(julia.width()) * 2.000 - 1.0000) * escape_radius,
+                                       (row / static_cast<double>(julia.height()) * 2.000 - 1.0000) * escape_radius };
+
+                iterations         = 0;
+                realsq             = scaled_coordinates.real() * scaled_coordinates.real();
+                imagsq             = scaled_coordinates.imag() * scaled_coordinates.imag();
+
+                while (realsq + imagsq < escaperadsq && ++iterations < MAX_ITERATIONS) {
+                    //
+                    realtemp           = realsq - imagsq;
+                    scaled_coordinates = {};
+                }
+            }
+        }
+    }
 } // namespace fractals
