@@ -1,5 +1,5 @@
 #include <canvas>
-#include <cmath>
+#include <fractals>
 
 int wmain() {
     // bitmap image { LR"(.\butterflies.bmp)" };
@@ -20,7 +20,7 @@ int wmain() {
     // board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
 
     // ::create_mandelbrot_set();
-    ::generate_tricorn(1000, 1000).to_file(LR"(.\tricorn.bmp)");
+    fractals::tricorn(12000, 12000).to_file(LR"(.\tricorn.bmp)");
 
     return EXIT_SUCCESS;
 }

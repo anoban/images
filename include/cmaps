@@ -8,14 +8,14 @@
 #include <wingdi.h>
 
 // colourmaps courtesy of https://github.com/ArashPartow/bitmap/blob/master/bitmap_image.hpp
-// his colourmaps use struct rgb_t { unsigned char red; unsigned char green; unsigned char blue; }; as pixel type
-// hence they have been refactored to comply with GDI's RGBQUAD which sequences colours in BGR order
+// his colourmaps use struct rgb_t { unsigned char red; unsigned char green; unsigned char blue; }; as the pixel type (RGB sequence)
+// hence they have been refactored to comply with GDI's RGBQUAD struct, which sequences colours in BGR order
 
 // NOLINTBEGIN(modernize-use-designated-initializers)
 
 static constexpr unsigned CMAPSIZE { 1000 };
 
-namespace colourmaps {
+inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, HSV, HOT, GREY, COPER and AUTUMN
 
     static constexpr std::array<RGBQUAD, CMAPSIZE> YARG {
         { { 0, 0, 0, 255 },       { 0, 0, 0, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },
