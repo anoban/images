@@ -59,11 +59,19 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
             __m512i    top {}, bottom {};
             const auto residues { info_header.biWidth % sizeof(__m512i) };
 
-            for (long row = 0; row < info_header.biHeight; ++row) {
-                for (unsigned i = 0; i < info_header.biWidth - residues; i += sizeof(__m512i)) { // keep swapping the scanlines
+            for (long row = 0; row < info_header.biHeight / 2; ++row) {
+                unsigned i {};
+                for (i = 0; i < info_header.biWidth - residues; i += sizeof(__m512i)) { // keep swapping the scanlines
+
+                    top    = ::_mm512_loadu_epi8(pixels + info_header.biWidth * row + i);
+                    bottom = ::_mm512_loadu_epi8(pixels + (info_header.biWidth * info_header.biHeight) - (info_header.biWidth * row + i));
+
+                    ::_mm512_storeu_epi8(pixels + info_header.biWidth * row + i, bottom);
+                    ::_mm512_storeu_epi8(pixels + (info_header.biWidth * info_header.biHeight) - (info_header.biWidth * row + i), top);
+                }
+
+                while (i++ < info_header.biWidth) { // handle the residues
                     //
-                    bottom = _mm512_loadu_epi8(pixels + i);
-                    top    = _mm512_loadu_epi8(pixels + i);
                 }
             }
         }

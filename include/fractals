@@ -1,0 +1,84 @@
+#include <canvas>
+#include <cmaps>
+#include <complex>
+
+namespace fractals {
+
+    // look up https://en.wikipedia.org/wiki/Mandelbrot_set
+    static inline canvas generate_mandelbrot_set(_In_ const long& width, _In_ const long& height) noexcept {
+        canvas mandelbrot { width, height };
+
+        double             cr {}, ci {}, nextr {}, nexti {}, prevr {}, previ {};
+        constexpr unsigned MAX_ITERATIONS { 1000 };
+
+        for (long y = 0; y < mandelbrot.height(); ++y) {
+            for (long x = 0; x < mandelbrot.width(); ++x) {
+                cr = 1.5 * (2.0 * x / mandelbrot.width() - 1.0) - 0.5;
+                ci = (2.0 * y / mandelbrot.height() - 1.0);
+
+                for (unsigned i = 0; i < MAX_ITERATIONS; ++i) {
+                    prevr = nextr;
+                    previ = nexti;
+
+                    nextr = prevr * prevr - previ * previ + cr;
+                    nexti = 2 * prevr * previ + ci;
+
+                    if (((nextr * nextr) + (nexti * nexti)) > 4) {
+                        const double z = ::sqrt(nextr * nextr + nexti * nexti);
+
+                        //https://en.wikipedia.org/wiki/Mandelbrot_set#Continuous_.28smooth.29_coloring
+                        const unsigned int index =
+                            static_cast<unsigned int>(1000.0 * log2(1.75 + i - log2(log2(z))) / log2(MAX_ITERATIONS));
+
+                        mandelbrot[x + y * mandelbrot.height()] = jet_colormap[index];
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return mandelbrot;
+    }
+
+    // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
+    static inline canvas generate_tricorn(_In_ const long& width, _In_ const long& height) noexcept {
+        canvas tricorn { width, height }; // prepare the canvas
+
+        double               scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
+        std::complex<double> cmplx {};
+
+        constexpr unsigned MAX_ITERATIONS { 1000 };
+        unsigned long long iterations {};
+        double             xtemp {};
+
+        for (long row = 0; row < tricorn.height(); ++row) {
+            for (long col = 0; col < tricorn.width(); ++col) {
+                // dividing col by width gives a value (0, 1), multiplying that by 3.500 upscales to to (0, 3.5), then subtracting 2.5 gives
+                // us (-2.5, 1)
+                scaled_x_coordinate = col / static_cast<double>(tricorn.width()) * 3.50000 - 2.50000;
+                // dividing row by height will give a value (0, 1), by multiplying by 2 we could stretch it to (0, 2), then by subtracting 1
+                // we could shift the range to (-1, 1)
+                scaled_y_coordinate = row / static_cast<double>(tricorn.height()) * 2.00000 - 1.00000;
+
+                cmplx               = { scaled_x_coordinate, scaled_y_coordinate };
+
+                // for each pixel in the image
+                while ((cmplx.real() * cmplx.real() + cmplx.imag() * cmplx.imag()) < 4.0000 && ++iterations < MAX_ITERATIONS) {
+                    xtemp = cmplx.real() * cmplx.real() - cmplx.imag() * cmplx.imag() + scaled_x_coordinate;
+                    cmplx = { xtemp, -2.000 * cmplx.real() * cmplx.imag() + scaled_y_coordinate };
+                }
+
+                assert(iterations < MAX_ITERATIONS);
+
+                tricorn[row * tricorn.height() + col] =
+                    (iterations == MAX_ITERATIONS) ? RGBQUAD { 0x00, 0x00, 0x00, 0xFF } : jet_colormap[iterations];
+            }
+        }
+
+        return tricorn;
+    }
+
+    // look up https://en.wikipedia.org/wiki/Julia_set
+    static inline canvas generate_julia_set() noexcept { }
+} // namespace fractals
