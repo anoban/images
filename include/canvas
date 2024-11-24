@@ -1,6 +1,8 @@
 #pragma once
 #include <bitmap>
 
+#include <immintrin.h>
+
 class canvas final { // a drawing canvas that uses bitmaps as their internal resource
     private:
         bitmap pane;
@@ -34,8 +36,13 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
             return pane[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
+        decltype(auto) height() const noexcept { return pane.height(); }
+
+        decltype(auto) width() const noexcept { return pane.width(); }
+
         void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(pane.begin(), pane.end(), pixel); }
 
+        // transform the image to black and white using the selected mechanism
         template<rgb::BW_TRANSFORMATION method> void to_blacknwhite() noexcept {
             switch (method) {
                 case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(pane.begin(), pane.end(), rgb::transformers::average); break;
@@ -62,6 +69,7 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
             return copy;
         }
 
+        // remove the selected colours from the pixels of the image
         template<rgb::RGB_TAG colour_combination> void remove_colour() noexcept {
             std::for_each(pane.begin(), pane.end(), rgb::removers::zero<colour_combination> {});
         }
@@ -71,6 +79,23 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
             std::for_each(copy.pane.begin(), copy.pane.end(), rgb::removers::zero<colour_combination> {});
             return copy;
         }
+
+        void hflip() noexcept { }
+
+        [[nodiscard]] canvas hflip() const noexcept { }
+
+        void vflip() noexcept {
+            // reverse the order of scanlines in the image
+            auto* const scanline { new (std::nothrow) unsigned char[pane.info_header.biWidth] };
+            __m512i_u   temp {};
+            for (long row = 0; row < pane.info_header.biHeight; ++row) { // keep swapping the scanlines
+                //
+            }
+
+            delete[] scanline;
+        }
+
+        [[nodiscard]] canvas vflip() const noexcept { }
 
         decltype(auto) shape() const noexcept { return pane.dim(); }
 

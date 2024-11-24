@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_MEAN
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <type_traits>
@@ -228,8 +229,8 @@ class bitmap final { // this class is designed to represent what Windows calls a
                           .biBitCount      = 32,
                           .biCompression   = BI_RGB, // uncompressed RGB
                           .biSizeImage     = 0,
-                          .biXPelsPerMeter = 3780, // ???????????
-                          .biYPelsPerMeter = 3780, // ???????????
+                          .biXPelsPerMeter = 3780, // an arbitrary choice
+                          .biYPelsPerMeter = 3780, // an arbitrary choice
                           .biClrUsed       = 0,
                           .biClrImportant  = 0 },
             file_size { file_header.bfSize },
@@ -286,9 +287,8 @@ class bitmap final { // this class is designed to represent what Windows calls a
                 file_size = other.file_size;               // keep the existing buffer_size as we are reusing the existing buffer
 
             ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
-            pixels      = reinterpret_cast<RGBQUAD*>( // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)
-            );
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            pixels      = reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
             file_header = other.file_header;
             info_header = other.info_header;
 
@@ -330,22 +330,23 @@ class bitmap final { // this class is designed to represent what Windows calls a
         }
 
         friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const bitmap& image) noexcept {
-            wostr << L"bfType          " << image.file_header.bfType << L'\n';
-            wostr << L"bfSize          " << image.file_header.bfSize << L'\n';
-            wostr << L"bfOffBits       " << image.file_header.bfOffBits << L'\n';
-
-            wostr << L"biSize          " << image.info_header.biSize << L'\n';
-            wostr << L"biWidth         " << image.info_header.biWidth << L'\n';
-            wostr << L"biHeight        " << image.info_header.biHeight << L'\n';
-            wostr << L"biPlanes        " << image.info_header.biPlanes << L'\n';
-            wostr << L"biBitCount      " << image.info_header.biBitCount << L'\n';
-            wostr << L"biCompression   " << image.info_header.biCompression << L'\n';
-            wostr << L"biSizeImage     " << image.info_header.biSizeImage << L'\n';
-            wostr << L"biXPelsPerMeter " << image.info_header.biXPelsPerMeter << L'\n';
-            wostr << L"biYPelsPerMeter " << image.info_header.biYPelsPerMeter << L'\n';
-            wostr << L"biClrUsed       " << image.info_header.biClrUsed << L'\n';
-            wostr << L"biClrImportant  " << image.info_header.biClrImportant << L'\n';
-
+            wostr << L"---------------------------------------\n";
+            wostr << L"| bfType          " << std::setw(20) << image.file_header.bfType << L"|\n";
+            wostr << L"| bfSize          " << std::setw(20) << image.file_header.bfSize << L"|\n";
+            wostr << L"| bfOffBits       " << std::setw(20) << image.file_header.bfOffBits << L"|\n";
+            wostr << L"|-------------------------------------|\n";
+            wostr << L"| biSize          " << std::setw(20) << image.info_header.biSize << L"|\n";
+            wostr << L"| biWidth         " << std::setw(20) << image.info_header.biWidth << L"|\n";
+            wostr << L"| biHeight        " << std::setw(20) << image.info_header.biHeight << L"|\n";
+            wostr << L"| biPlanes        " << std::setw(20) << image.info_header.biPlanes << L"|\n";
+            wostr << L"| biBitCount      " << std::setw(20) << image.info_header.biBitCount << L"|\n";
+            wostr << L"| biCompression   " << std::setw(20) << image.info_header.biCompression << L"|\n";
+            wostr << L"| biSizeImage     " << std::setw(20) << image.info_header.biSizeImage << L"|\n";
+            wostr << L"| biXPelsPerMeter " << std::setw(20) << image.info_header.biXPelsPerMeter << L"|\n";
+            wostr << L"| biYPelsPerMeter " << std::setw(20) << image.info_header.biYPelsPerMeter << L"|\n";
+            wostr << L"| biClrUsed       " << std::setw(20) << image.info_header.biClrUsed << L"|\n";
+            wostr << L"| biClrImportant  " << std::setw(20) << image.info_header.biClrImportant << L"|\n";
+            wostr << L"---------------------------------------\n";
             return wostr;
         }
 
@@ -397,4 +398,8 @@ class bitmap final { // this class is designed to represent what Windows calls a
 
         // returns the height and width of the bitmap, in that order
         std::pair<size_type, size_type> dim() const noexcept { return { info_header.biHeight, info_header.biWidth }; }
+
+        long height() const noexcept { return info_header.biHeight; }
+
+        long width() const noexcept { return info_header.biWidth; }
 };
