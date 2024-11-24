@@ -147,26 +147,7 @@ static constexpr std::array<RGBQUAD, 1000> jet_colormap {
      { 127, 0, 0 },     { 122, 0, 9 },     { 117, 0, 18 },    { 112, 0, 27 },    { 107, 0, 36 },    { 102, 0, 45 } }
 };
 
-int wmain() {
-    bitmap image { LR"(./concealment.bmp)" };
-    std::wcout << image;
-
-    // const canvas board { std::move(image) };
-    //
-    // board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
-    // board.to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(weighted_average.bmp)");
-    // board.to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(luminosity.bmp)");
-    // board.to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(binary.bmp)");
-    //
-    // board.remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(bluegreen.bmp)");
-    // board.remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(redblue.bmp)");
-    // board.remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(redgreen.bmp)");
-    // board.remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(red.bmp)");
-    // board.remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(green.bmp)");
-    // board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
-    //
-    std::wcout << L'\n';
-
+static inline void create_mandelbrot_set() noexcept {
     canvas mandelbrot { 6000, 4000 };
 
     double cr, ci;
@@ -205,37 +186,27 @@ int wmain() {
     }
 
     mandelbrot.to_file(L"mandelbrot_set.bmp");
+}
 
-    canvas julia(6000, 4000);
+int wmain() {
+    bitmap image { LR"(./concealment.bmp)" };
+    std::wcout << image;
 
-    // const unsigned int max_iterations = 300;
+    const canvas board { std::move(image) };
 
-    const double _cr = -0.70000;
-    const double _ci = 0.27015;
+    board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
+    board.to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(weighted_average.bmp)");
+    board.to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(luminosity.bmp)");
+    board.to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(binary.bmp)");
 
-    prevr = previ = 0;
+    board.remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(bluegreen.bmp)");
+    board.remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(redblue.bmp)");
+    board.remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(redgreen.bmp)");
+    board.remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(red.bmp)");
+    board.remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(green.bmp)");
+    board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
 
-    for (unsigned int y = 0; y < mandelbrot.height(); ++y) {
-        for (unsigned int x = 0; x < mandelbrot.width(); ++x) {
-            nextr = 1.5 * (2.0 * x / mandelbrot.width() - 1.0);
-            nexti = (2.0 * y / mandelbrot.height() - 1.0);
-
-            for (unsigned int i = 0; i < max_iterations; ++i) {
-                prevr = nextr;
-                previ = nexti;
-
-                nextr = prevr * prevr - previ * previ + cr;
-                nexti = 2 * prevr * previ + ci;
-
-                if (((nextr * nextr) + (nexti * nexti)) > 4) {
-                    julia[x + y * julia.height()] = jet_colormap[static_cast<int>((1000.0 * i) / max_iterations)];
-                    break;
-                }
-            }
-        }
-    }
-
-    julia.to_file(L"julia_set.bmp");
+    std::wcout << L'\n';
 
     return EXIT_SUCCESS;
 }

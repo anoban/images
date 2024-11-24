@@ -3,80 +3,50 @@
 
 #include <immintrin.h>
 
-class canvas final { // a drawing canvas that uses bitmaps as their internal resource
-    private:
-        bitmap pane;
+class canvas final : public bitmap { // a drawing canvas that uses bitmaps as their internal resource
 
     public:
-        canvas(_In_ const unsigned long long width, _In_ const unsigned long long height) noexcept : pane(width, height) { }
+        canvas(_In_ const long width, _In_ const long height) noexcept : bitmap { width, height } { }
 
-        explicit canvas(_In_ const bitmap& image) noexcept : pane { image } { }
+        explicit canvas(_In_ const bitmap& image) noexcept : bitmap { image } { }
 
-        explicit canvas(_In_ bitmap&& image) noexcept : pane { std::move(image) } { }
+        explicit canvas(_In_ bitmap&& image) noexcept : bitmap { std::move(image) } { }
 
         ~canvas() noexcept = default;
 
-        decltype(auto) begin() noexcept { return pane.begin(); } // NOLINT(readability-make-member-function-const)
-
-        decltype(auto) begin() const noexcept { return pane.begin(); }
-
-        decltype(auto) cbegin() const noexcept { return pane.cbegin(); }
-
-        decltype(auto) end() noexcept { return pane.end(); } // NOLINT(readability-make-member-function-const)
-
-        decltype(auto) end() const noexcept { return pane.end(); }
-
-        decltype(auto) cend() const noexcept { return pane.cend(); }
-
-        decltype(auto) operator[](_In_ const bitmap::size_type offset) noexcept { // NOLINT(readability-make-member-function-const)
-            return pane[offset];                                                  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        }
-
-        decltype(auto) operator[](_In_ const bitmap::size_type offset) const noexcept {
-            return pane[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        }
-
-        decltype(auto) height() const noexcept { return pane.height(); }
-
-        decltype(auto) width() const noexcept { return pane.width(); }
-
-        void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(pane.begin(), pane.end(), pixel); }
+        void fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(begin(), end(), pixel); }
 
         // transform the image to black and white using the selected mechanism
         template<rgb::BW_TRANSFORMATION method> void to_blacknwhite() noexcept {
             switch (method) {
-                case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(pane.begin(), pane.end(), rgb::transformers::average); break;
-                case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE :
-                    std::for_each(pane.begin(), pane.end(), rgb::transformers::weighted_average);
-                    break;
-                case rgb::BW_TRANSFORMATION::LUMINOSITY : std::for_each(pane.begin(), pane.end(), rgb::transformers::luminosity); break;
-                case rgb::BW_TRANSFORMATION::BINARY     : std::for_each(pane.begin(), pane.end(), rgb::transformers::binary); break;
+                case rgb::BW_TRANSFORMATION::AVERAGE          : std::for_each(begin(), end(), rgb::transformers::average); break;
+                case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE : std::for_each(begin(), end(), rgb::transformers::weighted_average); break;
+                case rgb::BW_TRANSFORMATION::LUMINOSITY       : std::for_each(begin(), end(), rgb::transformers::luminosity); break;
+                case rgb::BW_TRANSFORMATION::BINARY           : std::for_each(begin(), end(), rgb::transformers::binary); break;
             }
         }
 
         template<rgb::BW_TRANSFORMATION method> [[nodiscard]] canvas to_blacknwhite() const noexcept {
             auto copy { *this };
             switch (method) {
-                case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::average); break;
+                case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(copy.begin(), copy.end(), rgb::transformers::average); break;
                 case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE :
-                    std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::weighted_average);
+                    std::for_each(copy.begin(), copy.end(), rgb::transformers::weighted_average);
                     break;
-                case rgb::BW_TRANSFORMATION::LUMINOSITY :
-                    std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::luminosity);
-                    break;
-                case rgb::BW_TRANSFORMATION::BINARY : std::for_each(copy.pane.begin(), copy.pane.end(), rgb::transformers::binary); break;
+                case rgb::BW_TRANSFORMATION::LUMINOSITY : std::for_each(copy.begin(), copy.end(), rgb::transformers::luminosity); break;
+                case rgb::BW_TRANSFORMATION::BINARY     : std::for_each(copy.begin(), copy.end(), rgb::transformers::binary); break;
             }
             return copy;
         }
 
         // remove the selected colours from the pixels of the image
         template<rgb::RGB_TAG colour_combination> void remove_colour() noexcept {
-            std::for_each(pane.begin(), pane.end(), rgb::removers::zero<colour_combination> {});
+            std::for_each(begin(), end(), rgb::removers::zero<colour_combination> {});
         }
 
         template<rgb::RGB_TAG colour_combination> [[nodiscard]] canvas remove_colour() const noexcept {
             auto copy { *this };
-            std::for_each(copy.pane.begin(), copy.pane.end(), rgb::removers::zero<colour_combination> {});
+            std::for_each(copy.begin(), copy.end(), rgb::removers::zero<colour_combination> {});
             return copy;
         }
 
@@ -84,29 +54,23 @@ class canvas final { // a drawing canvas that uses bitmaps as their internal res
 
         [[nodiscard]] canvas hflip() const noexcept { }
 
-        void vflip() noexcept {
-            // reverse the order of scanlines in the image
-            auto* const scanline { new (std::nothrow) unsigned char[pane.info_header.biWidth] };
-            __m512i_u   temp {};
-            for (long row = 0; row < pane.info_header.biHeight; ++row) { // keep swapping the scanlines
-                //
-            }
+        void vflip() noexcept { // reverse the order of scanlines in the image
 
-            delete[] scanline;
+            __m512i    top {}, bottom {};
+            const auto residues { info_header.biWidth % sizeof(__m512i) };
+
+            for (long row = 0; row < info_header.biHeight; ++row) {
+                for (unsigned i = 0; i < info_header.biWidth - residues; i += sizeof(__m512i)) { // keep swapping the scanlines
+                    //
+                    bottom = _mm512_loadu_epi8(pixels + i);
+                    top    = _mm512_loadu_epi8(pixels + i);
+                }
+            }
         }
 
         [[nodiscard]] canvas vflip() const noexcept { }
 
-        decltype(auto) shape() const noexcept { return pane.dim(); }
-
         [[nodiscard]] canvas copy() const noexcept { return *this; }
 
-        [[nodiscard]] bitmap unwrap() const noexcept { return pane; }
-
-        decltype(auto) to_file(const wchar_t* const filepath) const noexcept { return pane.to_file(filepath); }
-
-        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const canvas& image) noexcept {
-            wostr << image.pane;
-            return wostr;
-        };
+        [[nodiscard]] bitmap unwrap() const noexcept { return *this; }
 };

@@ -34,9 +34,7 @@ enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOW
 // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
 static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
-class bottomup_scanline_iterator final { };
-
-class bitmap final { // this class is designed to represent what Windows calls as DIBs (Device Independent Bitmap)
+class bitmap { // this class is designed to represent what Windows calls as DIBs (Device Independent Bitmap)
     public:
         using value_type      = RGBQUAD; // pixel type
         using pointer         = value_type*;
@@ -49,8 +47,8 @@ class bitmap final { // this class is designed to represent what Windows calls a
         using difference_type = long long;
 
         // clang-format off
-#ifdef __TEST__
-   public:
+#ifndef __TEST__
+   protected:
 #endif
         // clang-format on
 
@@ -195,7 +193,7 @@ class bitmap final { // this class is designed to represent what Windows calls a
             ::memcpy_s(buffer, file_size, imstream, size);
         }
 
-    private:
+    protected:
         // an aggregate initializer style private constructor
         bitmap(
             _In_ unsigned char* const    imstream,
