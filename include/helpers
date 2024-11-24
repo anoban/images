@@ -3,6 +3,7 @@
 #include <iostream>
 #include <type_traits>
 
+
 // clang-format off
 #define _AMD64_
 #define WIN32_LEAN_AND_MEAN
@@ -287,7 +288,8 @@ namespace endian {
 
 } // namespace endian
 
-template<typename _Ty> requires std::is_arithmetic_v<_Ty> class complex final {
+template<typename _Ty> requires std::is_arithmetic_v<_Ty>
+class complex final { // doesn't provide the arithmetic functionalities like std::complex though
     private:
         _Ty _real;
         _Ty _imag;

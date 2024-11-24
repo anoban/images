@@ -3,7 +3,7 @@
 #include <cmath>
 #include <helpers> // for complex<> because std::complex<>'s real() and imag() methods return a const reference even when the object is non const
 // and it uses a 2 member array as the internal storage structure, so to update individual elements we need to expose the array and manually subscript into it
-// opting for a handrolled  complex, C++ heh???
+// opting for a handrolled  complex, fucking C++ heh???
 
 namespace fractals {
 
