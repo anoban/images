@@ -25,7 +25,7 @@ namespace internal {
 
         unsigned char* buffer {};
         LARGE_INTEGER  fsize {
-             { 0LLU, 0LLU }
+             { .LowPart = 0LLU, .HighPart = 0LLU }
         };
         const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
 

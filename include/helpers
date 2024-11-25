@@ -64,7 +64,7 @@ std::basic_ostream<_TyChar>& operator<<(_Inout_ std::basic_ostream<_TyChar>& ost
     return ostr;
 }
 
-inline namespace rgb {
+namespace rgb {
 
     // RGB combinations of colours
     enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
@@ -72,7 +72,7 @@ inline namespace rgb {
     // mechanism to be used in converting the pixels to black and white
     enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
 
-    inline namespace transformers {
+    namespace transformers {
 
         // each colour value in the pixel is updated to their arithmetic average
         static constexpr void __stdcall average(_Inout_ RGBQUAD& pixel) noexcept {
@@ -137,7 +137,7 @@ inline namespace rgb {
 
 } // namespace rgb
 
-inline namespace ascii {
+namespace ascii {
 
     // isalpha() from <cctype> is not constexpr :(
     static constexpr bool __stdcall is_alphabet(_In_ const char& character) noexcept {
@@ -163,7 +163,7 @@ inline namespace ascii {
 
 } // namespace ascii
 
-inline namespace crc { // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
+namespace crc { // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
 
     enum class POLYNOMIALS : unsigned {
         // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
@@ -288,7 +288,7 @@ namespace endian {
 } // namespace endian
 
 template<typename _Ty> requires std::is_arithmetic_v<_Ty>
-class coordinate final { // doesn't provide the arithmetic functionalities like std::complex though
+class coordinate final { // doesn't provide the arithmetic functionalities like std::complex<> though
     private:
         _Ty __x;
         _Ty __y;

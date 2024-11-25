@@ -5,7 +5,9 @@ int wmain(_In_opt_ int argc, _In_opt_count_c_(argc) const wchar_t* const argv[])
     for (int i = 1; i < argc; ++i) {
         canvas board(argv[i]);
         board.vflip();
-        board.to_file(std::format(LR"(.\vflipped_{:02d}.bmp)", i).c_str()); //.replace(0, LR"(.\)", L"").c_str());
+        auto fname { std::format(LR"(v{})", argv[i]) };
+        fname.erase(fname.find(LR"(.\)"), 2);
+        board.to_file(fname.c_str());
     }
 
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
