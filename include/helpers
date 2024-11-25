@@ -3,7 +3,6 @@
 #include <iostream>
 #include <type_traits>
 
-
 // clang-format off
 #define _AMD64_
 #define WIN32_LEAN_AND_MEAN
@@ -289,24 +288,24 @@ namespace endian {
 } // namespace endian
 
 template<typename _Ty> requires std::is_arithmetic_v<_Ty>
-class complex final { // doesn't provide the arithmetic functionalities like std::complex though
+class coordinate final { // doesn't provide the arithmetic functionalities like std::complex though
     private:
-        _Ty _real;
-        _Ty _imag;
+        _Ty __x;
+        _Ty __y;
 
     public:
-        constexpr complex() noexcept : _real {}, _imag {} { }
-        constexpr explicit complex(const _Ty& v) noexcept : _real { v }, _imag { v } { }
-        constexpr complex(const _Ty& r, const _Ty& i) noexcept : _real { r }, _imag { i } { }
+        constexpr coordinate() noexcept : __x {}, __y {} { }
+        constexpr explicit coordinate(const _Ty& v) noexcept : __x { v }, __y { v } { }
+        constexpr coordinate(const _Ty& x, const _Ty& y) noexcept : __x { x }, __y { y } { }
 
-        constexpr complex(const complex&)            = default;
-        constexpr complex(complex&&)                 = default;
-        constexpr complex& operator=(const complex&) = default;
-        constexpr complex& operator=(complex&&)      = default;
-        constexpr ~complex() noexcept                = default;
+        constexpr coordinate(const coordinate&)            = default;
+        constexpr coordinate(coordinate&&)                 = default;
+        constexpr coordinate& operator=(const coordinate&) = default;
+        constexpr coordinate& operator=(coordinate&&)      = default;
+        constexpr ~coordinate() noexcept                   = default;
 
-        constexpr _Ty& real() noexcept { return _real; }
-        constexpr _Ty  real() const noexcept { return _real; }
-        constexpr _Ty& imag() noexcept { return _imag; }
-        constexpr _Ty  imag() const noexcept { return _imag; }
+        constexpr _Ty& x() noexcept { return __x; }
+        constexpr _Ty  x() const noexcept { return __x; }
+        constexpr _Ty& y() noexcept { return __y; }
+        constexpr _Ty  y() const noexcept { return __y; }
 };

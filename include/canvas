@@ -2,7 +2,7 @@
 #include <bitmap>
 #include <cmaps>
 
-// std::complex<>'s real() and imag() methods return a const reference even when the object is non const
+// std::complex<>'s x() and y() methods return a const reference even when the object is non const
 // and it uses a 2 member array as the internal storage structure, so to update individual elements we need to expose the array and manually subscript into it
 // opting for a handrolled  complex, fucking C++ heh???
 
@@ -89,89 +89,97 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         [[nodiscard]] canvas copy() const noexcept { return *this; }
 
-        // a non-destructive object slicing happens here
-        [[nodiscard]] bitmap unwrap() const noexcept { return *this; }
+        [[nodiscard]] bitmap /* a non-destructive object slicing happens here */ unwrap() const noexcept { return *this; }
 
         static constexpr RGBQUAD BLACK { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0xFF };
 
-        void __cdecl mandelbrot() noexcept {                                         // look up https://en.wikipedia.org/wiki/Mandelbrot_set
-            double             cr {}, ci {}, nextr {}, nexti {}, prevr {}, previ {}; // NOLINT(readability-isolate-declaration)
-            constexpr unsigned MAX_ITERATIONS { 1000 };
+        // most of Wikipdia's fractal implementations have a lot of show stopping bugs, even though these are all inspired from
+        // Wikipedia's implementations, these contain numerous refactors to fix those bugs
+        // and thse fractal functions behave as if the scanlines in the pixel buffer are ordered top-down, since these are fractals, this is not much of an issue here
 
+        void __cdecl mandelbrot(_In_ const colourmap& cmap) noexcept { // look up https://en.wikipedia.org/wiki/Mandelbrot_set
+
+            // NOLINTNEXTLINE(readability-isolate-declaration)
+            double               scaled_x_coordinate {} /* (-2.00, 0.47) */, scaled_y_coordinate {} /* (-1.12, 1.12) */;
+            ::coordinate<double> scaled_coordinates {};
+
+            constexpr auto     MAX_ITERATIONS { CMAPSIZE };
+            volatile double    xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
+            unsigned long long iterations {};
+
+            // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
                 for (long col = 0; col < width(); ++col) {
-                    cr = 1.5 * (2.0 * col / width() - 1.0) - 0.5;
-                    ci = (2.0 * row / height() - 1.0);
+                    // dividing col by width gives a value (0, 1), multiplying that by 2.4700 upscales to to (0, 2.4700), then subtracting 2.000 gives us (-2.000, 0.4700)
+                    scaled_x_coordinate    = col / static_cast<double>(width()) * 2.47000 - 2.0000;
+                    // dividing row by height will give a value (0, 1), subtracting 0.500 shifts it to (-0.5, 0.5) then by multiplying by 2.2400 we could stretch it to (-1.1200, 1.1200)
+                    scaled_y_coordinate    = (row / static_cast<double>(height()) - 0.5000) * 2.24000;
 
-                    for (unsigned i = 0; i < MAX_ITERATIONS; ++i) {
-                        prevr = nextr;
-                        previ = nexti;
+                    scaled_coordinates.x() = scaled_x_coordinate;
+                    scaled_coordinates.y() = scaled_y_coordinate;
 
-                        nextr = prevr * prevr - previ * previ + cr;
-                        nexti = 2 * prevr * previ + ci;
+                    xsq                    = scaled_coordinates.x() * scaled_coordinates.x();
+                    ysq                    = scaled_coordinates.y() * scaled_coordinates.y();
+                    iterations             = 0;
 
-                        if (((nextr * nextr) + (nexti * nexti)) > 4) {
-                            const double z = ::sqrt(nextr * nextr + nexti * nexti);
-
-                            // https://en.wikipedia.org/wiki/Mandelbrot_set#Continuous_.28smooth.29_coloring
-                            const unsigned int index =
-                                static_cast<unsigned int>(1000.0 * log2(1.75 + i - log2(log2(z))) / log2(MAX_ITERATIONS));
-
-                            pixels[col + row * height()] = colourmaps::JET.at(index);
-
-                            break;
-                        }
+                    while (xsq + ysq < 4.0000 && ++iterations < MAX_ITERATIONS) {
+                        xtemp                  = xsq - ysq + scaled_x_coordinate;
+                        scaled_coordinates.y() = 2.0000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
+                        scaled_coordinates.x() = xtemp;
                     }
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? BLACK : cmap.at(iterations);
                 }
             }
         }
 
-        void __cdecl tricorn() noexcept { // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
+        void __cdecl tricorn(_In_ const colourmap& cmap) noexcept { // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
             // NOLINTNEXTLINE(readability-isolate-declaration)
-            double            scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
-            ::complex<double> scaled_coordinates {};
+            double               scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
+            ::coordinate<double> scaled_coordinates {};
 
             constexpr auto     MAX_ITERATIONS { CMAPSIZE };
-            volatile double    realtemp {}, realsq {}, imagsq {}; // NOLINT(readability-isolate-declaration)
+            volatile double    xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
                 for (long col = 0; col < width(); ++col) {
                     // dividing col by width gives a value (0, 1), multiplying that by 3.500 upscales to to (0, 3.5), then subtracting 2.5 gives us (-2.5, 1)
-                    scaled_x_coordinate       = col / static_cast<double>(width()) * 3.50000 - 2.50000;
+                    scaled_x_coordinate    = col / static_cast<double>(width()) * 3.50000 - 2.50000;
                     // dividing row by height will give a value (0, 1), by multiplying by 2 we could stretch it to (0, 2), then by subtracting 1, we could shift the range to (-1, 1)
-                    scaled_y_coordinate       = row / static_cast<double>(height()) * 2.00000 - 1.00000;
+                    scaled_y_coordinate    = row / static_cast<double>(height()) * 2.00000 - 1.00000;
 
-                    scaled_coordinates.real() = scaled_x_coordinate;
-                    scaled_coordinates.imag() = scaled_y_coordinate;
+                    scaled_coordinates.x() = scaled_x_coordinate;
+                    scaled_coordinates.y() = scaled_y_coordinate;
 
-                    realsq                    = scaled_coordinates.real() * scaled_coordinates.real();
-                    imagsq                    = scaled_coordinates.imag() * scaled_coordinates.imag();
-                    iterations                = 0;
+                    xsq                    = scaled_coordinates.x() * scaled_coordinates.x();
+                    ysq                    = scaled_coordinates.y() * scaled_coordinates.y();
+                    iterations             = 0;
 
-                    while (realsq + imagsq < 4.0000 && ++iterations < MAX_ITERATIONS) {
-                        realtemp                  = realsq - imagsq + scaled_x_coordinate;
+                    while (xsq + ysq < 4.0000 && ++iterations < MAX_ITERATIONS) {
+                        xtemp                  = xsq - ysq + scaled_x_coordinate;
                         // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
-                        scaled_coordinates.imag() = -2.000 * scaled_coordinates.real() * scaled_coordinates.imag() + scaled_y_coordinate;
-                        scaled_coordinates.real() = realtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
+                        scaled_coordinates.y() = -2.000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
+                        scaled_coordinates.x() = xtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
                     }
-
-                    pixels[row * height() + col] = iterations == MAX_ITERATIONS ? BLACK : colourmaps::PRISM.at(iterations);
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? BLACK : cmap.at(iterations);
                 }
             }
         }
 
-        void __cdecl julia(                  // look up https://en.wikipedia.org/wiki/Julia_set
+        void __cdecl julia( // look up https://en.wikipedia.org/wiki/Julia_set
+            _In_ const colourmap& cmap,
             _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
-            ::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+            ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
             const double   escaperadsq { escape_radius * escape_radius };
             constexpr auto MAX_ITERATIONS { CMAPSIZE };
 
             unsigned long iterations {};
-            double        realtemp {}, realsq {}, imagsq {}; // NOLINT(readability-isolate-declaration)
+            double        xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
@@ -183,28 +191,29 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
                                            (row / static_cast<double>(height()) * 2.000 - 1.0000) * escape_radius };
 
                     iterations         = 0;
-                    realsq             = scaled_coordinates.real() * scaled_coordinates.real();
-                    imagsq             = scaled_coordinates.imag() * scaled_coordinates.imag();
+                    xsq                = scaled_coordinates.x() * scaled_coordinates.x();
+                    ysq                = scaled_coordinates.y() * scaled_coordinates.y();
 
-                    while (realsq + imagsq < escaperadsq && ++iterations < MAX_ITERATIONS) {
+                    while (xsq + ysq < escaperadsq && ++iterations < MAX_ITERATIONS) {
                         //
-                        realtemp           = realsq - imagsq;
+                        xtemp              = xsq - ysq;
                         scaled_coordinates = {};
                     }
                 }
             }
         }
 
-        void __cdecl multijulia(             // lookup https://en.wikipedia.org/wiki/Julia_set
+        void __cdecl multijulia( // lookup https://en.wikipedia.org/wiki/Julia_set
+            _In_ const colourmap& cmap,
             _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
-            ::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+            ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
             const auto     escaperadsq { escape_radius * escape_radius };
             constexpr auto MAX_ITERATIONS { CMAPSIZE };
 
             unsigned long iterations {};
-            double        realtemp {}, realsq {}, imagsq {}; // NOLINT(readability-isolate-declaration)
+            double        xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
@@ -216,12 +225,12 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
                                            (row / static_cast<double>(height()) * 2.000 - 1.0000) * escape_radius };
 
                     iterations         = 0;
-                    realsq             = scaled_coordinates.real() * scaled_coordinates.real();
-                    imagsq             = scaled_coordinates.imag() * scaled_coordinates.imag();
+                    xsq                = scaled_coordinates.x() * scaled_coordinates.x();
+                    ysq                = scaled_coordinates.y() * scaled_coordinates.y();
 
-                    while (realsq + imagsq < escaperadsq && ++iterations < MAX_ITERATIONS) {
+                    while (xsq + ysq < escaperadsq && ++iterations < MAX_ITERATIONS) {
                         //
-                        realtemp           = realsq - imagsq;
+                        xtemp              = xsq - ysq;
                         scaled_coordinates = {};
                     }
                 }

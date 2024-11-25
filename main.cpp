@@ -18,10 +18,11 @@ int wmain() {
     // board.remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(green.bmp)");
     // board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
 
-    // ::create_mandelbrot_set();
     canvas fractal(2000, 2000);
-    fractal.tricorn();
+    fractal.tricorn(colourmaps::PRISM);
     fractal.to_file(LR"(.\tricorn.bmp)");
+    fractal.mandelbrot(colourmaps::COPPER);
+    fractal.to_file(LR"(.\mandelbrot.bmp)");
 
     return EXIT_SUCCESS;
 }

@@ -14,10 +14,11 @@
 // NOLINTBEGIN(modernize-use-designated-initializers)
 
 static constexpr unsigned CMAPSIZE { 1000 };
+using colourmap = std::array<RGBQUAD, CMAPSIZE>;
 
 inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, HSV, HOT, GREY, COPER and AUTUMN
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> YARG {
+    static constexpr colourmap YARG {
         { { 0, 0, 0, 255 },       { 0, 0, 0, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },
          { 1, 1, 1, 255 },       { 2, 2, 2, 255 },       { 2, 2, 2, 255 },       { 2, 2, 2, 255 },       { 2, 2, 2, 255 },
          { 3, 3, 3, 255 },       { 3, 3, 3, 255 },       { 3, 3, 3, 255 },       { 3, 3, 3, 255 },       { 4, 4, 4, 255 },
@@ -220,7 +221,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 254, 254, 254, 255 }, { 254, 254, 254, 255 }, { 254, 254, 254, 255 }, { 255, 255, 255, 255 }, { 255, 255, 255, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> VGA {
+    static constexpr colourmap VGA {
         { { 255, 255, 255, 255 }, { 254, 254, 254, 255 }, { 253, 253, 253, 255 }, { 252, 252, 252, 255 }, { 251, 251, 251, 255 },
          { 250, 250, 250, 255 }, { 249, 249, 249, 255 }, { 248, 248, 248, 255 }, { 247, 247, 247, 255 }, { 246, 246, 246, 255 },
          { 245, 245, 245, 255 }, { 244, 244, 244, 255 }, { 244, 244, 244, 255 }, { 243, 243, 243, 255 }, { 242, 242, 242, 255 },
@@ -423,7 +424,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 128, 0, 120, 255 },   { 128, 0, 122, 255 },   { 128, 0, 124, 255 },   { 128, 0, 126, 255 },   { 128, 0, 128, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> PRISM {
+    static constexpr colourmap PRISM {
         { { 0, 0, 255, 255 },   { 0, 2, 255, 255 },   { 0, 4, 255, 255 },   { 0, 6, 255, 255 },   { 0, 8, 255, 255 },
          { 0, 10, 255, 255 },  { 0, 11, 255, 255 },  { 0, 13, 255, 255 },  { 0, 15, 255, 255 },  { 0, 17, 255, 255 },
          { 0, 19, 255, 255 },  { 0, 21, 255, 255 },  { 0, 23, 255, 255 },  { 0, 25, 255, 255 },  { 0, 27, 255, 255 },
@@ -626,7 +627,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 0, 255, 15, 255 },  { 0, 255, 11, 255 },  { 0, 255, 8, 255 },   { 0, 255, 4, 255 },   { 0, 255, 0, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> JET {
+    static constexpr colourmap JET {
         { { 102, 0, 29, 255 },    { 107, 0, 23, 255 },    { 112, 0, 17, 255 },    { 117, 0, 12, 255 },    { 122, 0, 6, 255 },
          { 127, 0, 0, 255 },     { 128, 0, 0, 255 },     { 129, 0, 0, 255 },     { 129, 0, 0, 255 },     { 130, 0, 0, 255 },
          { 131, 0, 0, 255 },     { 132, 0, 0, 255 },     { 133, 0, 0, 255 },     { 133, 0, 0, 255 },     { 134, 0, 0, 255 },
@@ -829,7 +830,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 9, 0, 122, 255 },     { 18, 0, 117, 255 },    { 27, 0, 112, 255 },    { 36, 0, 107, 255 },    { 45, 0, 102, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> HSV {
+    static constexpr colourmap HSV {
         { { 0, 0, 255, 255 },   { 0, 2, 255, 255 },   { 0, 3, 255, 255 },   { 0, 5, 255, 255 },   { 0, 6, 255, 255 },
          { 0, 8, 255, 255 },   { 0, 9, 255, 255 },   { 0, 11, 255, 255 },  { 0, 12, 255, 255 },  { 0, 14, 255, 255 },
          { 0, 15, 255, 255 },  { 0, 17, 255, 255 },  { 0, 18, 255, 255 },  { 0, 20, 255, 255 },  { 0, 21, 255, 255 },
@@ -1032,7 +1033,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 30, 0, 255, 255 },  { 28, 0, 255, 255 },  { 27, 0, 255, 255 },  { 25, 0, 255, 255 },  { 24, 0, 255, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> HOT {
+    static constexpr colourmap HOT {
         { { 0, 0, 11, 255 },      { 0, 0, 11, 255 },      { 0, 0, 12, 255 },      { 0, 0, 13, 255 },      { 0, 0, 13, 255 },
          { 0, 0, 14, 255 },      { 0, 0, 15, 255 },      { 0, 0, 15, 255 },      { 0, 0, 16, 255 },      { 0, 0, 17, 255 },
          { 0, 0, 17, 255 },      { 0, 0, 18, 255 },      { 0, 0, 19, 255 },      { 0, 0, 19, 255 },      { 0, 0, 20, 255 },
@@ -1235,7 +1236,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 251, 255, 255, 255 }, { 252, 255, 255, 255 }, { 253, 255, 255, 255 }, { 254, 255, 255, 255 }, { 255, 255, 255, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> GREY {
+    static constexpr colourmap GREY {
         { { 255, 255, 255, 255 }, { 255, 255, 255, 255 }, { 254, 254, 254, 255 }, { 254, 254, 254, 255 }, { 254, 254, 254, 255 },
          { 254, 254, 254, 255 }, { 253, 253, 253, 255 }, { 253, 253, 253, 255 }, { 253, 253, 253, 255 }, { 253, 253, 253, 255 },
          { 252, 252, 252, 255 }, { 252, 252, 252, 255 }, { 252, 252, 252, 255 }, { 252, 252, 252, 255 }, { 251, 251, 251, 255 },
@@ -1438,7 +1439,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 1, 1, 1, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },       { 0, 0, 0, 255 },       { 0, 0, 0, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> COPPER {
+    static constexpr colourmap COPPER {
         { { 0, 0, 0, 255 },       { 0, 0, 0, 255 },       { 0, 0, 1, 255 },       { 0, 1, 1, 255 },       { 1, 1, 1, 255 },
          { 1, 1, 2, 255 },       { 1, 1, 2, 255 },       { 1, 1, 2, 255 },       { 1, 2, 3, 255 },       { 1, 2, 3, 255 },
          { 1, 2, 3, 255 },       { 1, 2, 4, 255 },       { 2, 2, 4, 255 },       { 2, 3, 4, 255 },       { 2, 3, 4, 255 },
@@ -1641,7 +1642,7 @@ inline namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM
          { 126, 198, 255, 255 }, { 126, 199, 255, 255 }, { 127, 199, 255, 255 }, { 127, 199, 255, 255 }, { 127, 199, 255, 255 } }
     };
 
-    static constexpr std::array<RGBQUAD, CMAPSIZE> AUTUMN {
+    static constexpr colourmap AUTUMN {
         { { 0, 0, 255, 255 },   { 0, 0, 255, 255 },   { 0, 1, 255, 255 },   { 0, 1, 255, 255 },   { 0, 1, 255, 255 },
          { 0, 1, 255, 255 },   { 0, 2, 255, 255 },   { 0, 2, 255, 255 },   { 0, 2, 255, 255 },   { 0, 2, 255, 255 },
          { 0, 3, 255, 255 },   { 0, 3, 255, 255 },   { 0, 3, 255, 255 },   { 0, 3, 255, 255 },   { 0, 4, 255, 255 },
