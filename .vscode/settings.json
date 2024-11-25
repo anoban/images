@@ -3,15 +3,8 @@
         ".clang-format": "yaml",
         ".clang-tidy": "yaml",
         ".clangd": "yaml",
-        "*.cu": "cuda-cpp",
-        "*.cuh": "cuda-cpp",
         "*.h": "c",
         "*.c": "c",
-        "*.clang-format": "yaml",
-        "*.clang-tidy": "yaml",
-        "bitmap": "cpp",
-        "imageio": "cpp",
-        "helpers": "cpp",
         "algorithm": "cpp",
         "any": "cpp",
         "array": "cpp",
@@ -88,8 +81,13 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
+        "bitmap": "cpp",
+        "imageio": "cpp",
+        "helpers": "cpp",
         "canvas": "cpp",
         "cmaps": "cpp",
-        "fractals": "cpp"
+        "iterators": "cpp",
+        "ico": "cpp",
+        "png": "cpp"
     }
 }

@@ -33,14 +33,7 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         template<rgb::BW_TRANSFORMATION method> [[nodiscard]] canvas to_blacknwhite() const noexcept {
             auto copy { *this };
-            switch (method) {
-                case rgb::BW_TRANSFORMATION::AVERAGE : std::for_each(copy.begin(), copy.end(), rgb::transformers::average); break;
-                case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE :
-                    std::for_each(copy.begin(), copy.end(), rgb::transformers::weighted_average);
-                    break;
-                case rgb::BW_TRANSFORMATION::LUMINOSITY : std::for_each(copy.begin(), copy.end(), rgb::transformers::luminosity); break;
-                case rgb::BW_TRANSFORMATION::BINARY     : std::for_each(copy.begin(), copy.end(), rgb::transformers::binary); break;
-            }
+            copy.to_blacknwhite<method>();
             return copy;
         }
 
@@ -51,7 +44,7 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         template<rgb::RGB_TAG colour_combination> [[nodiscard]] canvas remove_colour() const noexcept {
             auto copy { *this };
-            std::for_each(copy.begin(), copy.end(), rgb::removers::zero<colour_combination> {});
+            copy.remove_colour<colour_combination>();
             return copy;
         }
 
