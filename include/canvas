@@ -91,20 +91,19 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         [[nodiscard]] bitmap /* a non-destructive object slicing happens here */ unwrap() const noexcept { return *this; }
 
-        static constexpr RGBQUAD BLACK { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0xFF };
+        static constexpr RGBQUAD FOREGROUND { .rgbBlue = 0xAA, .rgbGreen = 0xFF, .rgbRed = 0x00, .rgbReserved = 0xFF };
 
         // most of Wikipdia's fractal implementations have a lot of show stopping bugs, even though these are all inspired from
         // Wikipedia's implementations, these contain numerous refactors to fix those bugs
         // and thse fractal functions behave as if the scanlines in the pixel buffer are ordered top-down, since these are fractals, this is not much of an issue here
 
         void __cdecl mandelbrot(_In_ const colourmap& cmap) noexcept { // look up https://en.wikipedia.org/wiki/Mandelbrot_set
-
             // NOLINTNEXTLINE(readability-isolate-declaration)
             double               scaled_x_coordinate {} /* (-2.00, 0.47) */, scaled_y_coordinate {} /* (-1.12, 1.12) */;
             ::coordinate<double> scaled_coordinates {};
 
             constexpr auto     MAX_ITERATIONS { CMAPSIZE };
-            volatile double    xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
+            double             xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
 
             // for each pixel in the image
@@ -118,17 +117,19 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
                     scaled_coordinates.x() = scaled_x_coordinate;
                     scaled_coordinates.y() = scaled_y_coordinate;
 
-                    xsq                    = scaled_coordinates.x() * scaled_coordinates.x();
-                    ysq                    = scaled_coordinates.y() * scaled_coordinates.y();
                     iterations             = 0;
 
-                    while (xsq + ysq < 4.0000 && ++iterations < MAX_ITERATIONS) {
+                    for (xsq = scaled_coordinates.x() * scaled_coordinates.x(), ysq = scaled_coordinates.y() * scaled_coordinates.y();
+                         xsq + ysq < 4.000 && iterations < MAX_ITERATIONS;
+                         ++iterations) {
                         xtemp                  = xsq - ysq + scaled_x_coordinate;
-                        scaled_coordinates.y() = 2.0000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
-                        scaled_coordinates.x() = xtemp;
+                        // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
+                        scaled_coordinates.y() = 2.000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
+                        scaled_coordinates.x() = xtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
                     }
+
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? BLACK : cmap.at(iterations);
+                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? FOREGROUND : cmap.at(iterations);
                 }
             }
         }
@@ -139,7 +140,7 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
             ::coordinate<double> scaled_coordinates {};
 
             constexpr auto     MAX_ITERATIONS { CMAPSIZE };
-            volatile double    xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
+            double             xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
 
             // for each pixel in the image
@@ -153,18 +154,18 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
                     scaled_coordinates.x() = scaled_x_coordinate;
                     scaled_coordinates.y() = scaled_y_coordinate;
 
-                    xsq                    = scaled_coordinates.x() * scaled_coordinates.x();
-                    ysq                    = scaled_coordinates.y() * scaled_coordinates.y();
                     iterations             = 0;
 
-                    while (xsq + ysq < 4.0000 && ++iterations < MAX_ITERATIONS) {
+                    for (xsq = scaled_coordinates.x() * scaled_coordinates.x(), ysq = scaled_coordinates.y() * scaled_coordinates.y();
+                         xsq + ysq < 4.000 && iterations < MAX_ITERATIONS;
+                         ++iterations) {
                         xtemp                  = xsq - ysq + scaled_x_coordinate;
-                        // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
                         scaled_coordinates.y() = -2.000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
-                        scaled_coordinates.x() = xtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
+                        scaled_coordinates.x() = xtemp;
                     }
+
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? BLACK : cmap.at(iterations);
+                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? FOREGROUND : cmap.at(iterations);
                 }
             }
         }
@@ -175,11 +176,11 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
         ) noexcept {
             ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
-            const double   escaperadsq { escape_radius * escape_radius };
+            const double   escrsq { escape_radius * escape_radius };
             constexpr auto MAX_ITERATIONS { CMAPSIZE };
 
             unsigned long iterations {};
-            double        xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
+            double        xtemp {};
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
@@ -187,16 +188,15 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
                     // dividing col by width will scale the value (0, 1), multiplication by 2 shifts the scale to (0, 2)
                     // subtracting 1 shifts to (-1, 1) and the ultimate multiplication by escape_radius will shift it to (-escape_radius, escape_radius)
                     // same goes for the col too
-                    scaled_coordinates = { (col / static_cast<double>(width()) * 2.000 - 1.0000) * escape_radius,
-                                           (row / static_cast<double>(height()) * 2.000 - 1.0000) * escape_radius };
+                    scaled_coordinates.x() = (col / static_cast<double>(width()) * 2.000 - 1.0000) * escape_radius;
+                    scaled_coordinates.y() = (row / static_cast<double>(height()) * 2.000 - 1.0000) * escape_radius;
 
-                    iterations         = 0;
-                    xsq                = scaled_coordinates.x() * scaled_coordinates.x();
-                    ysq                = scaled_coordinates.y() * scaled_coordinates.y();
+                    iterations             = 0;
 
-                    while (xsq + ysq < escaperadsq && ++iterations < MAX_ITERATIONS) {
+                    while (scaled_coordinates.x() * scaled_coordinates.x() + scaled_coordinates.y() * scaled_coordinates.y() < escrsq &&
+                           ++iterations < MAX_ITERATIONS) {
                         //
-                        xtemp              = xsq - ysq;
+                        xtemp = scaled_coordinates.x() * scaled_coordinates.x() - scaled_coordinates.y() * scaled_coordinates.y();
                         scaled_coordinates = {};
                     }
                 }
