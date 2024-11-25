@@ -11,11 +11,23 @@
 class canvas final : public bitmap { // a drawing canvas that uses bitmaps as their internal resource
 
     public:
+        canvas() noexcept = delete;
+
+        explicit canvas(_In_ const wchar_t* const filename) noexcept : bitmap(filename) { }
+
         canvas(_In_ const long width, _In_ const long height) noexcept : bitmap { width, height } { }
 
         explicit canvas(_In_ const bitmap& image) noexcept : bitmap { image } { }
 
         explicit canvas(_In_ bitmap&& image) noexcept : bitmap { std::move(image) } { }
+
+        canvas(_In_ const canvas& other) noexcept : bitmap(other) { } // NOLINT(modernize-use-equals-default)
+
+        canvas& operator=(_In_ const canvas& other) noexcept { }
+
+        canvas(_In_ canvas&& other) noexcept : bitmap(std::move(other)) { }
+
+        canvas& operator=(_In_ canvas&& other) noexcept { }
 
         ~canvas() noexcept = default;
 
@@ -52,24 +64,25 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         [[nodiscard]] canvas hflip() const noexcept { }
 
-        void vflip() noexcept {           // reverse the order of scanlines in the image
-            __m512i    top {}, bottom {}; // NOLINT(readability-isolate-declaration)
-            const long residues /* in RGBQUADs */ { static_cast<long>(width() % (sizeof(__m512i) / sizeof(RGBQUAD))) };
-            RGBQUAD    temp {};
-            long       col {}, row {}; // NOLINT(readability-isolate-declaration)
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            for (row = 0; row < height() / 2 /* deliberate integer division */;
-                 ++row) { // we slice the height into half, if the height is an even number,
-                // cool, we process all the rows, if it is an odd number we leave the middle one untouced, no probs
+        void vflip() noexcept { // reverse the order of scanlines in the image
+            // number of RGBQUAD structs a zmm register can hold
+            static constexpr auto ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
+            __m512i               above {}, below {}; // NOLINT(readability-isolate-declaration)
+            const long            residues /* in RGBQUADs */ { static_cast<long>(width() % ZMM_STORABLE_RGBQUADS) };
+            RGBQUAD               temp {};
+            long                  col {}, row {}; // NOLINT(readability-isolate-declaration)
 
-                for (col  = 0; col < width() - residues;
-                     col += (sizeof(__m512i) / sizeof(RGBQUAD)) // number of RGBQUAD structs a zmm register can hold
-                ) {
-                    // keep swapping the scanlines
-                    top    = ::_mm512_loadu_epi8(pixels + width() * row + col);
-                    bottom = ::_mm512_loadu_epi8(pixels + width() * (height() - row + 1) + col);
-                    ::_mm512_storeu_epi8(pixels + width() * row + col, bottom);
-                    ::_mm512_storeu_epi8(pixels + width() * (height() - row + 1) + col, top);
+            // THERE IS A BUG THAT CRASHES THE PROGRAMME WHEN THE IMAGE'S HEIGHT IS AN ODD NUMBER
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            for (row = 0; row < height() / 2 /* deliberate integer division */; ++row) {
+                // we slice the height into half, if the height is an even number, cool, we process all the rows,
+                // if it is an odd number we leave the middle one untouced, no probss
+                for (col = 0; col < width() - residues; col += ZMM_STORABLE_RGBQUADS) { // keep swapping the scanlines
+                    above = ::_mm512_loadu_epi8(pixels + width() * row + col);
+                    below = ::_mm512_loadu_epi8(pixels + width() * (height() - row - 1) + col);
+                    ::_mm512_storeu_epi8(pixels + width() * row + col, below);
+                    ::_mm512_storeu_epi8(pixels + width() * (height() - row - 1) + col, above);
                 }
 
                 for (; col < width(); ++col) { // handle the residues
@@ -81,7 +94,11 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
-        [[nodiscard]] canvas vflip() const noexcept { }
+        [[nodiscard]] canvas vflip() const noexcept {
+            auto copy { *this };
+            copy.vflip();
+            return copy;
+        }
 
         [[nodiscard]] canvas copy() const noexcept { return *this; }
 
