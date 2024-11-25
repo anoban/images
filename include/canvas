@@ -60,7 +60,32 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
             return copy;
         }
 
-        void hflip() noexcept { }
+        void hflip() noexcept { // number of RGBQUAD structs a zmm register can hold
+            static constexpr auto    ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
+            static constexpr __m512i BYTE_REVERSE_MASK {};
+            __m512i                  left {}, right {}; // NOLINT(readability-isolate-declaration)
+            const long               residues /* in RGBQUADs */ { static_cast<long>(width() % ZMM_STORABLE_RGBQUADS) };
+            RGBQUAD                  temp {};
+            long                     col {}, row {}; // NOLINT(readability-isolate-declaration)
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            for (row = 0; row < height(); ++row) {
+                for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += ZMM_STORABLE_RGBQUADS) {
+                    left = ::_mm512_loadu_epi8(pixels + width() * row + col);
+                    ::_mm512_permutex2var_epi8(left, BYTE_REVERSE_MASK, left);
+                    right = ::_mm512_loadu_epi8(pixels + width() * (height() - row - 1) + col);
+                    ::_mm512_storeu_epi8(pixels + width() * row + col, right);
+                    ::_mm512_storeu_epi8(pixels + width() * (height() - row - 1) + col, left);
+                }
+
+                for (; col < width(); ++col) { // handle the residues
+                    temp                                         = pixels[width() * row + col];
+                    pixels[width() * row + col]                  = pixels[width() * (height() - row - 1) + col];
+                    pixels[width() * (height() - row - 1) + col] = temp;
+                }
+            }
+        }
+        // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic) }
 
         [[nodiscard]] canvas hflip() const noexcept { }
 
@@ -71,8 +96,6 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
             const long            residues /* in RGBQUADs */ { static_cast<long>(width() % ZMM_STORABLE_RGBQUADS) };
             RGBQUAD               temp {};
             long                  col {}, row {}; // NOLINT(readability-isolate-declaration)
-
-            // THERE IS A BUG THAT CRASHES THE PROGRAMME WHEN THE IMAGE'S HEIGHT IS AN ODD NUMBER
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height() / 2 /* deliberate integer division */; ++row) {
@@ -87,8 +110,8 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
                 for (; col < width(); ++col) { // handle the residues
                     temp                                         = pixels[width() * row + col];
-                    pixels[width() * row + col]                  = pixels[width() * (height() - row + 1) + col];
-                    pixels[width() * (height() - row + 1) + col] = temp;
+                    pixels[width() * row + col]                  = pixels[width() * (height() - row - 1) + col];
+                    pixels[width() * (height() - row - 1) + col] = temp;
                 }
             }
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
