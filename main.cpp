@@ -1,10 +1,13 @@
 #include <canvas>
 
 int wmain() {
-    // bitmap image { LR"(.\butterflies.bmp)" };
-    // std::wcout << image;
+    bitmap image { LR"(.\sweeney.bmp)" };
 
-    // const canvas board { std::move(image) };
+    std::wcout << image;
+
+    canvas board { std::move(image) };
+    board.vflip();
+    board.to_file(LR"(vflipped.bmp)");
 
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(weighted_average.bmp)");
@@ -18,9 +21,9 @@ int wmain() {
     // board.remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(green.bmp)");
     // board.remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(blue.bmp)");
 
-    canvas fractal(5000, 2000);
-    fractal.mandelbrot(colourmaps::COPPER);
-    fractal.to_file(LR"(.\mandelbrot.bmp)");
+    // canvas fractal(5000, 5000);
+    // fractal.mandelbrot(colourmaps::COPPER);
+    // fractal.to_file(LR"(.\mandelbrot.bmp)");
 
     return EXIT_SUCCESS;
 }

@@ -59,30 +59,33 @@ class canvas final : public bitmap { // a drawing canvas that uses bitmaps as th
 
         [[nodiscard]] canvas hflip() const noexcept { }
 
-        void vflip() noexcept { // reverse the order of scanlines in the image
+        void vflip() noexcept {           // reverse the order of scanlines in the image
+            __m512i    top {}, bottom {}; // NOLINT(readability-isolate-declaration)
+            const long residues /* in RGBQUADs */ { static_cast<long>(width() % (sizeof(__m512i) / sizeof(RGBQUAD))) };
+            RGBQUAD    temp {};
+            long       col {}, row {}; // NOLINT(readability-isolate-declaration)
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            for (row = 0; row < height() / 2 /* deliberate integer division */;
+                 ++row) { // we slice the height into half, if the height is an even number,
+                // cool, we process all the rows, if it is an odd number we leave the middle one untouced, no probs
 
-            __m512i         top {}, bottom {}; // NOLINT(readability-isolate-declaration)
-            const long      residues /* in RGBQUADs */ { static_cast<long>(info_header.biWidth % (sizeof(__m512i) / sizeof(RGBQUAD))) };
-            const long long total_pixels { info_header.biWidth * info_header.biHeight };
-
-            for (long row = 0; row < info_header.biHeight / 2; ++row) { // we slice the height into half, if the height is an even number,
-                // cool, weprocess all the rows, if it is an odd number we leave the middle one untouced, no probs
-                long i {};
-                for (i  = 0; i < info_header.biWidth - residues;
-                     i += (sizeof(__m512i) / sizeof(RGBQUAD)) // number of RGBQUAD structs we can handle with a single _mm512_xxxx operation
+                for (col  = 0; col < width() - residues;
+                     col += (sizeof(__m512i) / sizeof(RGBQUAD)) // number of RGBQUAD structs a zmm register can hold
                 ) {
                     // keep swapping the scanlines
-                    top    = ::_mm512_loadu_epi8(pixels + info_header.biWidth * row + i);
-                    bottom = ::_mm512_loadu_epi8(pixels + total_pixels - (info_header.biWidth * row + i));
-
-                    ::_mm512_storeu_epi8(pixels + info_header.biWidth * row + i, bottom);
-                    ::_mm512_storeu_epi8(pixels + total_pixels - (info_header.biWidth * row + i), top);
+                    top    = ::_mm512_loadu_epi8(pixels + width() * row + col);
+                    bottom = ::_mm512_loadu_epi8(pixels + width() * (height() - row + 1) + col);
+                    ::_mm512_storeu_epi8(pixels + width() * row + col, bottom);
+                    ::_mm512_storeu_epi8(pixels + width() * (height() - row + 1) + col, top);
                 }
 
-                while (i++ < info_header.biWidth) { // handle the residues
-                    //
+                for (; col < width(); ++col) { // handle the residues
+                    temp                                         = pixels[width() * row + col];
+                    pixels[width() * row + col]                  = pixels[width() * (height() - row + 1) + col];
+                    pixels[width() * (height() - row + 1) + col] = temp;
                 }
             }
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
         [[nodiscard]] canvas vflip() const noexcept { }
