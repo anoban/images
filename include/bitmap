@@ -62,6 +62,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                                       // NOLINTEND(misc-non-private-member-variables-in-classes)
         friend class icondirectory;   // to serialize ico objects as bitmaps, we need access to this class's internals
         friend class canvas;
+        friend class fractal;
 
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)

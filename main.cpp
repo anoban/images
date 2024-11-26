@@ -1,14 +1,11 @@
 #include <canvas>
 #include <format>
+#include <fractal>
 
 int wmain(_In_opt_ int argc, _In_opt_count_c_(argc) const wchar_t* const argv[]) {
-    for (int i = 1; i < argc; ++i) {
-        canvas board(argv[i]);
-        board.vflip();
-        auto fname { std::format(LR"(v{})", argv[i]) };
-        fname.erase(fname.find(LR"(.\)"), 2);
-        board.to_file(fname.c_str());
-    }
+    fractal image { 2000, 1000 };
+    image.waves();
+    image.to_file(LR"(.\waves.bmp)");
 
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(weighted_average.bmp)");

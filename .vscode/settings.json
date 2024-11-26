@@ -3,6 +3,8 @@
         ".clang-format": "yaml",
         ".clang-tidy": "yaml",
         ".clangd": "yaml",
+        "*.cu": "cuda-cpp",
+        "*.cuh": "cuda-cpp",
         "*.h": "c",
         "*.c": "c",
         "algorithm": "cpp",
@@ -88,6 +90,7 @@
         "cmaps": "cpp",
         "iterators": "cpp",
         "ico": "cpp",
-        "png": "cpp"
+        "png": "cpp",
+        "fractal": "cpp"
     }
 }
