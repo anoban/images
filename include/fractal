@@ -6,9 +6,11 @@
 
 class fractal final : public bitmap {
     private:
-        static constexpr RGBQUAD            _FRACTAL_FOREGROUND { .rgbBlue = 0xAA, .rgbGreen = 0xFF, .rgbRed = 0x00, .rgbReserved = 0xFF };
-        static constexpr unsigned long long _FRACTAL_MAX_ITERATIONS { 1000 };
-        static constexpr double             _FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
+        static constexpr RGBQUAD            _FRACTAL_FOREGROUND { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x99, .rgbReserved = 0xFF };
+        static constexpr unsigned long long _FRACTAL_MAX_ITERATIONS {
+            colourmaps::CMAPSIZE // THIS IS CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
+        };
+        static constexpr double _FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 
     public:
         fractal() noexcept = delete;
@@ -55,8 +57,8 @@ class fractal final : public bitmap {
 
         void __cdecl mandelbrot(_In_ const colourmaps::colourmap& cmap) noexcept { // look up https://en.wikipedia.org/wiki/Mandelbrot_set
 
-            ::coordinate<double> c {}, z {}; // NOLINT(readability-isolate-declaration)
-            constexpr auto       _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
+            ::complex<double> c {}, z {}; // NOLINT(readability-isolate-declaration)
+            constexpr auto    _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
             double zxtemp {}, zxsq /* square of z.x() */ {}, zysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
 
@@ -65,9 +67,9 @@ class fractal final : public bitmap {
                 for (long col = 0; col < width(); ++col) {
                     // Mandelbrot space is defined by a horizontal range (-2.00, 0.47) and a vertical range (-1.12, 1.12)
                     // dividing col by width gives a value (0, 1), multiplying that by 2.4700 upscales to to (0, 2.4700), then subtracting 2.000 gives us (-2.000, 0.4700)
-                    c.x()      = col / static_cast<double>(width()) * 2.47000 - 2.0000;
+                    c.x()      = col / static_cast<double>(width()); // *2.47000 - 2.0000;
                     // dividing row by height will give a value (0, 1), subtracting 0.500 shifts it to (-0.5, 0.5) then by multiplying by 2.2400 we could stretch it to (-1.1200, 1.1200)
-                    c.y()      = (row / static_cast<double>(height()) - 0.5000) * 2.24000;
+                    c.y()      = row / static_cast<double>(height()); // - 0.5000) * 2.24000;
 
                     z.x()      = c.x();
                     z.y()      = c.y();
@@ -75,8 +77,11 @@ class fractal final : public bitmap {
                     iterations = 0;
 
                     // Mandelbrot equation is Z = Z^2 + C, throughout the loop, Z is iteratively updated while C is updated only once (before this loop begins)
+                    // at some point in the loop z may undergo an explosion, which is defined as the sums of squares of z's x and y coordinates surpassing a predefined threshold value
+                    // the selection of colour down the road depends on whcih happens first, whether the loop reaching maximum number of iterations or the explosion
                     for (zxsq = z.x() * z.x(), zysq = z.y() * z.y();
-                         zxsq + zysq < _FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ && iterations < _FRACTAL_MAX_ITERATIONS;
+                         zxsq + zysq /* magnitude of z */ < _FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ &&
+                         iterations < _FRACTAL_MAX_ITERATIONS;
                          ++iterations) {
                         zxtemp = zxsq - zysq + c.x();
                         // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
@@ -96,8 +101,8 @@ class fractal final : public bitmap {
         void __cdecl tricorn(_In_ const colourmaps::colourmap& cmap
         ) noexcept { // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
             // NOLINTNEXTLINE(readability-isolate-declaration)
-            double               scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
-            ::coordinate<double> scaled_coordinates {};
+            double            scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
+            ::complex<double> scaled_coordinates {};
 
             double             xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
@@ -133,7 +138,7 @@ class fractal final : public bitmap {
             _In_ const colourmaps::colourmap& cmap,
             _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
-            ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+            ::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
             const double escrsq { escape_radius * escape_radius };
 
@@ -165,7 +170,7 @@ class fractal final : public bitmap {
             _In_ const colourmaps::colourmap& cmap,
             _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
-            ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+            ::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
             const auto escaperadsq { escape_radius * escape_radius };
 
