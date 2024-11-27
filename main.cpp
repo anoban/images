@@ -3,9 +3,11 @@
 #include <fractal>
 
 int wmain(_In_opt_ int argc, _In_opt_count_c_(argc) const wchar_t* const argv[]) {
-    fractal image { 2000, 1000 };
+    fractal image { 1500, 1000 };
     image.waves();
     image.to_file(LR"(.\waves.bmp)");
+    image.mandelbrot(colourmaps::COPPER);
+    image.to_file(LR"(.\mandelbrot.bmp)");
 
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(average.bmp)");
     // board.to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(weighted_average.bmp)");

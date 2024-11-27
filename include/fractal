@@ -31,10 +31,6 @@ class fractal final : public bitmap {
 
         ~fractal() noexcept = default;
 
-        [[nodiscard]] fractal copy() const noexcept { return *this; }
-
-        [[nodiscard]] bitmap /* a non-invasive object slicing happens here */ unwrap() const noexcept { return *this; }
-
         void waves() noexcept {
             double red {}, green {}, blue {}; // NOLINT(readability-isolate-declaration)
 
@@ -58,38 +54,41 @@ class fractal final : public bitmap {
         // these fractal functions behave as if the scanlines in the pixel buffer are ordered top-down, since these are fractals, this is not much of an issue here
 
         void __cdecl mandelbrot(_In_ const colourmaps::colourmap& cmap) noexcept { // look up https://en.wikipedia.org/wiki/Mandelbrot_set
-            // NOLINTNEXTLINE(readability-isolate-declaration)
-            double               scaled_x_coordinate {} /* (-2.00, 0.47) */, scaled_y_coordinate {} /* (-1.12, 1.12) */;
-            ::coordinate<double> scaled_coordinates {};
 
-            constexpr auto     MAX_ITERATIONS { colourmaps::CMAPSIZE };
-            double             xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
+            ::coordinate<double> c {}, z {}; // NOLINT(readability-isolate-declaration)
+            constexpr auto       _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
+            double zxtemp {}, zxsq /* square of z.x() */ {}, zysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
                 for (long col = 0; col < width(); ++col) {
+                    // Mandelbrot space is defined by a horizontal range (-2.00, 0.47) and a vertical range (-1.12, 1.12)
                     // dividing col by width gives a value (0, 1), multiplying that by 2.4700 upscales to to (0, 2.4700), then subtracting 2.000 gives us (-2.000, 0.4700)
-                    scaled_x_coordinate    = col / static_cast<double>(width()) * 2.47000 - 2.0000;
+                    c.x()      = col / static_cast<double>(width()) * 2.47000 - 2.0000;
                     // dividing row by height will give a value (0, 1), subtracting 0.500 shifts it to (-0.5, 0.5) then by multiplying by 2.2400 we could stretch it to (-1.1200, 1.1200)
-                    scaled_y_coordinate    = (row / static_cast<double>(height()) - 0.5000) * 2.24000;
+                    c.y()      = (row / static_cast<double>(height()) - 0.5000) * 2.24000;
 
-                    scaled_coordinates.x() = scaled_x_coordinate;
-                    scaled_coordinates.y() = scaled_y_coordinate;
+                    z.x()      = c.x();
+                    z.y()      = c.y();
 
-                    iterations             = 0;
+                    iterations = 0;
 
-                    for (xsq = scaled_coordinates.x() * scaled_coordinates.x(), ysq = scaled_coordinates.y() * scaled_coordinates.y();
-                         xsq + ysq < 4.000 && iterations < MAX_ITERATIONS;
+                    // Mandelbrot equation is Z = Z^2 + C, throughout the loop, Z is iteratively updated while C is updated only once (before this loop begins)
+                    for (zxsq = z.x() * z.x(), zysq = z.y() * z.y();
+                         zxsq + zysq < _FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ && iterations < _FRACTAL_MAX_ITERATIONS;
                          ++iterations) {
-                        xtemp                  = xsq - ysq + scaled_x_coordinate;
+                        zxtemp = zxsq - zysq + c.x();
                         // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
-                        scaled_coordinates.y() = 2.000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
-                        scaled_coordinates.x() = xtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
+                        z.y()  = 2.000 * z.x() * z.y() + c.y();
+                        z.x()  = zxtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
                     }
 
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? _FRACTAL_FOREGROUND : cmap.at(iterations);
+                    pixels[row * height() + col] =
+                        (iterations == _FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?
+                            _FRACTAL_FOREGROUND : /* if the loop was exited because of an explosion */
+                            cmap.at(iterations);
                 }
             }
         }
@@ -100,7 +99,6 @@ class fractal final : public bitmap {
             double               scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
             ::coordinate<double> scaled_coordinates {};
 
-            constexpr auto     MAX_ITERATIONS { colourmaps::CMAPSIZE };
             double             xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
             unsigned long long iterations {};
 
@@ -118,7 +116,7 @@ class fractal final : public bitmap {
                     iterations             = 0;
 
                     for (xsq = scaled_coordinates.x() * scaled_coordinates.x(), ysq = scaled_coordinates.y() * scaled_coordinates.y();
-                         xsq + ysq < 4.000 && iterations < MAX_ITERATIONS;
+                         xsq + ysq < 4.000 && iterations < _FRACTAL_MAX_ITERATIONS;
                          ++iterations) {
                         xtemp                  = xsq - ysq + scaled_x_coordinate;
                         scaled_coordinates.y() = -2.000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
@@ -126,7 +124,7 @@ class fractal final : public bitmap {
                     }
 
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    pixels[row * height() + col] = (iterations == MAX_ITERATIONS) ? _FRACTAL_FOREGROUND : cmap.at(iterations);
+                    pixels[row * height() + col] = (iterations == _FRACTAL_MAX_ITERATIONS) ? _FRACTAL_FOREGROUND : cmap.at(iterations);
                 }
             }
         }
@@ -137,8 +135,7 @@ class fractal final : public bitmap {
         ) noexcept {
             ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
-            const double   escrsq { escape_radius * escape_radius };
-            constexpr auto MAX_ITERATIONS { colourmaps::CMAPSIZE };
+            const double escrsq { escape_radius * escape_radius };
 
             unsigned long iterations {};
             double        xtemp {};
@@ -155,7 +152,7 @@ class fractal final : public bitmap {
                     iterations             = 0;
 
                     while (scaled_coordinates.x() * scaled_coordinates.x() + scaled_coordinates.y() * scaled_coordinates.y() < escrsq &&
-                           ++iterations < MAX_ITERATIONS) {
+                           ++iterations < _FRACTAL_MAX_ITERATIONS) {
                         //
                         xtemp = scaled_coordinates.x() * scaled_coordinates.x() - scaled_coordinates.y() * scaled_coordinates.y();
                         scaled_coordinates = {};
@@ -170,8 +167,7 @@ class fractal final : public bitmap {
         ) noexcept {
             ::coordinate<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
-            const auto     escaperadsq { escape_radius * escape_radius };
-            constexpr auto MAX_ITERATIONS { colourmaps::CMAPSIZE };
+            const auto escaperadsq { escape_radius * escape_radius };
 
             unsigned long iterations {};
             double        xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
@@ -189,7 +185,7 @@ class fractal final : public bitmap {
                     xsq                = scaled_coordinates.x() * scaled_coordinates.x();
                     ysq                = scaled_coordinates.y() * scaled_coordinates.y();
 
-                    while (xsq + ysq < escaperadsq && ++iterations < MAX_ITERATIONS) {
+                    while (xsq + ysq < escaperadsq && ++iterations < _FRACTAL_MAX_ITERATIONS) {
                         //
                         xtemp              = xsq - ysq;
                         scaled_coordinates = {};
