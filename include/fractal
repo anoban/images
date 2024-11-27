@@ -7,10 +7,9 @@
 class fractal final : public bitmap {
     private:
         static constexpr RGBQUAD            _FRACTAL_FOREGROUND { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x99, .rgbReserved = 0xFF };
-        static constexpr unsigned long long _FRACTAL_MAX_ITERATIONS {
-            colourmaps::CMAPSIZE // THIS IS CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
-        };
-        static constexpr double _FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
+        // BELOW IS ABSOLUTELY CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
+        static constexpr unsigned long long _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
+        static constexpr double             _FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 
     public:
         fractal() noexcept = delete;
@@ -84,11 +83,12 @@ class fractal final : public bitmap {
                          iterations < _FRACTAL_MAX_ITERATIONS;
                          ++iterations) {
                         zxtemp = zxsq - zysq + c.x();
+
                         // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
                         z.y()  = 2.000 * z.x() * z.y() + c.y();
                         z.x()  = zxtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
                     }
-
+                    dbgwprintf_s(L"iteration = %llu, zxsq = %.10lf, zysq = %.10lf\n", iterations, zxsq, zysq);
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     pixels[row * height() + col] =
                         (iterations == _FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?
