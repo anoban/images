@@ -13,7 +13,7 @@
 
 // NOLINTBEGIN(modernize-use-designated-initializers)
 
-namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, HSV, HOT, GREY, COPER and AUTUMN
+namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, HSV, HOT, GREY, COPPER and AUTUMN
 
     static constexpr unsigned CMAPSIZE { 1000 };
     using colourmap = std::array<RGBQUAD, CMAPSIZE>;
