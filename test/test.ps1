@@ -17,8 +17,8 @@ if ($unrecognized.Count -ne 0) {
 }
 
 $cflags = @(
-    "./test/main.cpp",
-    "./test/googletest/src/gtest-all.cc",
+    "./main.cpp",
+    "./googletest/src/gtest-all.cc",
     "/arch:AVX512",
     "/diagnostics:caret",
     "/DNDEBUG",
@@ -33,8 +33,8 @@ $cflags = @(
     "/GL",
     "/Gw",
     "/I./include",
-    "/I./test/googletest",
-    "/I./test/googletest/include",
+    "/I./googletest",
+    "/I./googletest/include",
     "/jumptablerdata",
     "/MP",
     "/MT",
