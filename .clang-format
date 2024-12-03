@@ -1,3 +1,5 @@
+# UPDATED TO CLANG FORMAT 19.14
+
 # .clang-format is basically a YAML file.
 # Where keys and values are separated by a colon e.g. key: value
 # Comments are started using the # symbol!
@@ -111,7 +113,9 @@ AlignConsecutiveBitFields:      # Same as `AlignConsecutiveAssignments`, but for
 
 AlignConsecutiveDeclarations:   # Same as `AlignConsecutiveAssignments`, but for declarations.
   Enabled:         true
-  AcrossEmptyLines: false
+  AcrossEmptyLines: true
+  # AlignFunctionDeclarations: false
+  AlignFunctionPointers: true
   AcrossComments:  true
   AlignCompound:   true
   PadOperators:    true
@@ -156,10 +160,10 @@ AlignConsecutiveShortCaseStatements:
   # default:           return "";
   # }
 
-AlignEscapedNewlines: Right     # #define A                               \
-                                # int aaaa;                               \
-                                # int b;                                  \
-                                # int dddddddddd;
+AlignEscapedNewlines: LeftWithLastLine      # #define A       \
+											# int aaaa;       \
+											# int b;          \
+											# int dddddddddd;
 
 AlignOperands:   Align          # int aaa = bbbbbbbbbbbbbbb +
                                 #           ccccccccccccccc;
@@ -199,13 +203,14 @@ AllowAllParametersOfDeclarationOnNextLine: true  # If the function declaration d
   #                 int d,
   #                 int e);
 
-AllowBreakBeforeNoexceptSpecifier: OnlyWithParen        # Controls if there could be a line break before a noexcept specifier.
+AllowBreakBeforeNoexceptSpecifier: Never        # Controls if there could be a line break before a noexcept specifier.
 
 AllowShortBlocksOnASingleLine: Always           # Always merge short blocks into a single line.
                                                 # e.g.
                                                 # while (true) {}
                                                 # while (true) { continue; }
 
+AllowShortCaseExpressionOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true         # If true, short case labels will be contracted to a single line.
 
 AllowShortCompoundRequirementOnASingleLine: true
@@ -316,10 +321,6 @@ BitFieldColonSpacing: Both
 
 BracedInitializerIndentWidth: 3
 
-BreakAdjacentStringLiterals: true
-
-BreakBeforeBraces: Custom       # Control of individual brace wrapping cases. (Whether a line break is inserted before the starting brace `{`)
-
 BraceWrapping:
 
   AfterCaseLabel:  false
@@ -394,6 +395,8 @@ BraceWrapping:
   SplitEmptyNamespace: false    # If false, empty namespace body can be put on a single line. This option is used only if
                                 # the opening brace of the namespace has already been wrapped
 
+BreakAdjacentStringLiterals: true
+
 BreakAfterAttributes: Never     # Break after a group of C++11 attributes before a function declaration/definition name.
 # If set to Never;
 # [[nodiscard]] inline int f();
@@ -421,11 +424,15 @@ BreakBeforeBinaryOperators: None
 #              aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa >
 #                  ccccccccccccccccccccccccccccccccccccccccc;
 
+BreakBeforeBraces: Custom       # Control of individual brace wrapping cases. (Whether a line break is inserted before the starting brace `{`)
+
 BreakBeforeConceptDeclarations: Never     # The concept declaration style to use.
 # Keep the template declaration line together with concept.
 # template <typename T> concept C = ...;
 
 BreakBeforeInlineASMColon: OnlyMultiline
+
+# BreakBinaryOperations: Never # clang-format 20.0
 
 BreakBeforeTernaryOperators: false        # If true, ternary operators will be placed after line breaks.
 # if set to true;
@@ -718,15 +725,16 @@ IntegerLiteralSeparator:              # Format integer literal separators (' for
   Hex:              0
   HexMinDigits:     0
 
-KeepEmptyLinesAtTheStartOfBlocks: false  # If true, the empty line at the start of blocks is kept.
-# If set to true;                        If set to false;
-# if (foo) {                     vs.     if (foo) {
-#                                          bar();
-#   bar();                               }
-# }
-
-KeepEmptyLinesAtEOF: false
-
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  # If set to true;                        If set to false;
+  # if (foo) {                     vs.     if (foo) {
+  #                                          bar();
+  #   bar();                               }
+  # }
+  AtStartOfFile: false
+  
 LambdaBodyIndentation: Signature       # The indentation style of lambda bodies. Signature (the default) causes the lambda body to be indented
                                        # one additional level relative to the indentation level of the signature. OuterScope forces the lambda
                                        # body to be indented one additional level relative to the parent scope containing the lambda signature.
@@ -878,10 +886,10 @@ RequiresClausePosition: SingleLine
 
 RequiresExpressionIndentation: OuterScope
 
-SeparateDefinitionBlocks: Leave               # Specifies the use of empty lines to separate definition blocks, including classes, structs,
+SeparateDefinitionBlocks: Always              # Specifies the use of empty lines to separate definition blocks, including classes, structs,
                                               # enums, and functions.
 
-ShortNamespaceLines: 1
+ShortNamespaceLines: 10
 
 SkipMacroDefinitionBody: false
 

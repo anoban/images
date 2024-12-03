@@ -295,7 +295,9 @@ class complex final { // doesn't provide the arithmetic functionalities like std
 
     public:
         constexpr complex() noexcept : __x {}, __y {} { }
+
         constexpr explicit complex(const _Ty& v) noexcept : __x { v }, __y { v } { }
+
         constexpr complex(const _Ty& x, const _Ty& y) noexcept : __x { x }, __y { y } { }
 
         constexpr complex(const complex&)            = default;
@@ -305,7 +307,10 @@ class complex final { // doesn't provide the arithmetic functionalities like std
         constexpr ~complex() noexcept                = default;
 
         constexpr _Ty& x() noexcept { return __x; }
+
         constexpr _Ty  x() const noexcept { return __x; }
+
         constexpr _Ty& y() noexcept { return __y; }
+
         constexpr _Ty  y() const noexcept { return __y; }
 };

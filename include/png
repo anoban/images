@@ -133,7 +133,7 @@ template<unsigned long long length> static constexpr typename std::enable_if<len
 
 template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type operator==(
     _In_ const std::array<char, length>& left,
-    _In_ const char (&right)[length] // NOLINT(modernize-avoid-c-arrays)
+    _In_ const char                      (&right)[length] // NOLINT(modernize-avoid-c-arrays)
 ) noexcept {
     return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
 }

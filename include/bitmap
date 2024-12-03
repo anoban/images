@@ -353,7 +353,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return wostr;
         }
 
-        bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
+        bool     to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
 
         iterator begin() noexcept { // NOLINT(readability-make-member-function-const)
             return { pixels, static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
@@ -395,14 +395,14 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
-        pointer data() noexcept { return pixels; } // NOLINT(readability-make-member-function-const)
+        pointer                         data() noexcept { return pixels; } // NOLINT(readability-make-member-function-const)
 
-        const_pointer data() const noexcept { return pixels; }
+        const_pointer                   data() const noexcept { return pixels; }
 
         // returns the height and width of the bitmap, in that order
         std::pair<size_type, size_type> dim() const noexcept { return { info_header.biHeight, info_header.biWidth }; }
 
-        long height() const noexcept { return info_header.biHeight; }
+        long                            height() const noexcept { return info_header.biHeight; }
 
-        long width() const noexcept { return info_header.biWidth; }
+        long                            width() const noexcept { return info_header.biWidth; }
 };

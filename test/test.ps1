@@ -32,7 +32,7 @@ $cflags = @(
     "/fpcvt:IA",
     "/GL",
     "/Gw",
-    "/I./include",
+    "/I./../include",
     "/I./googletest",
     "/I./googletest/include",
     "/jumptablerdata",

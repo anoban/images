@@ -208,7 +208,7 @@ class icondirectory final { // represents an .ico file
 
         size_type image_count() const noexcept { return entry_count; }
 
-        bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
+        bool      to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
 
-        bitmap image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
+        bitmap    image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
 };

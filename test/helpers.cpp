@@ -44,7 +44,7 @@ TEST(RGB, RGBQUAD_EQUALITY_OPERATORS) {
 }
 
 struct RgbQuadFixture : public testing::Test {
-        RGBQUAD pixel;
+        RGBQUAD        pixel;
 
         constexpr void SetUp() noexcept override {
             pixel = { .rgbBlue { 0xFF }, .rgbGreen { 0xFF }, .rgbRed { 0xFF }, .rgbReserved { 0xFF } };
