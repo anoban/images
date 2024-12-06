@@ -3,5 +3,4 @@
 #ifndef __CMAPS__
     #define __CMAPS__
     #include <_cmaps.hpp>
-
 #endif

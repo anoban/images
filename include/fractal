@@ -1,0 +1,6 @@
+#pragma once
+
+#ifndef __FRACTAL__
+    #define __FRACTAL__
+    #include <_fractal.hpp>
+#endif

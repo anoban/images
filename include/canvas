@@ -1,0 +1,6 @@
+#pragma once
+
+#ifndef __CANVAS__
+    #define __CANVAS__
+    #include <_canvas.hpp>
+#endif

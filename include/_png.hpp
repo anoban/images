@@ -1,4 +1,8 @@
 #pragma once
+#ifndef __PNG__
+    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
+#endif
+
 #include <algorithm>
 
 #include <Winsock2.h> // for the byte order reversal routines

@@ -1,0 +1,6 @@
+#pragma once
+
+#ifndef __BITMAP__
+    #define __BITMAP__
+    #include <_bitmap.hpp>
+#endif
