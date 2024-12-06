@@ -169,3 +169,5 @@ template<typename _Ty> class random_access_iterator { // unchecked random access
             return _offset - other._offset;
         }
 };
+
+#undef __INTERNAL

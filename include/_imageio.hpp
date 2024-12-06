@@ -121,3 +121,5 @@ PREMATURE_RETURN:
     }
 
 } // namespace internal
+
+#undef __INTERNAL

@@ -149,3 +149,5 @@ class png final {
     public:
         png() noexcept = default;
 };
+
+#undef __INTERNAL

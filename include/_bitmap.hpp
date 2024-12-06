@@ -411,3 +411,5 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         long                            width() const noexcept { return info_header.biWidth; }
 };
+
+#undef __INTERNAL

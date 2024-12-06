@@ -204,3 +204,5 @@ class fractal final : public bitmap {
             }
         }
 };
+
+#undef __INTERNAL

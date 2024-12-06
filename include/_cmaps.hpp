@@ -1853,3 +1853,5 @@ namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, 
     // NOLINTEND(modernize-use-designated-initializers)
 
 } // namespace colourmaps
+
+#undef __INTERNAL

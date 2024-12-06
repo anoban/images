@@ -218,3 +218,5 @@ class icondirectory final { // represents an .ico file
 
         bitmap    image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
 };
+
+#undef __INTERNAL

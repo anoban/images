@@ -133,3 +133,5 @@ class canvas final : public bitmap {
 
         [[nodiscard]] bitmap /* a non-destructive object slicing happens here */ unwrap() const noexcept { return *this; }
 };
+
+#undef __INTERNAL

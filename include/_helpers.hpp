@@ -319,3 +319,5 @@ class complex final { // doesn't provide the arithmetic functionalities like std
 
         constexpr _Ty  y() const noexcept { return __y; }
 };
+
+#undef __INTERNAL
