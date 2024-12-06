@@ -1,7 +1,5 @@
 #pragma once
-
-#ifndef __ITERATORS__
-    #define __ITERATORS__
+#ifndef __ITERATORS
+    #define __ITERATORS
     #include <_iterators.hpp>
-
 #endif

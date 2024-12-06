@@ -1,6 +1,5 @@
 #pragma once
-
-#ifndef __CMAPS__
-    #define __CMAPS__
+#ifndef __CMAPS
+    #define __CMAPS
     #include <_cmaps.hpp>
 #endif

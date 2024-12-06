@@ -1,4 +1,9 @@
 #pragma once
+#define __INTERNAL
+#if !defined(__FRACTAL) && !defined(__INTERNAL)
+    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
+#endif
+
 #include <immintrin.h>
 
 #include <_bitmap.hpp>

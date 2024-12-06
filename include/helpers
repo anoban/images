@@ -1,6 +1,5 @@
 #pragma once
-
-#ifndef __HELPERS__
-    #define __HELPERS__
+#ifndef __HELPERS
+    #define __HELPERS
     #include <_helpers.hpp>
 #endif

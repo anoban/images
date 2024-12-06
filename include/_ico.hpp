@@ -1,8 +1,14 @@
 #pragma once
-#include <bitmap>
-#include <helpers>
-#include <imageio>
+#define __INTERNAL
+#if !defined(__ICO) && !defined(__INTERNAL)
+    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
+#endif
+
 #include <vector>
+
+#include <_bitmap.hpp>
+#include <_helpers.hpp>
+#include <_imageio.hpp>
 
 // most .ico files will have only one bitmap in them, so this is generous enough
 static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 5 };

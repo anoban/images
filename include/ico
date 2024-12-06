@@ -1,6 +1,5 @@
 #pragma once
-
-#ifndef __ICO__
-    #define __ICO__
+#ifndef __ICO
+    #define __ICO
     #include <_ico.hpp>
 #endif

@@ -1,6 +1,11 @@
 #pragma once
-#include <bitmap>
-#include <cmaps>
+#define __INTERNAL
+#if !defined(__CANVAS) && !defined(__INTERNAL)
+    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
+#endif
+
+#include <_bitmap.hpp>
+#include <_cmaps.hpp>
 
 // std::complex<>'s x() and y() methods return a const reference even when the object is non const
 // and it uses a 2 member array as the internal storage structure, so to update individual elements we need to expose the array and manually subscript into it

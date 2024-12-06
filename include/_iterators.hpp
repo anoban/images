@@ -1,4 +1,9 @@
 #pragma once
+#define __INTERNAL
+#if !defined(__ITERATORS) && !defined(__INTERNAL)
+    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
+#endif
+
 #include <cassert>
 #include <iterator> // std::random_access_iterator_tag
 
