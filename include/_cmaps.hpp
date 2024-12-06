@@ -1,4 +1,8 @@
 #pragma once
+#ifndef __CMAPS__
+    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
+#endif
+
 #include <array>
 
 #define _AMD64_ // architecture

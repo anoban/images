@@ -1,11 +1,11 @@
 #pragma once
 #include <algorithm>
 
-// project headers
-#include <helpers>
-#include <imageio>
-
 #include <Winsock2.h> // for the byte order reversal routines
+
+// project headers
+#include <_helpers.hpp>
+#include <_imageio.hpp>
 
 #pragma comment(lib, "Ws2_32.lib")
 

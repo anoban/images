@@ -1,8 +1,8 @@
 #pragma once
-#include <bitmap>
-#include <cmaps>
-
 #include <immintrin.h>
+
+#include <_bitmap.hpp>
+#include <_cmaps.hpp>
 
 class fractal final : public bitmap {
     private:
