@@ -7,7 +7,7 @@
 #include <cassert>
 #include <iterator> // std::random_access_iterator_tag
 
-template<typename _Ty> class random_access_iterator { // unchecked random access iterator
+template<typename _Ty> class random_access_iterator final { // unchecked random access iterator
         // if invalid memory access happens, the OS may raise an access violation exception, the iterator won't do anything about this in release mode
         // in debug mode, certain preventative asserts may fail, indicating where things went wrong
 
