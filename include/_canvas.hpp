@@ -4,14 +4,10 @@
     #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
 #endif
 
+#include <immintrin.h>
+
 #include <_bitmap.hpp>
 #include <_cmaps.hpp>
-
-// std::complex<>'s x() and y() methods return a const reference even when the object is non const
-// and it uses a 2 member array as the internal storage structure, so to update individual elements we need to expose the array and manually subscript into it
-// opting for a handrolled  complex, fucking C++ heh???
-
-#include <immintrin.h>
 
 class canvas final : public bitmap {
     public:
@@ -111,8 +107,10 @@ class canvas final : public bitmap {
 
         [[nodiscard]] canvas copy() const noexcept { return *this; }
 
-        // a non-destructive object slicing happens here
-        [[nodiscard]] bitmap unwrap() const noexcept { return *this; }
+        [[nodiscard]] bitmap unwrap() const noexcept {
+            static_assert(sizeof(bitmap) == sizeof(canvas));
+            return *this; // a non-destructive object slicing happens here
+        }
 };
 
 #undef __INTERNAL
