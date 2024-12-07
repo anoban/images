@@ -93,7 +93,13 @@ class fractal final : public bitmap {
                         z.y()  = 2.000 * z.x() * z.y() + c.y();
                         z.x()  = zxtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
                     }
-                    dbgwprintf_s(L"iteration = %llu, zxsq = %.10lf, zysq = %.10lf\n", iterations, zxsq, zysq);
+                    dbgwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                        L"iteration = %llu, zxsq = %.10lf, zysq = %.10lf\n",
+                        iterations,
+                        zxsq,
+                        zysq
+                    );
+
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     pixels[row * height() + col] =
                         (iterations == _FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?

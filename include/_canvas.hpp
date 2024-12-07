@@ -25,7 +25,7 @@ class canvas final : public bitmap {
 
         explicit canvas(_In_ bitmap&& image) noexcept : bitmap { std::move(image) } { }
 
-        canvas(_In_ const canvas& other) noexcept : bitmap(other) { } // NOLINT(modernize-use-equals-default)
+        canvas(_In_ const canvas& other) = default;
 
         canvas& operator=(_In_ const canvas& other) noexcept { }
 
@@ -47,21 +47,9 @@ class canvas final : public bitmap {
             }
         }
 
-        template<rgb::BW_TRANSFORMATION method> [[nodiscard]] canvas to_blacknwhite() const noexcept {
-            auto copy { *this };
-            copy.to_blacknwhite<method>();
-            return copy;
-        }
-
         // remove the selected colours from the pixels of the image
         template<rgb::RGB_TAG colour_combination> void remove_colour() noexcept {
             std::for_each(begin(), end(), rgb::removers::zero<colour_combination> {});
-        }
-
-        template<rgb::RGB_TAG colour_combination> [[nodiscard]] canvas remove_colour() const noexcept {
-            auto copy { *this };
-            copy.remove_colour<colour_combination>();
-            return copy;
         }
 
         // INCOMPLETE AND BUGGY
@@ -93,9 +81,7 @@ class canvas final : public bitmap {
 
         // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic) }
 
-        [[nodiscard]] canvas hflip() const noexcept { }
-
-        void                 vflip() noexcept { // reverse the order of scanlines in the image
+        void vflip() noexcept { // reverse the order of scanlines in the image
             // number of RGBQUAD structs a zmm register can hold
             static constexpr auto ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
             __m512i               above {}, below {}; // NOLINT(readability-isolate-declaration)
@@ -123,15 +109,10 @@ class canvas final : public bitmap {
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
-        [[nodiscard]] canvas vflip() const noexcept {
-            auto copy { *this };
-            copy.vflip();
-            return copy;
-        }
+        [[nodiscard]] canvas copy() const noexcept { return *this; }
 
-        [[nodiscard]] canvas                                                     copy() const noexcept { return *this; }
-
-        [[nodiscard]] bitmap /* a non-destructive object slicing happens here */ unwrap() const noexcept { return *this; }
+        // a non-destructive object slicing happens here
+        [[nodiscard]] bitmap unwrap() const noexcept { return *this; }
 };
 
 #undef __INTERNAL

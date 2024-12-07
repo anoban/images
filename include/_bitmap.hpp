@@ -30,15 +30,6 @@
 // however there are no markers to identify the type of the image header present in the bmp image, the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct
 // from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes
 
-// order of pixels in the BMP buffer.
-enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
-
-// types of compressions used in BMP files.
-enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
-
-// that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
-static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
-
 class bitmap { // this class is designed to represent what Windows calls as DIBs (Device Independent Bitmap)
     public:
         using value_type      = RGBQUAD; // pixel type
@@ -51,6 +42,15 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         using size_type       = long long; // because BMP files use signed long as the type for sizes
         using difference_type = long long;
 
+        // order of pixels in the BMP buffer.
+        enum class SCANLINE_ORDERING : unsigned char { TOPDOWN, BOTTOMUP };
+
+        // types of compressions used in BMP files.
+        enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
+
+        // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
+        static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
+
         // clang-format off
 #ifndef __TEST__
    protected:
@@ -58,16 +58,15 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // clang-format on
 
         // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-        unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
-        RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
-        BITMAPFILEHEADER file_header;
-        BITMAPINFOHEADER info_header;
-        unsigned long    file_size;   // file size
-        unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
-                                      // NOLINTEND(misc-non-private-member-variables-in-classes)
-        friend class icondirectory;   // to serialize ico objects as bitmaps, we need access to this class's internals
-        friend class canvas;
-        friend class fractal;
+        unsigned char*                  buffer; // this will point to the original file buffer, this is the one that needs deallocation!
+        RGBQUAD*                        pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
+        BITMAPFILEHEADER                file_header;
+        BITMAPINFOHEADER                info_header;
+        unsigned long                   file_size; // file size
+        unsigned long buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+                                   // NOLINTEND(misc-non-private-member-variables-in-classes)
+
+        friend class icondirectory; // to serialize ico objects as bitmaps, we need access to this class's internals
 
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)
