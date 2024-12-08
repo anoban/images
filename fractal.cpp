@@ -3,12 +3,12 @@
 #include <cmaps>
 #include <random>
 
-static constexpr RGBQUAD            _FRACTAL_FOREGROUND { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x99, .rgbReserved = 0xFF };
+static constexpr RGBQUAD            FRACTAL_FOREGROUND { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0xFF, .rgbReserved = 0xFF };
 // BELOW IS ABSOLUTELY CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
-static constexpr unsigned long long _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
-static constexpr double             _FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
+static constexpr unsigned long long FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
+static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 
-static void __cdecl waves(_Inout_ canvas& pane) noexcept {
+[[maybe_unused]] static void __cdecl waves(_Inout_ canvas& pane) noexcept {
     double red {}, green {}, blue {}; // NOLINT(readability-isolate-declaration)
 
     for (long row = 0; row < pane.height(); ++row) {
@@ -33,7 +33,7 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
 // look up https://en.wikipedia.org/wiki/Mandelbrot_set
 [[maybe_unused]] static void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
     ::complex<double>  c {}, z {}; // NOLINT(readability-isolate-declaration)
-    constexpr auto     _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
+
     double             zxtemp {}, zxsq /* square of z.x() */ {}, zysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
     unsigned long long iterations {};
 
@@ -55,8 +55,8 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
             // at some point in the loop z may undergo an explosion, which is defined as the sums of squares of z's x and y coordinates surpassing a predefined threshold value
             // the selection of colour down the road depends on whcih happens first, whether the loop reaching maximum number of iterations or the explosion
             for (zxsq = z.x() * z.x(), zysq = z.y() * z.y();
-                 zxsq + zysq /* magnitude of z */ < _FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ &&
-                 iterations < _FRACTAL_MAX_ITERATIONS;
+                 zxsq + zysq /* magnitude of z */ < FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ &&
+                 iterations < FRACTAL_MAX_ITERATIONS;
                  ++iterations) {
                 zxtemp = zxsq - zysq + c.x();
 
@@ -73,8 +73,8 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             pane[row * pane.width() + col] =
-                (iterations == _FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?
-                    _FRACTAL_FOREGROUND : /* if the loop was exited because of an explosion */
+                (iterations == FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?
+                    FRACTAL_FOREGROUND : /* if the loop was exited because of an explosion */
                     cmap.at(iterations);
         }
     }
@@ -103,7 +103,7 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
             iterations             = 0;
 
             for (xsq = scaled_coordinates.x() * scaled_coordinates.x(), ysq = scaled_coordinates.y() * scaled_coordinates.y();
-                 xsq + ysq < 4.000 && iterations < _FRACTAL_MAX_ITERATIONS;
+                 xsq + ysq < 4.000 && iterations < FRACTAL_MAX_ITERATIONS;
                  ++iterations) {
                 xtemp                  = xsq - ysq + scaled_x_coordinate;
                 scaled_coordinates.y() = -2.000 * scaled_coordinates.x() * scaled_coordinates.y() + scaled_y_coordinate;
@@ -111,7 +111,7 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
             }
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            pane[row * pane.height() + col] = (iterations == _FRACTAL_MAX_ITERATIONS) ? _FRACTAL_FOREGROUND : cmap.at(iterations);
+            pane[row * pane.width() + col] = (iterations == FRACTAL_MAX_ITERATIONS) ? FRACTAL_FOREGROUND : cmap.at(iterations);
         }
     }
 }
@@ -141,7 +141,7 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
             iterations             = 0;
 
             while (scaled_coordinates.x() * scaled_coordinates.x() + scaled_coordinates.y() * scaled_coordinates.y() < escrsq &&
-                   ++iterations < _FRACTAL_MAX_ITERATIONS) {
+                   ++iterations < FRACTAL_MAX_ITERATIONS) {
                 //
                 xtemp              = scaled_coordinates.x() * scaled_coordinates.x() - scaled_coordinates.y() * scaled_coordinates.y();
                 scaled_coordinates = {};
@@ -176,7 +176,7 @@ static void __cdecl waves(_Inout_ canvas& pane) noexcept {
             xsq                = scaled_coordinates.x() * scaled_coordinates.x();
             ysq                = scaled_coordinates.y() * scaled_coordinates.y();
 
-            while (xsq + ysq < escaperadsq && ++iterations < _FRACTAL_MAX_ITERATIONS) {
+            while (xsq + ysq < escaperadsq && ++iterations < FRACTAL_MAX_ITERATIONS) {
                 //
                 xtemp              = xsq - ysq;
                 scaled_coordinates = {};
@@ -189,10 +189,13 @@ int main() {
     std::mt19937_64 rand_engine { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) };
     std::uniform_int_distribution<long> runif { 100, 10'000 };
     canvas                              board { runif(rand_engine), runif(rand_engine) };
+
     ::waves(board);
     board.to_file(LR"(./waves.bmp)");
     ::mandelbrot(board, colourmaps::JET);
     board.to_file(LR"(./mandelbrot.bmp)");
+    ::tricorn(board, colourmaps::COPPER);
+    board.to_file(LR"(./tricorn.bmp)");
 
     return EXIT_SUCCESS;
 }
