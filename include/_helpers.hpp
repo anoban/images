@@ -21,7 +21,7 @@
 #pragma comment(lib, "Gdi32.lib")
 #pragma comment(lib, "Ws2_32.lib")
 
-#ifdef _DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
     #define dbgputws(...)     ::fputws(__VA_ARGS__, stderr)
     #define dbgwprintf_s(...) ::fwprintf_s(stderr, __VA_ARGS__);
 #else

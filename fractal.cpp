@@ -14,10 +14,10 @@ static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
     for (long row = 0; row < pane.height(); ++row) {
         for (long col = 0; col < pane.width(); ++col) {
             // minimum and maximum values returned by cos() are -1.000 and 1.000
-            red                                     = 128.0000 + 127.0000 * ::cos(0.0021 * row * col);
             // if cos() returned -1.000, red will be 1.000, if cos() returned 1.000, red will be 255.000, so all cool
-            green                                   = 128.0000 + 127.0000 * ::sin(0.002 * row * col) - ::cos(0.004 * col) / 2.0000;
-            blue                                    = 128.0000 + 127.0000 * ::cos(0.008 * row) + ::sin(0.002 * row * col) / 2.0000;
+            red                                     = 128.0000 + 127.0000 * ::cos(0.02153 * row * col);
+            green                                   = 128.0000 + 127.0000 * ::sin(0.01297 * row * col) - ::cos(0.1354 * col) / 2.0000;
+            blue                                    = 128.0000 + 127.0000 * ::cos(0.1248 * row) + ::sin(0.1573 * row * col) / 2.0000;
 
             pane[row * pane.width() + col].rgbBlue  = static_cast<unsigned char>(blue);
             pane[row * pane.width() + col].rgbGreen = static_cast<unsigned char>(green);
@@ -32,9 +32,8 @@ static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 
 // look up https://en.wikipedia.org/wiki/Mandelbrot_set
 [[maybe_unused]] static void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
-    ::complex<double>  c {}, z {}; // NOLINT(readability-isolate-declaration)
-
-    double             zxtemp {}, zxsq /* square of z.x() */ {}, zysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
+    ::complex<double>  scaled_coordinates {}, z {};                                          // NOLINT(readability-isolate-declaration)
+    double             xtemp {}, xsq /* square of z.x() */ {}, ysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
     unsigned long long iterations {};
 
     // for each pixel in the image
@@ -42,34 +41,32 @@ static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
         for (long col = 0; col < pane.width(); ++col) {
             // Mandelbrot space is defined by a horizontal range (-2.00, 0.47) and a vertical range (-1.12, 1.12)
             // dividing col by width gives a value (0, 1), multiplying that by 2.4700 upscales to to (0, 2.4700), then subtracting 2.000 gives us (-2.000, 0.4700)
-            c.x()      = col / static_cast<double>(pane.width()); // *2.47000 - 2.0000;
+            scaled_coordinates.x() = col / static_cast<double>(pane.width()) * 2.47000 - 2.0000;
             // dividing row by height will give a value (0, 1), subtracting 0.500 shifts it to (-0.5, 0.5) then by multiplying by 2.2400 we could stretch it to (-1.1200, 1.1200)
-            c.y()      = row / static_cast<double>(pane.height()); // - 0.5000) * 2.24000;
+            scaled_coordinates.y() = (row / static_cast<double>(pane.height()) - 0.5000) * 2.24000;
 
-            z.x()      = c.x();
-            z.y()      = c.y();
-
-            iterations = 0;
+            xsq = ysq = z.x() = z.y() = 0.0000;
+            iterations                = 0;
 
             // Mandelbrot equation is Z = Z^2 + C, throughout the loop, Z is iteratively updated while C is updated only once (before this loop begins)
             // at some point in the loop z may undergo an explosion, which is defined as the sums of squares of z's x and y coordinates surpassing a predefined threshold value
             // the selection of colour down the road depends on whcih happens first, whether the loop reaching maximum number of iterations or the explosion
-            for (zxsq = z.x() * z.x(), zysq = z.y() * z.y();
-                 zxsq + zysq /* magnitude of z */ < FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ &&
+            for (xsq = z.x() * z.x(), ysq = z.y() * z.y();
+                 (xsq + ysq) /* magnitude of z */ < FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ &&
                  iterations < FRACTAL_MAX_ITERATIONS;
                  ++iterations) {
-                zxtemp = zxsq - zysq + c.x();
-
+                xtemp = xsq - ysq + scaled_coordinates.x();
                 // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
-                z.y()  = 2.000 * z.x() * z.y() + c.y();
-                z.x()  = zxtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
+                z.y() = 2.000 * z.x() * z.y() + scaled_coordinates.y();
+                z.x() = xtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
             }
-            dbgwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                L"iteration = %llu, zxsq = %.10lf, zysq = %.10lf\n",
-                iterations,
-                zxsq,
-                zysq
-            );
+
+            // if (iterations < FRACTAL_MAX_ITERATIONS || zxsq + zysq > 2.0000)
+            //     dbgwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
+            //         L"iteration = %llu, zxsq + zysq = %.10lf\n",
+            //         iterations,
+            //         zxsq + zysq
+            //     );
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             pane[row * pane.width() + col] =
@@ -187,15 +184,11 @@ static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 
 int main() {
     std::mt19937_64 rand_engine { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) };
-    std::uniform_int_distribution<long> runif { 100, 10'000 };
+    std::uniform_int_distribution<long> runif { 5000, 10'000 };
     canvas                              board { runif(rand_engine), runif(rand_engine) };
 
-    ::waves(board);
-    board.to_file(LR"(./waves.bmp)");
     ::mandelbrot(board, colourmaps::JET);
     board.to_file(LR"(./mandelbrot.bmp)");
-    ::tricorn(board, colourmaps::COPPER);
-    board.to_file(LR"(./tricorn.bmp)");
 
     return EXIT_SUCCESS;
 }
