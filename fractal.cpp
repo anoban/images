@@ -30,53 +30,6 @@ static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 // these contain numerous refactors to fix those bugs
 // these fractal functions behave as if the scanlines in the pixel buffer are ordered top-down, since these are fractals, this is not much of an issue here
 
-// look up https://en.wikipedia.org/wiki/Mandelbrot_set
-[[maybe_unused]] static void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
-    ::complex<double>  scaled_coordinates {}, z {};                                          // NOLINT(readability-isolate-declaration)
-    double             xtemp {}, xsq /* square of z.x() */ {}, ysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
-    unsigned long long iterations {};
-
-    // for each pixel in the image
-    for (long row = 0; row < pane.height(); ++row) {
-        for (long col = 0; col < pane.width(); ++col) {
-            // Mandelbrot space is defined by a horizontal range (-2.00, 0.47) and a vertical range (-1.12, 1.12)
-            // dividing col by width gives a value (0, 1), multiplying that by 2.4700 upscales to to (0, 2.4700), then subtracting 2.000 gives us (-2.000, 0.4700)
-            scaled_coordinates.x() = col / static_cast<double>(pane.width()) * 2.47000 - 2.0000;
-            // dividing row by height will give a value (0, 1), subtracting 0.500 shifts it to (-0.5, 0.5) then by multiplying by 2.2400 we could stretch it to (-1.1200, 1.1200)
-            scaled_coordinates.y() = (row / static_cast<double>(pane.height()) - 0.5000) * 2.24000;
-
-            xsq = ysq = z.x() = z.y() = 0.0000;
-            iterations                = 0;
-
-            // Mandelbrot equation is Z = Z^2 + C, throughout the loop, Z is iteratively updated while C is updated only once (before this loop begins)
-            // at some point in the loop z may undergo an explosion, which is defined as the sums of squares of z's x and y coordinates surpassing a predefined threshold value
-            // the selection of colour down the road depends on whcih happens first, whether the loop reaching maximum number of iterations or the explosion
-            for (xsq = z.x() * z.x(), ysq = z.y() * z.y();
-                 (xsq + ysq) /* magnitude of z */ < FRACTAL_EXPLODE_THRESHOLD /* is there an explosion? */ &&
-                 iterations < FRACTAL_MAX_ITERATIONS;
-                 ++iterations) {
-                xtemp = xsq - ysq + scaled_coordinates.x();
-                // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART IS UPDATED, THE USED REAL PART SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
-                z.y() = 2.000 * z.x() * z.y() + scaled_coordinates.y();
-                z.x() = xtemp; // THUS UPDATING THE REAL PART AFTER THE UPDATE OF IMAGINARY PART
-            }
-
-            // if (iterations < FRACTAL_MAX_ITERATIONS || zxsq + zysq > 2.0000)
-            //     dbgwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-            //         L"iteration = %llu, zxsq + zysq = %.10lf\n",
-            //         iterations,
-            //         zxsq + zysq
-            //     );
-
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            pane[row * pane.width() + col] =
-                (iterations == FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?
-                    FRACTAL_FOREGROUND : /* if the loop was exited because of an explosion */
-                    cmap.at(iterations);
-        }
-    }
-}
-
 // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
 [[maybe_unused]] static void __cdecl tricorn(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
     // NOLINTNEXTLINE(readability-isolate-declaration)
@@ -182,13 +135,79 @@ static constexpr double             FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
     }
 }
 
+static void mandelbrot_wikipedia(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
+    ::complex<long double> scaled {};
+    unsigned long long     niterations {};
+    long double            x {}, xtemp {}, y {};
+
+    for (long row = 0; row < pane.height(); ++row) {
+        for (long col = 0; col < pane.width(); ++col) {
+            scaled.x() = col / static_cast<long double>(pane.width()) * 2.4700 - 2.0000;
+            scaled.y() = (row / static_cast<long double>(pane.height()) - 0.5000) * 2.2400;
+
+            x = y       = 0.0000;
+            niterations = 0;
+
+            while (niterations < FRACTAL_MAX_ITERATIONS - 1 && (x * x + y * y) <= 4.0000) {
+                xtemp = x * x - y * y + scaled.x();
+                y     = 2 * x * y + scaled.y();
+                x     = xtemp;
+                niterations++;
+            }
+
+            // ::wprintf_s(L"%10llu\n", niterations);
+            pane[row * pane.width() + col] = cmap.at(niterations);
+        }
+    }
+}
+
+// look up https://en.wikipedia.org/wiki/Mandelbrot_set
+[[maybe_unused]] static void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
+    ::complex<double>  scaled_coords {}, coords {}; // NOLINT(readability-isolate-declaration)
+    double             xtemp {};                    // NOLINT(readability-isolate-declaration)
+    unsigned long long niterations {};
+
+    // for each pixel in the image
+    for (long row = 0; row < pane.height(); ++row) {
+        for (long col = 0; col < pane.width(); ++col) {
+            // Mandelbrot space is defined by a horizontal range (-2.00, 0.47) and a vertical range (-1.12, 1.12)
+            // dividing col by width gives a value (0, 1), multiplying that by 2.4700 upscales to to (0, 2.4700), then subtracting 2.000 gives us (-2.000, 0.4700)
+            scaled_coords.x() = col / static_cast<double>(pane.width()) * 2.47000 - 2.0000;
+            // dividing row by height will give a value (0, 1), subtracting 0.500 shifts it to (-0.5, 0.5) then by multiplying by 2.2400 we could stretch it to (-1.1200, 1.1200)
+            scaled_coords.y() = (row / static_cast<double>(pane.height()) - 0.5000) * 2.24000;
+
+            niterations       = 0;
+            coords.x() = coords.y() = 0.0000;
+
+            // Mandelbrot equation :: Z = Z^2 + C
+            // throughout the loop Z is iteratively updated while C is updated only once before this loop begins
+            // at some point in the loop Z may undergo an explosion, which is defined as the sums of squares of Z's x and y coordinates surpassing a predefined threshold value
+            // the selection of colour down the road depends on whcih happens first, whether the loop reaching maximum number of iterations or the explosion
+            for (// BEWARE OF POTENTIAL SHORT CIRCUITS BELOW, REORDERING THE SUBEXPRESSIONS MAY LEAD TO UNWANTED RUNTIME BEHAVIOURS
+                ; niterations < FRACTAL_MAX_ITERATIONS - 1 &&
+                   coords.x() * coords.x() + coords.y() * coords.y() /* magnitude of Z */ < FRACTAL_EXPLODE_THRESHOLD;
+                 ++niterations) {
+                xtemp      = coords.x() * coords.x() - coords.y() * coords.y() + scaled_coords.x();
+                // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART (y) IS UPDATED, THE USED REAL PART (x) SHOULD BE IN THE ORIGINAL (PREVIOUS) STATE
+                coords.y() = 2.000 * coords.x() * coords.y() + scaled_coords.y();
+                coords.x() = xtemp; // THUS UPDATING THE REAL PART (x) AFTER THE UPDATE OF IMAGINARY PART (y)
+            }
+
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            pane[row * pane.width() + col] = cmap.at(niterations);
+            // if the loop was exited because of an explosion
+            // if the loop was exited because we reached the maximum iterations
+        }
+    }
+}
+
 int main() {
     std::mt19937_64 rand_engine { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) };
-    std::uniform_int_distribution<long> runif { 5000, 10'000 };
+    std::uniform_int_distribution<long> runif { 5000, 8000 };
     canvas                              board { runif(rand_engine), runif(rand_engine) };
 
     ::mandelbrot(board, colourmaps::JET);
-    board.to_file(LR"(./mandelbrot.bmp)");
+    board.to_file(LR"(./mandelbrot_jet.bmp)");
 
     return EXIT_SUCCESS;
 }
