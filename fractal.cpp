@@ -1,24 +1,27 @@
 #include <canvas>
+#include <chrono>
+#include <cmaps>
+#include <random>
 
 static constexpr RGBQUAD            _FRACTAL_FOREGROUND { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x99, .rgbReserved = 0xFF };
 // BELOW IS ABSOLUTELY CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
 static constexpr unsigned long long _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
 static constexpr double             _FRACTAL_EXPLODE_THRESHOLD { 4.0000 };
 
-static inline void                  waves(_Inout_ canvas& pane) noexcept {
+static void __cdecl waves(_Inout_ canvas& pane) noexcept {
     double red {}, green {}, blue {}; // NOLINT(readability-isolate-declaration)
 
     for (long row = 0; row < pane.height(); ++row) {
         for (long col = 0; col < pane.width(); ++col) {
             // minimum and maximum values returned by cos() are -1.000 and 1.000
-            red   = 128.0000 + 127.0000 * ::cos(0.0021 * row * col);
+            red                                     = 128.0000 + 127.0000 * ::cos(0.0021 * row * col);
             // if cos() returned -1.000, red will be 1.000, if cos() returned 1.000, red will be 255.000, so all cool
-            green = 128.0000 + 127.0000 * ::sin(0.002 * row * col) - ::cos(0.004 * col) / 2.0000;
-            blue  = 128.0000 + 127.0000 * ::cos(0.008 * row) + ::sin(0.002 * row * col) / 2.0000;
+            green                                   = 128.0000 + 127.0000 * ::sin(0.002 * row * col) - ::cos(0.004 * col) / 2.0000;
+            blue                                    = 128.0000 + 127.0000 * ::cos(0.008 * row) + ::sin(0.002 * row * col) / 2.0000;
 
-            pane[row * pane.height() + col].rgbBlue  = static_cast<unsigned char>(blue);
-            pane[row * pane.height() + col].rgbGreen = static_cast<unsigned char>(green);
-            pane[row * pane.height() + col].rgbRed   = static_cast<unsigned char>(red);
+            pane[row * pane.width() + col].rgbBlue  = static_cast<unsigned char>(blue);
+            pane[row * pane.width() + col].rgbGreen = static_cast<unsigned char>(green);
+            pane[row * pane.width() + col].rgbRed   = static_cast<unsigned char>(red);
         }
     }
 }
@@ -28,7 +31,7 @@ static inline void                  waves(_Inout_ canvas& pane) noexcept {
 // these fractal functions behave as if the scanlines in the pixel buffer are ordered top-down, since these are fractals, this is not much of an issue here
 
 // look up https://en.wikipedia.org/wiki/Mandelbrot_set
-static inline void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
+[[maybe_unused]] static void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
     ::complex<double>  c {}, z {}; // NOLINT(readability-isolate-declaration)
     constexpr auto     _FRACTAL_MAX_ITERATIONS { colourmaps::CMAPSIZE };
     double             zxtemp {}, zxsq /* square of z.x() */ {}, zysq /* square of z.y() */ {}; // NOLINT(readability-isolate-declaration)
@@ -69,7 +72,7 @@ static inline void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmap
             );
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            pane[row * pane.height() + col] =
+            pane[row * pane.width() + col] =
                 (iterations == _FRACTAL_MAX_ITERATIONS) /* if the loop was exited because we reached the maximum iterations */ ?
                     _FRACTAL_FOREGROUND : /* if the loop was exited because of an explosion */
                     cmap.at(iterations);
@@ -77,8 +80,8 @@ static inline void __cdecl mandelbrot(_Inout_ canvas& pane, _In_ const colourmap
     }
 }
 
-static inline void __cdecl tricorn(_In_ const colourmaps::colourmap& cmap
-) noexcept { // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
+// look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
+[[maybe_unused]] static void __cdecl tricorn(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
     // NOLINTNEXTLINE(readability-isolate-declaration)
     double             scaled_x_coordinate {} /* (-2.5, 1) */, scaled_y_coordinate {} /* (-1, 1) */; // of the pixel
     ::complex<double>  scaled_coordinates {};
@@ -87,12 +90,12 @@ static inline void __cdecl tricorn(_In_ const colourmaps::colourmap& cmap
     unsigned long long iterations {};
 
     // for each pixel in the image
-    for (long row = 0; row < height(); ++row) {
-        for (long col = 0; col < width(); ++col) {
+    for (long row = 0; row < pane.height(); ++row) {
+        for (long col = 0; col < pane.width(); ++col) {
             // dividing col by width gives a value (0, 1), multiplying that by 3.500 upscales to to (0, 3.5), then subtracting 2.5 gives us (-2.5, 1)
-            scaled_x_coordinate    = col / static_cast<double>(width()) * 3.50000 - 2.50000;
+            scaled_x_coordinate    = col / static_cast<double>(pane.width()) * 3.50000 - 2.50000;
             // dividing row by height will give a value (0, 1), by multiplying by 2 we could stretch it to (0, 2), then by subtracting 1, we could shift the range to (-1, 1)
-            scaled_y_coordinate    = row / static_cast<double>(height()) * 2.00000 - 1.00000;
+            scaled_y_coordinate    = row / static_cast<double>(pane.height()) * 2.00000 - 1.00000;
 
             scaled_coordinates.x() = scaled_x_coordinate;
             scaled_coordinates.y() = scaled_y_coordinate;
@@ -108,12 +111,14 @@ static inline void __cdecl tricorn(_In_ const colourmaps::colourmap& cmap
             }
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            pixels[row * height() + col] = (iterations == _FRACTAL_MAX_ITERATIONS) ? _FRACTAL_FOREGROUND : cmap.at(iterations);
+            pane[row * pane.height() + col] = (iterations == _FRACTAL_MAX_ITERATIONS) ? _FRACTAL_FOREGROUND : cmap.at(iterations);
         }
     }
 }
 
-void __cdecl julia( // look up https://en.wikipedia.org/wiki/Julia_set
+// look up https://en.wikipedia.org/wiki/Julia_set
+[[maybe_unused]] static void __cdecl julia(
+    _Inout_ canvas& pane,
     _In_ const colourmaps::colourmap& cmap,
     _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
 ) noexcept {
@@ -125,13 +130,13 @@ void __cdecl julia( // look up https://en.wikipedia.org/wiki/Julia_set
     double            xtemp {};
 
     // for each pixel in the image
-    for (long row = 0; row < height(); ++row) {
-        for (long col = 0; col < width(); ++col) {
+    for (long row = 0; row < pane.height(); ++row) {
+        for (long col = 0; col < pane.width(); ++col) {
             // dividing col by width will scale the value (0, 1), multiplication by 2 shifts the scale to (0, 2)
             // subtracting 1 shifts to (-1, 1) and the ultimate multiplication by escape_radius will shift it to (-escape_radius, escape_radius)
             // same goes for the col too
-            scaled_coordinates.x() = (col / static_cast<double>(width()) * 2.000 - 1.0000) * escape_radius;
-            scaled_coordinates.y() = (row / static_cast<double>(height()) * 2.000 - 1.0000) * escape_radius;
+            scaled_coordinates.x() = (col / static_cast<double>(pane.width()) * 2.000 - 1.0000) * escape_radius;
+            scaled_coordinates.y() = (row / static_cast<double>(pane.height()) * 2.000 - 1.0000) * escape_radius;
 
             iterations             = 0;
 
@@ -145,7 +150,9 @@ void __cdecl julia( // look up https://en.wikipedia.org/wiki/Julia_set
     }
 }
 
-void __cdecl multijulia( // lookup https://en.wikipedia.org/wiki/Julia_set
+// lookup https://en.wikipedia.org/wiki/Julia_set
+[[maybe_unused]] void __cdecl multijulia(
+    _Inout_ canvas& pane,
     _In_ const colourmaps::colourmap& cmap,
     _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
 ) noexcept {
@@ -157,13 +164,13 @@ void __cdecl multijulia( // lookup https://en.wikipedia.org/wiki/Julia_set
     double            xtemp {}, xsq {}, ysq {}; // NOLINT(readability-isolate-declaration)
 
     // for each pixel in the image
-    for (long row = 0; row < height(); ++row) {
-        for (long col = 0; col < width(); ++col) {
+    for (long row = 0; row < pane.height(); ++row) {
+        for (long col = 0; col < pane.width(); ++col) {
             // dividing col by width will scale the value (0, 1), multiplication by 2 shifts the scale to (0, 2)
             // subtracting 1 shifts to (-1, 1) and the ultimate multiplication by escape_radius will shift it to (-escape_radius, escape_radius)
             // same goes for the col too
-            scaled_coordinates = { (col / static_cast<double>(width()) * 2.000 - 1.0000) * escape_radius,
-                                   (row / static_cast<double>(height()) * 2.000 - 1.0000) * escape_radius };
+            scaled_coordinates = { (col / static_cast<double>(pane.width()) * 2.000 - 1.0000) * escape_radius,
+                                   (row / static_cast<double>(pane.height()) * 2.000 - 1.0000) * escape_radius };
 
             iterations         = 0;
             xsq                = scaled_coordinates.x() * scaled_coordinates.x();
@@ -179,6 +186,13 @@ void __cdecl multijulia( // lookup https://en.wikipedia.org/wiki/Julia_set
 }
 
 int main() {
-    //
+    std::mt19937_64 rand_engine { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) };
+    std::uniform_int_distribution<long> runif { 100, 10'000 };
+    canvas                              board { runif(rand_engine), runif(rand_engine) };
+    ::waves(board);
+    board.to_file(LR"(./waves.bmp)");
+    ::mandelbrot(board, colourmaps::JET);
+    board.to_file(LR"(./mandelbrot.bmp)");
+
     return EXIT_SUCCESS;
 }

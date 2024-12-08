@@ -15,7 +15,7 @@ class canvas final : public bitmap {
 
         explicit canvas(_In_ const wchar_t* const filename) noexcept : bitmap(filename) { }
 
-        canvas(_In_ const long width, _In_ const long height) noexcept : bitmap { width, height } { }
+        canvas(_In_ const long height, _In_ const long width) noexcept : bitmap { height, width } { }
 
         explicit canvas(_In_ const bitmap& image) noexcept : bitmap { image } { }
 

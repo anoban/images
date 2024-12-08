@@ -216,7 +216,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { size } { }
 
         // this is likely to get more compilcated
-        bitmap(_In_ const long width, _In_ const long height) noexcept :
+        bitmap(_In_ const long height, _In_ const long width) noexcept :
             buffer { new (std::nothrow
             ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
