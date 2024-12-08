@@ -1,5 +1,0 @@
-#pragma once
-#ifndef __FRACTAL
-    #define __FRACTAL
-    #include <_fractal.hpp>
-#endif
