@@ -1,7 +1,7 @@
 ### _Usage:_
 --------
 
-Only the class `canvas` supports image transformations. Other classes (`bitmap`, `png` & `ico`) suport parsing and decoding their respective file formats. But these classes do provide a converting constructor to class `canvas` which can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types whcih is the base class for class `canvas`).
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) suport reading, encoding, parsing, decoding and serializing their respective file formats. But these classes do provide a converting constructor to class `canvas` which can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types whcih is the base class for class `canvas`).
 
 ```C++
 #include <canvas> // a class that uses the bitmap class as base
@@ -9,7 +9,7 @@ Only the class `canvas` supports image transformations. Other classes (`bitmap`,
 canvas image {LR"(./image.bmp)"};
 ```
 
-<img src="./images/image.jpg" width=300 height=300>
+<img src="./images/image.jpg" width=300 height=200>
 
 ---------
 
@@ -19,26 +19,29 @@ image.copy(). // specify a preferred RGB to black and white mapping method
 to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
 ```
 
-<img src="./images/average.jpg" width=300 height=300>
+<img src="./images/average.jpg" width=300 height=200>
+>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().
 to_file(LR"(./weighted_average.bmp)");
 ```
 
-<img src="./images/weighted_average.jpg" width=300 height=300>
+<img src="./images/weighted_average.jpg" width=300 height=200>
+>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 
-<img src="./images/binary.jpg" width=300 height=300>
+<img src="./images/binary.jpg" width=300 height=240>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
 ```
 
-<img src="./images/luminosity.jpg" width=300 height=300>
+<img src="./images/luminosity.jpg" width=300 height=200>
+>
 
 ---------
 
@@ -46,40 +49,46 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./
 image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
 ```
 
-<img src="./images/redgreen.jpg" width=300 height=300>
+<img src="./images/redgreen.jpg" width=300 height=200>
+>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
 ```
 
-<img src="./images/bluegreen.jpg" width=300 height=300>
+<img src="./images/bluegreen.jpg" width=300 height=200>
+>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
 ```
 
-<img src="./images/redblue.jpg" width=300 height=300>
+<img src="./images/redblue.jpg" width=300 height=200>
+>
 
 ```C++
 // remove green & blue
 image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
 
-<img src="./images/red.jpg" width=300 height=300>
+<img src="./images/red.jpg" width=300 height=200>
+>
 
 ```C++
 // remove red & green
 image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
 ```
 
-<img src="./images/blue.jpg" width=300 height=300>
+<img src="./images/blue.jpg" width=300 height=200>
+>
 
 ```C++
 // remove red & blue
 image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
 ```
 
-<img src="./images/green.jpg" width=300 height=300>
+<img src="./images/green.jpg" width=300 height=200>
+>
 
 ### _Warning:_
 --------
