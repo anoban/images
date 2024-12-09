@@ -15,8 +15,7 @@
     // .copy() returns a deep copy so that the original stays as is during the transformation
 
     image.copy(). // specify a preferred RGB to black and white mapping method
-    to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().
-    to_file(LR"(./average.bmp)");
+    to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
 ```
 
 <img src="./images/average.jpg" width=300 height=300>
@@ -29,15 +28,13 @@
 <img src="./images/weighted_average.jpg" width=300 height=300>
 
 ```C++
-    image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().
-    to_file(LR"(./binary.bmp)");
+    image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 
 <img src="./images/binary.jpg" width=300 height=300>
 
 ```C++
-    image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().
-    to_file(LR"(./luminosity.bmp)");
+    image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
 ```
 
 <img src="./images/luminosity.jpg" width=300 height=300>
@@ -63,22 +60,22 @@
 <img src="./images/redblue.jpg" width=300 height=300>
 
 ```C++
-    image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>(). // remove green & blue
-    to_file(LR"(.\red.bmp)");
+    // remove green & blue
+    image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
 
 <img src="./images/red.jpg" width=300 height=300>
 
 ```C++
-    image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>(). // remove red & green
-    to_file(LR"(.\blue.bmp)");
+    // remove red & green
+    image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
 ```
 
 <img src="./images/blue.jpg" width=300 height=300>
 
 ```C++
-    image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>(). // remove red & blue
-    to_file(LR"(.\green.bmp)");
+    // remove red & blue
+    image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
 ```
 
 <img src="./images/green.jpg" width=300 height=300>
