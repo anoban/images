@@ -12,12 +12,12 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-// PNG (Portable Network Graphics) is the newest image format compared to JPEG, BMP and GIF
+// PNG (Portable Network Graphics) is a relatvely new image format compared to JPEG, BMP and GIF
 // PNG uses loseless compression and supports:
 // 1) up to 48 bits pixel depth
 // 2) 1, 2, 4, 8, 16 bit sample precisions
 // 3) alpha channel for full colour transparency
-// 4) complicated colour matching ??
+// 4) complicated colour matching ????
 
 // PNG stores multibyte integers in MSB first order (Big Endian)
 // bit strings are read from the least to the most significant bit ?? (related to Huffman codes), when a bit string steps over a byte boundary,
@@ -33,7 +33,7 @@
 // 3) private - chunks defined by applications e.g. Adobe PhotoShop (these chunks are often used internally by these applications)
 
 // every PNG chunk consists of 4 parts:
-// 1) length - number of bytes in the data segment (BE, unsigned)
+// 1) length - number of bytes in the data segment, excluding the chunk itself (BE, unsigned)
 // 2) type - chunk name/identifier (a string literal of 4 characters)
 // 3) data - a series of bytes (contiguous array of length number of bytes)
 // 4) CRC - a Cyclic Redundancy Check (CRC32) checksum value (BE, unsigned)
@@ -45,7 +45,9 @@ class png_chunk final {
         unsigned       length;
         char           type[4]; // NOLINT(modernize-avoid-c-arrays)
         unsigned char* data;
-        unsigned       checksum;
+        unsigned       crc32_checksum;
+        // crc32 checksum is computed for all bytes of a given chunk following the length field (the first four bytes are excluded)
+        // a crc32 checksum must always be there even for chunks with an empty data field
 
     public:
         constexpr bool is_critical() const noexcept {
@@ -73,12 +75,11 @@ class png_chunk final {
 };
 
 // every PNG data stream must begin with the bytes :: {137, 'P', 'N', 'G', 13, 10, 26, 10}
-static constexpr std::array<unsigned char, 8> SIGNATURE_LE { 10, 26, 10, 13, 'G', 'N', 'P', 137 };
-static const unsigned long long               PNG_SIGNATURE { *reinterpret_cast<const unsigned long long*>(SIGNATURE_LE.data()) };
+static constexpr std::array<unsigned char, 8> PNG_SIGNATURE { 10, 26, 10, 13, 'G', 'N', 'P', 137 };
 
 enum class PIXEL_KIND : unsigned char { GREYSCALE = 0, RGBTRIPLE = 2, COLOURPALETTE = 3, GREYSCALEALPHA = 4, RGBALPHA = 6 };
 
-enum class INTERLACING_KIND : unsigned char { NONE /* not interlaced */, ADAM /* uses Adam 7 interlacing */ };
+enum class INTERLACING_KIND : unsigned char { NONE /* not interlaced */, ADAM7 /* uses Adam 7 interlacing */ };
 
 enum class CHUNK_KIND : unsigned char { IHDR, PLTE, IDAT, IEND, bKGD /* background */, cHRM, gAMA, UNRECOGNIZED };
 
@@ -89,15 +90,30 @@ class IHDR final {                  // layout of the IHDR chunk data, i.e the da
         PIXEL_KIND       colour_type;
         unsigned char    compression_method; // must be 0
         unsigned char    filter_method;      // must be 0
-        INTERLACING_KIND interlacing;
+        INTERLACING_KIND interlace_method;
 
     public:
-        IHDR(_In_reads_bytes_(size) const unsigned char* const chunkdata, _In_ const unsigned long size) noexcept { }
+        IHDR(_In_reads_bytes_(size) const unsigned char* const chunkdata, _In_ const unsigned long size) noexcept :
+            width { endian::ulong_from_be_bytes(chunkdata) },
+            height { endian::ulong_from_be_bytes(chunkdata + 4) },
+            bit_depth { *(chunkdata + 8) },
+            colour_type { *(chunkdata + 9) },
+            compression_method { *(chunkdata + 10) },
+            filter_method { *(chunkdata + 11) },
+            interlace_method { *(chunkdata + 12) } {
+            assert(size >= sizeof(IHDR)); // PROBLEMATIC
+        }
 
-        bool is_valid() const noexcept { }
+        ~IHDR() noexcept = default;
+
+        bool is_valid() const noexcept { return width && height; }
 };
 
-struct cHRM final { // layout of the cHRM chunk data
+class PLTE final { };
+
+class IDAT final { };
+
+class cHRM final { // layout of the cHRM chunk data
         unsigned white_x;
         unsigned white_y;
         unsigned red_x;
@@ -108,7 +124,7 @@ struct cHRM final { // layout of the cHRM chunk data
         unsigned blue_y;
 };
 
-struct gAMA final { // layout of the gAMA chunk data
+class gAMA final { // layout of the gAMA chunk data
         unsigned gamma;
 };
 
@@ -128,14 +144,16 @@ namespace png_chunk_names { // there are 4 critical chunks each PNG file is expe
 } // namespace png_chunk_names
 
 // this overloaded operator== is only intended to compare PNG chunk names!
-template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type operator==(
-    _In_ const char (&left)[length], // NOLINT(modernize-avoid-c-arrays)
+template<unsigned long long length>
+static constexpr typename std::enable_if<length == 4LLU, bool>::type operator==( // NOLINT(modernize-use-constraints)
+    _In_ const char (&left)[length],                                             // NOLINT(modernize-avoid-c-arrays)
     _In_ const std::array<char, length>& right
 ) noexcept {
     return left[0] == right[0] && left[1] == right[1] && left[2] == right[2] && left[3] == right[3];
 }
 
-template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type operator==(
+template<unsigned long long length>
+static constexpr typename std::enable_if<length == 4LLU, bool>::type operator==( // NOLINT(modernize-use-constraints)
     _In_ const std::array<char, length>& left,
     _In_ const char                      (&right)[length] // NOLINT(modernize-avoid-c-arrays)
 ) noexcept {
@@ -147,6 +165,12 @@ class png final {
 
     public:
         png() noexcept = default;
+
+        explicit png(_In_ const wchar_t* const filepath) noexcept { }
+
+        bool decode() noexcept { }
+
+        bool encode() noexcept { }
 };
 
 #undef __INTERNAL
