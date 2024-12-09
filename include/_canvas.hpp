@@ -31,25 +31,32 @@ class canvas final : public bitmap {
 
         ~canvas() noexcept = default;
 
-        void                                         fill(_In_ const RGBQUAD& pixel) noexcept { std::fill(begin(), end(), pixel); }
+        // most methods that involve transformations of some sort return a reference to self in order to facilitate method chaining
+        canvas& fill(_In_ const RGBQUAD& pixel) noexcept {
+            std::fill(begin(), end(), pixel);
+            return *this;
+        }
 
         // transform the image to black and white using the selected mechanism
-        template<rgb::BW_TRANSFORMATION method> void to_blacknwhite() noexcept {
+        template<rgb::BW_TRANSFORMATION method> canvas& to_blacknwhite() noexcept {
             switch (method) {
                 case rgb::BW_TRANSFORMATION::AVERAGE          : std::for_each(begin(), end(), rgb::transformers::average); break;
                 case rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE : std::for_each(begin(), end(), rgb::transformers::weighted_average); break;
                 case rgb::BW_TRANSFORMATION::LUMINOSITY       : std::for_each(begin(), end(), rgb::transformers::luminosity); break;
                 case rgb::BW_TRANSFORMATION::BINARY           : std::for_each(begin(), end(), rgb::transformers::binary); break;
             }
+            return *this;
         }
 
         // remove the selected colours from the pixels of the image
-        template<rgb::RGB_TAG colour_combination> void remove_colour() noexcept {
+        template<rgb::RGB_TAG colour_combination> canvas& remove_colour() noexcept {
             std::for_each(begin(), end(), rgb::removers::zero<colour_combination> {});
+            return *this;
         }
 
         // INCOMPLETE AND BUGGY
-        void hflip() noexcept { // number of RGBQUAD structs a zmm register can hold
+        canvas& hflip() noexcept {
+            // number of RGBQUAD structs a zmm register can hold
             static constexpr auto    ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
             static constexpr __m512i BYTE_REVERSE_MASK {};
             __m512i                  left {}, right {}; // NOLINT(readability-isolate-declaration)
@@ -73,11 +80,11 @@ class canvas final : public bitmap {
                     pixels[width() * (height() - row - 1) + col] = temp;
                 }
             }
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            return *this;
         }
 
-        // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic) }
-
-        void vflip() noexcept { // reverse the order of scanlines in the image
+        canvas& vflip() noexcept { // reverse the order of scanlines in the image
             // number of RGBQUAD structs a zmm register can hold
             static constexpr auto ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
             __m512i               above {}, below {}; // NOLINT(readability-isolate-declaration)
@@ -103,11 +110,17 @@ class canvas final : public bitmap {
                 }
             }
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            return *this;
         }
 
-        [[nodiscard]] canvas copy() const noexcept { return *this; }
+        template<DEGREES> canvas& rotate() noexcept;
 
-        [[nodiscard]] bitmap unwrap() const noexcept {
+        template<> canvas&        rotate<DEGREES::NINETY>() noexcept { }
+
+        // returns a deep copy of self
+        [[nodiscard]] canvas      copy() const noexcept { return *this; }
+
+        [[nodiscard]] bitmap      unwrap() const noexcept {
             static_assert(sizeof(bitmap) == sizeof(canvas));
             return *this; // a non-destructive object slicing happens here
         }

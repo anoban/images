@@ -323,4 +323,6 @@ class complex final { // doesn't provide the arithmetic functionalities like std
         constexpr _Ty  y() const noexcept { return __y; }
 };
 
+enum class DEGREES : unsigned short { NINETY = 90, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
+
 #undef __INTERNAL

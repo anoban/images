@@ -6,8 +6,6 @@
 
 #include <algorithm>
 
-#include <Winsock2.h> // for the byte order reversal routines
-
 // project headers
 #include <_helpers.hpp>
 #include <_imageio.hpp>
@@ -80,7 +78,7 @@ static const unsigned long long               PNG_SIGNATURE { *reinterpret_cast<
 
 enum class PIXEL_KIND : unsigned char { GREYSCALE = 0, RGBTRIPLE = 2, COLOURPALETTE = 3, GREYSCALEALPHA = 4, RGBALPHA = 6 };
 
-enum class INTERLACING_KIND : unsigned char { NONE /* the image is not interlaced */, ADAM /* image uses Adam 7 interlacing */ };
+enum class INTERLACING_KIND : unsigned char { NONE /* not interlaced */, ADAM /* uses Adam 7 interlacing */ };
 
 enum class CHUNK_KIND : unsigned char { IHDR, PLTE, IDAT, IEND, bKGD /* background */, cHRM, gAMA, UNRECOGNIZED };
 
@@ -115,18 +113,19 @@ struct gAMA final { // layout of the gAMA chunk data
 };
 
 // the PLTE chunks (colour palettes) in PNG images use the RGBTRIPLE pixel format, also known as "palette entries"
-struct RGB final { // unlike bitmaps (B, G & R), the colour values are ordered in the same sequence implied by the name - R, G & B
+// unlike Windows bitmaps with B, G & R sequenced pixels, the colour values are ordered in the same sequence implied by the name - R, G & B
+struct RGB final {
         unsigned char red;
         unsigned char green;
         unsigned char blue;
 };
 
-namespace names { // there are 4 critical chunks each PNG file is expected to contain - IHDR, PLTE, IDAT and IEND
+namespace png_chunk_names { // there are 4 critical chunks each PNG file is expected to contain - IHDR, PLTE, IDAT and IEND
     static constexpr std::array<char, 4> IHDR { 'I', 'H', 'D', 'R' }; // image header, the first chunk in a PNG data stream
     static constexpr std::array<char, 4> PLTE { 'P', 'L', 'T', 'E' }; // palette table
     static constexpr std::array<char, 4> IDAT { 'I', 'D', 'A', 'T' }; // image chunk
     static constexpr std::array<char, 4> IEND { 'I', 'E', 'N', 'D' }; // image trailer, the last chunk in a PNG data stream
-} // namespace names
+} // namespace png_chunk_names
 
 // this overloaded operator== is only intended to compare PNG chunk names!
 template<unsigned long long length> static constexpr typename std::enable_if<length == 4, bool>::type operator==(
