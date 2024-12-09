@@ -1,6 +1,8 @@
 ### _Usage:_
 --------
 
+Only the class `canvas` supports image transformations. Other classes (`bitmap`, `png` & `ico`) suport parsing and decoding their respective file formats. But these classes do provide a converting constructor to class `canvas` which can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types whcih is the base class for class `canvas`).
+
 ```C++
 #include <canvas> // a class that uses the bitmap class as base
 // below we read in the bitmap from disk as a canvas object
