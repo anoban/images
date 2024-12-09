@@ -51,6 +51,12 @@ image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); 
 
 <img src="./images/redgreen.jpg" width=300 height=200>
 
+```C++
+// remove red & blue
+image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
+```
+
+<img src="./images/green.jpg" width=300 height=200>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
@@ -58,6 +64,12 @@ image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); 
 
 <img src="./images/bluegreen.jpg" width=300 height=200>
 
+```C++
+// remove red & green
+image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
+```
+
+<img src="./images/blue.jpg" width=300 height=200>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
@@ -72,22 +84,6 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
 
 <img src="./images/red.jpg" width=300 height=200>
-
-
-```C++
-// remove red & green
-image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
-```
-
-<img src="./images/blue.jpg" width=300 height=200>
-
-```C++
-// remove red & blue
-image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
-```
-
-<img src="./images/green.jpg" width=300 height=200>
-
 
 ### _Warning:_
 --------
