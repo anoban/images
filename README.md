@@ -12,11 +12,9 @@
 ---------
 
 ```C++
-    // .copy() returns a deep copy so that the original stays as is
-    // during the transformation
+    // .copy() returns a deep copy so that the original stays as is during the transformation
 
-    image.copy().
-    // specify a preferred RGB to black and white mapping method
+    image.copy(). // specify a preferred RGB to black and white mapping method
     to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().
     to_file(LR"(./average.bmp)");
 ```
@@ -47,22 +45,19 @@
 ---------
 
 ```C++
-    image.copy().remove_colour<rgb::RGB_TAG::BLUE>(). // remove blue
-    to_file(LR"(.\redgreen.bmp)");
+    image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
 ```
 
 <img src="./images/redgreen.jpg" width=300 height=300>
 
 ```C++
-    image.copy().remove_colour<rgb::RGB_TAG::RED>(). // remove red
-    to_file(LR"(.\bluegreen.bmp)");
+    image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
 ```
 
 <img src="./images/bluegreen.jpg" width=300 height=300>
 
 ```C++
-    image.copy().remove_colour<rgb::RGB_TAG::GREEN>(). // remove green
-    to_file(LR"(.\redblue.bmp)");
+    image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
 ```
 
 <img src="./images/redblue.jpg" width=300 height=300>
