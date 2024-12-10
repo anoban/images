@@ -1,3 +1,5 @@
+Caution: `Images in this README.md are JPEG converts of the bitmap files used in and resulted from the image manipulations. This was done to minimize the repository size!`
+
 ### _Usage:_
 --------
 
@@ -136,7 +138,7 @@ board.to_file(LR"(./mandelbrot.bmp)");
 ### _Warning:_
 --------
 
-Owing to the non-opt-in use of `SSSE3`, `AVX2` and `AVX512` compiler (`MSVC` & `LLVM`) intrinsics, If compiles, will probably raise an illegal instruction hardware exception at runtime on unsupported CPU architectures (anything other than `AMD64`). Unfortunately my expertise is very Windows centric hence, I have no desire to accommodate the `linux/g++` toolchain in this project.
+Owing to the non-opt-in use of `SSSE3`, `AVX1`, `AVX2` and `AVX512` compiler (`MSVC` & `LLVM`) intrinsics, If compiles, will probably raise an illegal instruction hardware exception at runtime on unsupported CPU architectures (anything other than `AMD64`). Unfortunately my expertise is very Windows centric hence, I have no desire to accommodate the `linux/g++` toolchain in this project.
 
 ### _Reference:_
 --------

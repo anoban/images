@@ -64,32 +64,34 @@ class canvas final : public bitmap {
 
         // INCOMPLETE AND BUGGY
         canvas& hflip() noexcept {
-            // number of RGBQUAD structs a zmm register can hold
-            static constexpr auto ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
+            // number of RGBQUAD structs a xmm register can hold
+            static constexpr auto XMM_STORABLE_RGBQUADS { sizeof(__m128i) / sizeof(RGBQUAD) };
+
 #if defined(__llvm__) && defined(__clang__)
-            static constexpr __m512i BYTE_REVERSE_MASK {};
+            static constexpr __m128i BYTE_REVERSE_MASK { 0x08090A0B 0C0D0E0F, 0x00010203 04050607 };
 #elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-            static constexpr __m512i BYTE_REVERSE_MASK {
-                .m512i_u8 { 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42,
-                           41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20,
-                           19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,  0 }
+            static constexpr __m128i BYTE_REVERSE_MASK {
+                // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
+                .m128i_u8 { 12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3 }
             };
 #endif
-            __m512i    left {}, right {}; // NOLINT(readability-isolate-declaration)
-            const long residues /* in RGBQUADs */ { static_cast<long>(width() / 2 % ZMM_STORABLE_RGBQUADS) };
+            __m128i    left {}, right {}; // NOLINT(readability-isolate-declaration)
+            const long residues /* in RGBQUADs */ { static_cast<long>(width() / 2 % XMM_STORABLE_RGBQUADS) };
             RGBQUAD    temp {};
             long       col {}, row {}; // NOLINT(readability-isolate-declaration)
 
+            // AVX2 OR AVX512 do not provide instructions to shuffle THE bytes across the 64 byte zmm lane
+            // they only allow byte shuffling WITHIN 16 byte boundaries WITHIN the zmm register, so going back to AVX1 :(
+
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height(); ++row) {
-                for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += ZMM_STORABLE_RGBQUADS) {
-                    left  = ::_mm512_shuffle_epi8(::_mm512_loadu_epi8(pixels + width() * row + col), BYTE_REVERSE_MASK);
-                    right = ::_mm512_shuffle_epi8(
-                        ::_mm512_loadu_epi8(pixels + width() * (row + 1) - col - ZMM_STORABLE_RGBQUADS), BYTE_REVERSE_MASK
-                    );
+                for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += XMM_STORABLE_RGBQUADS) {
+                    left = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * row + col), BYTE_REVERSE_MASK);
+                    right =
+                        ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS), BYTE_REVERSE_MASK);
 
-                    ::_mm512_storeu_epi8(pixels + width() * (row + 1) - col - ZMM_STORABLE_RGBQUADS, left);
-                    ::_mm512_storeu_epi8(pixels + width() * row + col, right);
+                    ::_mm_storeu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS, left);
+                    ::_mm_storeu_epi8(pixels + width() * row + col, right);
                 }
 
                 for (; col < width(); ++col) { // handle the residues
