@@ -91,9 +91,9 @@ image.copy().vflip().to_file(LR"(./vflipped.bmp)"); // vertical flip
 image.hflip().to_file(LR"(./hflipped.bmp)"); // horizontal flip
 ```
 
-<img src="./images/warrior.jpg" width=400 height=500>
-<img src="./images/vflipped.jpg" width=400 height=500>
-<img src="./images/hflipped.jpg" width=400 height=500>
+<img src="./images/warrior.jpg" width=33% style="align:left;">
+<img src="./images/vflipped.jpg" width=33% style="align:middle;">
+<img src="./images/hflipped.jpg" width=33% style="align:right;">
 
 ---------
 
