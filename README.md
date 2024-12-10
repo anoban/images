@@ -88,7 +88,7 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 
 ---------
 ```C++
-canvas image {LR"(./warrior.bmp)"};
+canvas image {LR"(./guitar.bmp)"};
 image.copy().vflip().to_file(LR"(./vflipped.bmp)"); // vertical flip
 image.hflip().to_file(LR"(./hflipped.bmp)"); // horizontal flip
 ```

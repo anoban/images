@@ -68,7 +68,7 @@ class canvas final : public bitmap {
             static constexpr auto XMM_STORABLE_RGBQUADS { sizeof(__m128i) / sizeof(RGBQUAD) };
 
 #if defined(__llvm__) && defined(__clang__)
-            static constexpr __m128i BYTE_REVERSE_MASK { 0x08090A0B 0C0D0E0F, 0x00010203 04050607 };
+            static constexpr __m128i BYTE_REVERSE_MASK { 0x0C0D0E0F08090A0B, 0x0405060700010203 };
 #elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
             static constexpr __m128i BYTE_REVERSE_MASK {
                 // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
@@ -90,8 +90,8 @@ class canvas final : public bitmap {
                     right =
                         ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS), BYTE_REVERSE_MASK);
 
-                    ::_mm_storeu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS, left);
-                    ::_mm_storeu_epi8(pixels + width() * row + col, right);
+                    ::_mm_storeu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS, right);
+                    ::_mm_storeu_epi8(pixels + width() * row + col, left);
                 }
 
                 for (; col < width(); ++col) { // handle the residues
