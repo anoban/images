@@ -255,19 +255,19 @@ class canvas final : public bitmap {
         }
 
         // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
-        [[maybe_unused]] static void __cdecl tricorn(_Inout_ canvas& pane, _In_ const colourmaps::colourmap& cmap) noexcept {
+        canvas& tricorn(_In_ const colourmaps::colourmap& cmap) noexcept {
             // NOLINTNEXTLINE(readability-isolate-declaration)
             ::complex<double>  scaled_coords {}, coords {}, squares {}; // x (-2.5, 1) y (-1, 1)
             double             xtemp {};
             unsigned long long niterations {};
 
             // for each pixel in the image
-            for (long row = 0; row < pane.height(); ++row) {
-                for (long col = 0; col < pane.width(); ++col) {
+            for (long row = 0; row < height(); ++row) {
+                for (long col = 0; col < width(); ++col) {
                     // dividing col by width gives a value (0, 1), multiplying that by 3.500 upscales to to (0, 3.5), then subtracting 2.5 gives us (-2.5, 1)
-                    scaled_coords.x() = col / static_cast<double>(pane.width()) * 3.5000 - 2.5000;
+                    scaled_coords.x() = col / static_cast<double>(width()) * 3.5000 - 2.5000;
                     // dividing row by height will give a value (0, 1), by multiplying by 2 we could stretch it to (0, 2), then by subtracting 1, we could shift the range to (-1, 1)
-                    scaled_coords.y() = row / static_cast<double>(pane.height()) * 2.0000 - 1.0000;
+                    scaled_coords.y() = row / static_cast<double>(height()) * 2.0000 - 1.0000;
 
                     while (++niterations < FRACTAL_MAX_ITERATIONS &&
                            (squares.x() = coords.x() * coords.x()) + (squares.y() = coords.y() * coords.y()) < FRACTAL_EXPLODE_THRESHOLD) {
@@ -276,11 +276,12 @@ class canvas final : public bitmap {
                         coords.x() = xtemp;
                     }
 
-                    pane[row * pane.width() + col] = cmap.at(niterations);
-                    niterations                    = 0;
+                    pixels[row * width() + col] = cmap.at(niterations); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    niterations                 = 0;
                     squares.x() = squares.y() = 0.0000;
                 }
             }
+            return *this;
         }
 
         template<DEGREES> canvas& rotate() noexcept;

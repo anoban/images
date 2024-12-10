@@ -87,8 +87,9 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ---------
 
 ```C++
-std::mt19937_64 reng { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) };
-canvas rectangle {1920 /* width */ , 1080 /* height */};
+std::mt19937_64 reng { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().
+                       time_since_epoch().count()) };
+canvas rectangle {1920 /* width */, 1080 /* height */};
 board.fill(RGBQUAD { static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* B */,
                      static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* G */,
                      static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* R */,
@@ -101,7 +102,12 @@ rectangle.to_file(LR"(colour.bmp)");
 ---------
 
 ```C++
+canvas rectangle {1920, 1080 };
+rectangle.waves();
+rectangle.to_file(LR"(waves.bmp)");
 ```
+
+<img src="./images/waves.jpg" width=640 height=360>
 
 ---------
 
