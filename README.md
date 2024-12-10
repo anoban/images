@@ -97,7 +97,7 @@ board.fill(RGBQUAD { static_cast<unsigned char>(reng() % std::numeric_limits<uns
 rectangle.to_file(LR"(colour.bmp)");
 ```
 
-<img src="./images/colour.jpg" width=320 height=180>
+<img src="./images/colour.jpg" width=640 height=360>
 
 ---------
 
@@ -108,6 +108,15 @@ rectangle.to_file(LR"(waves.bmp)");
 ```
 
 <img src="./images/waves.jpg" width=640 height=360>
+
+```C++
+canvas board { 8640, 15360 };
+board.mandelbrot(colourmaps::VGA);  // choose a colourmap of your liking, provided by <cmaps>
+board.to_file(LR"(./mandelbrot.bmp)");
+```
+
+<img src="./images/mandelbrot.jpg" width=640 height=360>
+
 
 ---------
 
