@@ -92,9 +92,9 @@ image.hflip().to_file(LR"(./hflipped.bmp)"); // horizontal flip
 ```
 
 <div>
-    <img src="./images/warrior.jpg"  width=25% style="align:left;">
-    <img src="./images/vflipped.jpg" width=25% style="align:middle;">
-    <img src="./images/hflipped.jpg" width=25% style="align:right;">
+    <img src="./images/warrior.jpg"  width=33% style="align:left;">
+    <img src="./images/vflipped.jpg" width=33% style="align:middle;">
+    <img src="./images/hflipped.jpg" width=33% style="align:right;">
 </div>
 
 ---------
