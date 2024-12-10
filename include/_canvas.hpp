@@ -65,27 +65,37 @@ class canvas final : public bitmap {
         // INCOMPLETE AND BUGGY
         canvas& hflip() noexcept {
             // number of RGBQUAD structs a zmm register can hold
-            static constexpr auto    ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
+            static constexpr auto ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
+#if defined(__llvm__) && defined(__clang__)
             static constexpr __m512i BYTE_REVERSE_MASK {};
-            __m512i                  left {}, right {}; // NOLINT(readability-isolate-declaration)
-            const long               residues /* in RGBQUADs */ { static_cast<long>(width() % ZMM_STORABLE_RGBQUADS) };
-            RGBQUAD                  temp {};
-            long                     col {}, row {}; // NOLINT(readability-isolate-declaration)
+#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
+            static constexpr __m512i BYTE_REVERSE_MASK {
+                .m512i_u8 { 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42,
+                           41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20,
+                           19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,  0 }
+            };
+#endif
+            __m512i    left {}, right {}; // NOLINT(readability-isolate-declaration)
+            const long residues /* in RGBQUADs */ { static_cast<long>(width() / 2 % ZMM_STORABLE_RGBQUADS) };
+            RGBQUAD    temp {};
+            long       col {}, row {}; // NOLINT(readability-isolate-declaration)
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height(); ++row) {
                 for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += ZMM_STORABLE_RGBQUADS) {
-                    left = ::_mm512_loadu_epi8(pixels + width() * row + col);
-                    ::_mm512_permutex2var_epi8(left, BYTE_REVERSE_MASK, left);
-                    right = ::_mm512_loadu_epi8(pixels + width() * (height() - row - 1) + col);
+                    left  = ::_mm512_shuffle_epi8(::_mm512_loadu_epi8(pixels + width() * row + col), BYTE_REVERSE_MASK);
+                    right = ::_mm512_shuffle_epi8(
+                        ::_mm512_loadu_epi8(pixels + width() * (row + 1) - col - ZMM_STORABLE_RGBQUADS), BYTE_REVERSE_MASK
+                    );
+
+                    ::_mm512_storeu_epi8(pixels + width() * (row + 1) - col - ZMM_STORABLE_RGBQUADS, left);
                     ::_mm512_storeu_epi8(pixels + width() * row + col, right);
-                    ::_mm512_storeu_epi8(pixels + width() * (height() - row - 1) + col, left);
                 }
 
                 for (; col < width(); ++col) { // handle the residues
-                    temp                                         = pixels[width() * row + col];
-                    pixels[width() * row + col]                  = pixels[width() * (height() - row - 1) + col];
-                    pixels[width() * (height() - row - 1) + col] = temp;
+                    temp                              = pixels[width() * row + col];
+                    pixels[width() * row + col]       = pixels[width() * (row + 1) - col];
+                    pixels[width() * (row + 1) - col] = temp;
                 }
             }
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)

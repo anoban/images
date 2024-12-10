@@ -34,7 +34,7 @@ to_file(LR"(./weighted_average.bmp)");
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 
-<img src="./images/binary.jpg" width=300 height=240>
+<img src="./images/binary.jpg" width=600 height=400>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
