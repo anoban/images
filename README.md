@@ -1,7 +1,9 @@
 ### _Usage:_
 --------
 
-Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) suport reading, encoding, parsing, decoding and serializing their respective file formats. But these classes do provide a converting constructor to class `canvas` which can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types whcih is the base class for class `canvas`).
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) suport reading, encoding,
+parsing, decoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
+can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for class `canvas`).
 
 ```C++
 #include <canvas> // a class that uses the bitmap class as base
@@ -21,14 +23,12 @@ to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
 
 <img src="./images/average.jpg" width=300 height=200>
 
-
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().
 to_file(LR"(./weighted_average.bmp)");
 ```
 
 <img src="./images/weighted_average.jpg" width=300 height=200>
-
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
@@ -41,7 +41,6 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./
 ```
 
 <img src="./images/luminosity.jpg" width=300 height=200>
-
 
 ---------
 
@@ -85,11 +84,24 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 
 <img src="./images/red.jpg" width=300 height=200>
 
+---------
+
+```C++
+    canvas rectangle {1920 /* width */ , 1080 /* height */};
+    rectangle.fill(RGBQUAD{});
+```
+
+---------
+
+```C++
+```
+
+---------
+
 ### _Warning:_
 --------
 
 Owing to the non-opt-in use of `SSSE3`, `AVX2` and `AVX512` compiler (`MSVC` & `LLVM`) intrinsics, If compiles, will probably raise an illegal instruction hardware exception at runtime on unsupported CPU architectures (anything other than `AMD64`). Unfortunately my expertise is very Windows centric hence, I have no desire to accommodate the `linux/g++` toolchain in this project.
-
 
 ### _Reference:_
 --------

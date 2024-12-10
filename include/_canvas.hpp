@@ -35,6 +35,10 @@ class canvas final : public bitmap {
 
         ~canvas() noexcept = default;
 
+        //----------------------------------------------------------------------------------------------------------------------------------//
+        //                                              IMAGE TRANSFORMATION ROUTINES                                                       //
+        //----------------------------------------------------------------------------------------------------------------------------------//
+
         // most methods that involve transformations of some sort return a reference to self in order to facilitate method chaining
         canvas& fill(_In_ const RGBQUAD& pixel) noexcept {
             std::fill(begin(), end(), pixel);
@@ -116,6 +120,10 @@ class canvas final : public bitmap {
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return *this;
         }
+
+        //----------------------------------------------------------------------------------------------------------------------------------//
+        //                                              PATTERN GENERATION ROUTINES                                                         //
+        //----------------------------------------------------------------------------------------------------------------------------------//
 
         canvas& waves() noexcept {
             long double red {}, green {}, blue {}; // NOLINT(readability-isolate-declaration)
