@@ -11,7 +11,7 @@ can be used to manipulate these images (internally, the converting constructor w
 canvas image {LR"(./image.bmp)"};
 ```
 
-<img src="./images/image.jpg" width=300 height=200>
+<img src="./images/image.jpg" width=600 height=400>
 
 ---------
 
@@ -21,14 +21,14 @@ image.copy(). // specify a preferred RGB to black and white mapping method
 to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
 ```
 
-<img src="./images/average.jpg" width=300 height=200>
+<img src="./images/average.jpg" width=600 height=400>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().
 to_file(LR"(./weighted_average.bmp)");
 ```
 
-<img src="./images/weighted_average.jpg" width=300 height=200>
+<img src="./images/weighted_average.jpg" width=600 height=400>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
@@ -40,7 +40,7 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./bina
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
 ```
 
-<img src="./images/luminosity.jpg" width=300 height=200>
+<img src="./images/luminosity.jpg" width=600 height=400>
 
 ---------
 
@@ -48,33 +48,33 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./
 image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
 ```
 
-<img src="./images/redgreen.jpg" width=300 height=200>
+<img src="./images/redgreen.jpg" width=600 height=400>
 
 ```C++
 // remove red & blue
 image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
 ```
 
-<img src="./images/green.jpg" width=300 height=200>
+<img src="./images/green.jpg" width=600 height=400>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
 ```
 
-<img src="./images/bluegreen.jpg" width=300 height=200>
+<img src="./images/bluegreen.jpg" width=600 height=400>
 
 ```C++
 // remove red & green
 image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
 ```
 
-<img src="./images/blue.jpg" width=300 height=200>
+<img src="./images/blue.jpg" width=600 height=400>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
 ```
 
-<img src="./images/redblue.jpg" width=300 height=200>
+<img src="./images/redblue.jpg" width=600 height=400>
 
 
 ```C++
@@ -82,32 +82,32 @@ image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); 
 image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
 
-<img src="./images/red.jpg" width=300 height=200>
+<img src="./images/red.jpg" width=600 height=400>
 
 ---------
 
 ```C++
 std::mt19937_64 reng { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().
                        time_since_epoch().count()) };
-canvas rectangle {1920 /* width */, 1080 /* height */};
+canvas board { 1080 /* height */, 1920 /* width */};
 board.fill(RGBQUAD { static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* B */,
                      static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* G */,
                      static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* R */,
                      0XFF });
-rectangle.to_file(LR"(colour.bmp)");
+board.to_file(LR"(colour.bmp)");
 ```
 
-<img src="./images/colour.jpg" width=640 height=360>
+<img src="./images/colour.jpg" width=600 height=400>
 
 ---------
 
 ```C++
-canvas rectangle {1920, 1080 };
-rectangle.waves();
-rectangle.to_file(LR"(waves.bmp)");
+canvas board { 1080, 1920 };
+board.waves();
+board.to_file(LR"(waves.bmp)");
 ```
 
-<img src="./images/waves.jpg" width=640 height=360>
+<img src="./images/waves.jpg" width=600 height=400>
 
 ```C++
 canvas board { 8640, 15360 };
@@ -115,7 +115,7 @@ board.mandelbrot(colourmaps::VGA);  // choose a colourmap of your liking, provid
 board.to_file(LR"(./mandelbrot.bmp)");
 ```
 
-<img src="./images/mandelbrot.jpg" width=640 height=360>
+<img src="./images/mandelbrot.jpg" width=600 height=400>
 
 
 ---------
