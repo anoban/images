@@ -1,7 +1,7 @@
 ### _Usage:_
 --------
 
-Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) suport reading, encoding,
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) support reading, encoding,
 parsing, decoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
 can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for class `canvas`).
 
@@ -83,6 +83,17 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
 
 <img src="./images/red.jpg" width=600 height=400>
+
+---------
+```C++
+canvas image {LR"(./warrior.bmp)"};
+image.copy().vflip().to_file(LR"(./vflipped.bmp)"); // vertical flip
+image.hflip().to_file(LR"(./hflipped.bmp)"); // horizontal flip
+```
+
+<img src="./images/warrior.jpg" width=400 height=500>
+<img src="./images/vflipped.jpg" width=400 height=500>
+<img src="./images/hflipped.jpg" width=400 height=500>
 
 ---------
 

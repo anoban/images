@@ -102,6 +102,21 @@ class canvas final : public bitmap {
             return *this;
         }
 
+        canvas& hflip_alt() noexcept {
+            RGBQUAD temp {};
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            for (long row = 0; row < height(); ++row) {
+                for (long col = 0; col < width() / 2 /* deliberate integer division */; ++col) {
+                    temp                              = pixels[width() * row + col];
+                    pixels[width() * row + col]       = pixels[width() * (row + 1) - col];
+                    pixels[width() * (row + 1) - col] = temp;
+                }
+            }
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            return *this;
+        }
+
         canvas& vflip() noexcept { // reverse the order of scanlines in the image
             // number of RGBQUAD structs a zmm register can hold
             static constexpr auto ZMM_STORABLE_RGBQUADS { sizeof(__m512i) / sizeof(RGBQUAD) };
