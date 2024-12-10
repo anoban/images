@@ -87,9 +87,16 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ---------
 
 ```C++
-    canvas rectangle {1920 /* width */ , 1080 /* height */};
-    rectangle.fill(RGBQUAD{});
+std::mt19937_64 reng { static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) };
+canvas rectangle {1920 /* width */ , 1080 /* height */};
+board.fill(RGBQUAD { static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* B */,
+                     static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* G */,
+                     static_cast<unsigned char>(reng() % std::numeric_limits<unsigned char>::max()) /* R */,
+                     0XFF });
+rectangle.to_file(LR"(colour.bmp)");
 ```
+
+<img src="./images/colour.jpg" width=320 height=180>
 
 ---------
 
