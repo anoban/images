@@ -3,17 +3,16 @@ Caution: `Images in this README.md are JPEG converts of the bitmap files used in
 ### _Usage:_
 --------
 
-Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) support reading, encoding,
-parsing, decoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
-can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for class `canvas`).
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) support reading, parsing, decoding, encoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
+can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for `canvas`).
 
 ```C++
-#include <canvas> // a class that uses the bitmap class as base
-// below we read in the bitmap from disk as a canvas object
+#include <canvas> // a class that uses the class bitmap as base
+// read in a bitmap from disk as a canvas object
 canvas image {LR"(./image.bmp)"};
 ```
 
-<img src="./images/image.jpg" width=600 height=400>
+<img src="./readme/image.jpg" width=600 height=400>
 
 ---------
 
@@ -23,26 +22,26 @@ image.copy(). // specify a preferred RGB to black and white mapping method
 to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
 ```
 
-<img src="./images/average.jpg" width=600 height=400>
+<img src="./readme/average.jpg" width=600 height=400>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().
 to_file(LR"(./weighted_average.bmp)");
 ```
 
-<img src="./images/weighted_average.jpg" width=600 height=400>
+<img src="./readme/weighted_average.jpg" width=600 height=400>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 
-<img src="./images/binary.jpg" width=600 height=400>
+<img src="./readme/binary.jpg" width=600 height=400>
 
 ```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
 ```
 
-<img src="./images/luminosity.jpg" width=600 height=400>
+<img src="./readme/luminosity.jpg" width=600 height=400>
 
 ---------
 
@@ -50,33 +49,33 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./
 image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
 ```
 
-<img src="./images/redgreen.jpg" width=600 height=400>
+<img src="./readme/redgreen.jpg" width=600 height=400>
 
 ```C++
 // remove red & blue
 image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
 ```
 
-<img src="./images/green.jpg" width=600 height=400>
+<img src="./readme/green.jpg" width=600 height=400>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
 ```
 
-<img src="./images/bluegreen.jpg" width=600 height=400>
+<img src="./readme/bluegreen.jpg" width=600 height=400>
 
 ```C++
 // remove red & green
 image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
 ```
 
-<img src="./images/blue.jpg" width=600 height=400>
+<img src="./readme/blue.jpg" width=600 height=400>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
 ```
 
-<img src="./images/redblue.jpg" width=600 height=400>
+<img src="./readme/redblue.jpg" width=600 height=400>
 
 
 ```C++
@@ -84,7 +83,7 @@ image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); 
 image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
 
-<img src="./images/red.jpg" width=600 height=400>
+<img src="./readme/red.jpg" width=600 height=400>
 
 ---------
 ```C++
@@ -94,9 +93,9 @@ image.hflip().to_file(LR"(./hflipped.bmp)"); // horizontal flip
 ```
 
 <div>
-    <img src="./images/guitar.jpg"  width=30% style="align:left;">
-    <img src="./images/vflipped.jpg" width=30% style="align:middle;">
-    <img src="./images/hflipped.jpg" width=30% style="align:right;">
+    <img src="./readme/guitar.jpg"  width=30% style="align:left;">
+    <img src="./readme/vflipped.jpg" width=30% style="align:middle;">
+    <img src="./readme/hflipped.jpg" width=30% style="align:right;">
 </div>
 
 ---------
@@ -112,7 +111,7 @@ board.fill(RGBQUAD { static_cast<unsigned char>(reng() % std::numeric_limits<uns
 board.to_file(LR"(colour.bmp)");
 ```
 
-<img src="./images/colour.jpg" width=600 height=400>
+<img src="./readme/colour.jpg" width=600 height=400>
 
 ---------
 
@@ -122,7 +121,7 @@ board.waves();
 board.to_file(LR"(waves.bmp)");
 ```
 
-<img src="./images/waves.jpg" width=600 height=400>
+<img src="./readme/waves.jpg" width=600 height=400>
 
 ```C++
 canvas board { 8640, 15360 };
@@ -130,7 +129,7 @@ board.mandelbrot(colourmaps::VGA);  // choose a colourmap of your liking, provid
 board.to_file(LR"(./mandelbrot.bmp)");
 ```
 
-<img src="./images/mandelbrot.jpg" width=600 height=400>
+<img src="./readme/mandelbrot.jpg" width=600 height=400>
 
 
 ---------

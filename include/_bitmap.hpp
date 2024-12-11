@@ -91,7 +91,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             if (!imstream) return header;
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            if (imstream[0] != 'B' && imstream[1] != 'M') { // validate that the passed buffer is of a bitmap file
+            if (imstream[0] != 'B' && imstream[1] != 'M') [[unlikely]] { // validate that the passed buffer is of a bitmap file
                 ::fputws(L"Error in " __FUNCTIONW__ ", file isn't recognized as a Windows bitmap file\n", stderr);
                 return header;
             }
@@ -128,7 +128,8 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             BITMAPINFOHEADER header {};
             if (!imstream) return header;
 
-            if (*reinterpret_cast<const unsigned int*>(imstream + 14U) != 40) { // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (*reinterpret_cast<const unsigned int*>(imstream + 14U) != 40) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                [[unlikely]] {
                 // header size must be == 40 bytes
                 ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
                 return header;

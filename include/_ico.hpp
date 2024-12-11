@@ -24,52 +24,65 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 <
 
 // in summary, the binary representation of an .ico file looks like { GRPICONDIRENTRY, pixels, <GRPICONDIRENTRY, pixels> ... }
 
-enum ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
+class icondirectory                 final { // represents an .ico file
 
-enum ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
+    public:
+        // type of the file
+        enum ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
-// look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
-// UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
-// EVEN CHROMIUM HAS THESE STRUCTURES HANDROLLED IN ITS SOURCE :(
+        // type of the resources contained in the file
+        enum ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
 
-struct GRPICONDIRENTRY final {
-        BYTE  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
-        BYTE  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
-        BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
-        BYTE  bReserved;   // reserved byte, must always be 0
-        WORD  wPlanes;     // for icons- specifies the colour planes (should be 0 or 1)
-        // for cursors - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
-        WORD  wBitCount; // for icons - specifies pixel depth
-        // for cursors - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
-        // Windows cursors have a hotspot location that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
-        DWORD dwBytesInRes;  // size of the associated image in bytes
-        DWORD dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
-};
+        // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
+        // UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
+        // EVEN CHROMIUM HAS THESE STRUCTURES HANDROLLED IN ITS SOURCE :(
 
-static_assert(sizeof(GRPICONDIRENTRY) == 16);
-static_assert(std::is_standard_layout_v<GRPICONDIRENTRY>);
+        struct GRPICONDIRENTRY final {
+                BYTE  bWidth;  // width of the associated image in pixels (must be in the range of 0 to 256)
+                BYTE  bHeight; // height of the associated image in pixels (must be in the range of 0 to 256)
+                BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
+                BYTE  bReserved; // reserved byte, must always be 0
+                WORD  wPlanes;   // for icons- specifies the colour planes (should be 0 or 1)
+                // for cursors - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
+                WORD  wBitCount; // for icons - specifies pixel depth
+                // for cursors - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
+                // Windows cursors have a hotspot location that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
+                DWORD dwBytesInRes;  // size of the associated image in bytes
+                DWORD dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
+        };
 
-struct GRPICONDIR final {
-        WORD            idReserved; // reserved, must always be 0
-        WORD            idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
-            // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
-        WORD            idCount;     // number of resources (images) stored in the given .ico file
-        GRPICONDIRENTRY idEntries[]; // NOLINT(modernize-avoid-c-arrays)
-};
+        static_assert(sizeof(GRPICONDIRENTRY) == 16);
+        static_assert(std::is_standard_layout_v<GRPICONDIRENTRY>);
 
-static_assert(sizeof(GRPICONDIR) == 8);
-static_assert(std::is_standard_layout_v<GRPICONDIR>);
+        struct GRPICONDIR final {
+                WORD            idReserved; // reserved, must always be 0
+                WORD            idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
+                    // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
+                WORD            idCount;     // number of resources (images) stored in the given .ico file
+                GRPICONDIRENTRY idEntries[]; // NOLINT(modernize-avoid-c-arrays)
+        };
 
-class icondirectory final { // represents an .ico file
+        static_assert(sizeof(GRPICONDIR) == 8);
+        static_assert(std::is_standard_layout_v<GRPICONDIR>);
+
+        using value_type      = RGBQUAD; // pixel type
+        using pointer         = value_type*;
+        using const_pointer   = const value_type*;
+        using reference       = value_type&;
+        using const_reference = const value_type&;
+        using iterator        = ::random_access_iterator<value_type>;
+        using const_iterator  = ::random_access_iterator<const value_type>;
+        using size_type       = unsigned long long;
+        using difference_type = long long;
 
         // clang-format off
-#ifdef __TEST__
-    public:
+#ifndef __TEST__
+    private:
 #endif
         // clang-format on
 
-        unsigned char* buffer;      // the raw byte buffer
-        unsigned long  file_size;   // file size
+        unsigned char* buffer;    // the raw byte buffer
+        unsigned long  file_size; // file size
         unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
         GRPICONDIR     icondir;
         std::vector<GRPICONDIRENTRY> entries; // entries stored in the file
@@ -80,32 +93,32 @@ class icondirectory final { // represents an .ico file
         ) noexcept {
             static constinit GRPICONDIR temp {};
 
-            if (!imstream) {
+            if (!imstream) [[unlikely]] {
                 ::fputws(L"Error in " __FUNCTIONW__ ", the received buffer is empty!\n", stderr);
-                return temp;
+                return {};
             }
 
-            if ((temp.idReserved = *reinterpret_cast<const unsigned short*>(imstream))) { // must be 0
+            if ((temp.idReserved = *reinterpret_cast<const unsigned short*>(imstream))) [[unlikely]] { // must be 0
                 ::fputws(L"Error in " __FUNCTIONW__ ", a non-zero value encountered as idReserved!\n", stderr);
-                return temp;
+                return {};
             }
 
             temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
-            if (temp.idType != ICO_FILE_TYPE::ICON && temp.idType != ICO_FILE_TYPE::CURSOR) { // cannot be anything else
+            if (temp.idType != ICO_FILE_TYPE::ICON && temp.idType != ICO_FILE_TYPE::CURSOR) [[unlikely]] { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
-                return false;
+                return {};
             }
 
             // we're 4 bytes past the beginning of the buffer now
-            entry_count = *reinterpret_cast<const unsigned short*>(imstream + 4); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
-            // if (entry_count > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) {
-            //     ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
-            //     return false;
-            // }
+            if ((temp.idCount = *reinterpret_cast<const unsigned short*>(imstream + 4)) > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE)
+                [[unlikely]] {
+                ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
+                return {};
+            }
 
-            return true;
+            return temp;
         }
 
         // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a GRPICONDIRENTRY
@@ -114,34 +127,24 @@ class icondirectory final { // represents an .ico file
         ) noexcept {
             if (!imstream) return {};
             if (*(imstream + 3)) return {}; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic) must always be 0
+
             static constinit GRPICONDIRENTRY temp {};
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            temp.width       = *imstream;
-            temp.height      = *(imstream + 1);
-            temp.color_count = *(imstream + 2);
-            temp.__          = *(imstream + 3);
-
-            temp.planes      = *reinterpret_cast<const unsigned short*>(imstream + 4);
-            temp.bit_count   = *reinterpret_cast<const unsigned short*>(imstream + 6);
-            temp.size        = *reinterpret_cast<const unsigned long*>(imstream + 8);
-            temp.offset      = *reinterpret_cast<const unsigned long*>(imstream + 12);
+            temp.bWidth        = *imstream;
+            temp.bHeight       = *(imstream + 1);
+            temp.bColorCount   = *(imstream + 2);
+            temp.bReserved     = *(imstream + 3);
+            temp.wPlanes       = *reinterpret_cast<const unsigned short*>(imstream + 4);
+            temp.wBitCount     = *reinterpret_cast<const unsigned short*>(imstream + 6);
+            temp.dwBytesInRes  = *reinterpret_cast<const unsigned long*>(imstream + 8);
+            temp.dwImageOffset = *reinterpret_cast<const unsigned long*>(imstream + 12);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
             return temp;
         }
 
     public:
-        // using value_type                 = RGBQUAD; // pixel type
-        // using pointer                    = value_type*;
-        // using const_pointer              = const value_type*;
-        // using reference                  = value_type&;
-        // using const_reference            = const value_type&;
-        // using iterator                   = value_type*;
-        // using const_iterator             = const value_type*;
-        using size_type          = unsigned long long;
-        using difference_type    = long long;
-
         icondirectory() noexcept = default; // will be good enough
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
