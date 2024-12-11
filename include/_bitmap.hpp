@@ -82,7 +82,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // the best (admittedly less elegant) way to circumnavigate this is to hold an alias pointer that points to the beginning of the pixel buffer
         // inside the raw file buffer - no additional heap allocations and we could just sink the buffer to the disk when a serialization is needed
 
-        [[nodiscard]] static BITMAPFILEHEADER parse_file_header(
+        [[nodiscard]] static BITMAPFILEHEADER __stdcall parse_file_header(
             _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
         ) noexcept {
             static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "struct BITMAPFILEHEADER must be 14 bytes in size");
@@ -119,7 +119,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return COMPRESSION_KIND::UNKNOWN;
         }
 
-        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(
+        [[nodiscard]] static BITMAPINFOHEADER __stdcall parse_info_header(
             _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
         ) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)

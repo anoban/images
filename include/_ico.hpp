@@ -9,23 +9,24 @@
 #include <_bitmap.hpp>
 #include <_helpers.hpp>
 #include <_imageio.hpp>
+#include <_iterators.hpp>
 
 // most .ico files will have only one bitmap in them, so this is generous enough
 static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 6 };
 
 // an ICO file can be imagined as a meta-info struct, called ICONDIR, for ICON DIRectory followed by a bitmap or an array of bitmaps
 // (an .ico file can contain one or more images, hence the name icon directory), these bitmap images are stored contiguously, following the ICONDIR structure.
-// each bitmap is defined by an ICONDIRENTRY struct in the ICONDIR struct
+// each bitmap is defined by an GRPICONDIRENTRY struct in the ICONDIR struct
 // the bitmap data can be in the format of a Windows BMP without the BITMAPFILEHEADER struct or a PNG image in its entirety i.e uncompressed.
 // https://handwiki.org/wiki/ICO_(file_format)
 
 // multibyte integers in .ico files are stored LSB first (using little endian byte order), just like .bmp files
 
-// in summary, the binary representation of an .ico file looks like { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
+// in summary, the binary representation of an .ico file looks like { GRPICONDIRENTRY, pixels, <GRPICONDIRENTRY, pixels> ... }
 
-enum class ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
+enum ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
-enum class ICO_RESOURCE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
+enum ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
 // UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
@@ -53,7 +54,7 @@ struct GRPICONDIR final {
         WORD            idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
             // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
         WORD            idCount;     // number of resources (images) stored in the given .ico file
-        GRPICONDIRENTRY idEntries[]; // marks the beginning of the first GRPICONDIRENTRY struct in the ICONDIR
+        GRPICONDIRENTRY idEntries[]; // NOLINT(modernize-avoid-c-arrays)
 };
 
 static_assert(sizeof(GRPICONDIR) == 8);
@@ -70,30 +71,28 @@ class icondirectory final { // represents an .ico file
         unsigned char* buffer;      // the raw byte buffer
         unsigned long  file_size;   // file size
         unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
-        unsigned short reserved;    // must be 0
-        ICO_FILE_TYPE  type;
-        unsigned short entry_count;        // number of ICONDIRENTRYs in the file
-        std::vector<ICONDIRENTRY> entries; // entries stored in the file
+        GRPICONDIR     icondir;
+        std::vector<GRPICONDIRENTRY> entries; // entries stored in the file
 
         // will initialize reserved, type and entry_count members of the class
-        bool parse_icondirectory(_In_reads_bytes_(size) const unsigned char* const imstream, _In_ const unsigned long size) noexcept {
-            UNREFERENCED_PARAMETER(size);
+        [[nodiscard]] static GRPICONDIR __stdcall parse_icondirectory(
+            _In_reads_bytes_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long size
+        ) noexcept {
+            static constinit GRPICONDIR temp {};
 
             if (!imstream) {
                 ::fputws(L"Error in " __FUNCTIONW__ ", the received buffer is empty!\n", stderr);
-                return false;
+                return temp;
             }
 
-            reserved = *reinterpret_cast<const unsigned short*>(imstream);
-            if (reserved) { // must be 0
+            if ((temp.idReserved = *reinterpret_cast<const unsigned short*>(imstream))) { // must be 0
                 ::fputws(L"Error in " __FUNCTIONW__ ", a non-zero value encountered as idReserved!\n", stderr);
-                return false;
+                return temp;
             }
 
-            type = static_cast<ICO_FILE_TYPE>(
-                *reinterpret_cast<const unsigned short*>(imstream + 2) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            );
-            if (type != ICO_FILE_TYPE::ICON && type != ICO_FILE_TYPE::CURSOR) { // cannot be anything else
+            temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+            if (temp.idType != ICO_FILE_TYPE::ICON && temp.idType != ICO_FILE_TYPE::CURSOR) { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
                 return false;
             }
@@ -109,15 +108,13 @@ class icondirectory final { // represents an .ico file
             return true;
         }
 
-        // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a ICONDIRENTRY
-        static constexpr ICONDIRENTRY parse_icondirectory_entry(
-            _In_count_(size) const unsigned char* const imstream, _In_ const unsigned long size
+        // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a GRPICONDIRENTRY
+        [[nodiscard]] static GRPICONDIRENTRY __stdcall parse_icondirectory_entry(
+            _In_count_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long size
         ) noexcept {
-            UNREFERENCED_PARAMETER(size);
-
             if (!imstream) return {};
             if (*(imstream + 3)) return {}; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic) must always be 0
-            ICONDIRENTRY temp {};
+            static constinit GRPICONDIRENTRY temp {};
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             temp.width       = *imstream;
@@ -163,12 +160,12 @@ class icondirectory final { // represents an .ico file
             }
 
             entries.resize(entry_count);
-            unsigned long long caret { 6 };              // skip the first six bytes and jump to the first ICONDIRENTRY
+            unsigned long long caret { 6 };              // skip the first six bytes and jump to the first GRPICONDIRENTRY
             for (unsigned i = 0; i < entry_count; ++i) { // try and parse all the ICONDIRENTRYs in the file
                                                          //
                 entries.at(i)  = icondirectory::parse_icondirectory_entry(buffer + caret, file_size);
                 // update caret
-                caret         += sizeof(ICONDIRENTRY) + entries.at(i).size;
+                caret         += sizeof(GRPICONDIRENTRY) + entries.at(i).size;
             }
         }
 
@@ -198,6 +195,11 @@ class icondirectory final { // represents an .ico file
         bool      to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
 
         bitmap    image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
+
+        friend std::wostream& operator<<(_In_ const icondirectory& ico, _Inout_ std::wostream& wostr) noexcept {
+            //
+            return wostr;
+        }
 };
 
 #undef __INTERNAL
