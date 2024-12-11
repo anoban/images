@@ -27,13 +27,21 @@ class canvas final : public bitmap {
 
         canvas(_In_ const canvas& other) = default;
 
-        canvas& operator=(_In_ const canvas& other) noexcept { }
+        canvas& operator=(_In_ const canvas& other) noexcept {
+            if (this == std::addressof(other)) return *this;
+            // since class canvas does not have any data members of its own, take advantage of the base class's copy assignment operator
+            *static_cast<bitmap*>(this) = static_cast<bitmap>(other);
+            return *this;
+        }
 
+        // since class canvas does not have any data members of its own, take advantage of the base class's move constructor
         canvas(_In_ canvas&& other) noexcept : bitmap(std::move(other)) { }
 
         canvas& operator=(_In_ canvas&& other) noexcept { }
 
         ~canvas() noexcept = default;
+
+        bool    resize() noexcept { }
 
         //----------------------------------------------------------------------------------------------------------------------------------//
         //                                              IMAGE TRANSFORMATION ROUTINES                                                       //
@@ -62,21 +70,21 @@ class canvas final : public bitmap {
             return *this;
         }
 
-        // INCOMPLETE AND BUGGY
         canvas& hflip() noexcept {
             // number of RGBQUAD structs a xmm register can hold
             static constexpr auto XMM_STORABLE_RGBQUADS { sizeof(__m128i) / sizeof(RGBQUAD) };
 
 #if defined(__llvm__) && defined(__clang__)
-            static constexpr __m128i BYTE_REVERSE_MASK { 0x0C0D0E0F08090A0B, 0x0405060700010203 };
+            static constexpr __v16qu MASK { 12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3 };
 #elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-            static constexpr __m128i BYTE_REVERSE_MASK {
+            static constexpr __m128i MASK {
                 // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
+                // !!! WE DO NOT WANT BYTES WITHIN EACH PIXELS REORDERED AS THIS WILL CHANGE THE WAY COLOURS ARE INTERPRETED FROM PIXELS
                 .m128i_u8 { 12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3 }
             };
 #endif
             __m128i    left {}, right {}; // NOLINT(readability-isolate-declaration)
-            const long residues /* in RGBQUADs */ { static_cast<long>(width() / 2 % XMM_STORABLE_RGBQUADS) };
+            const long residues /* in RGBQUADs */ { static_cast<long>((width() / 2) % XMM_STORABLE_RGBQUADS) };
             RGBQUAD    temp {};
             long       col {}, row {}; // NOLINT(readability-isolate-declaration)
 
@@ -86,30 +94,16 @@ class canvas final : public bitmap {
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height(); ++row) {
                 for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += XMM_STORABLE_RGBQUADS) {
-                    left = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * row + col), BYTE_REVERSE_MASK);
-                    right =
-                        ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS), BYTE_REVERSE_MASK);
+                    left  = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * row + col), MASK);
+                    // !!! WE NEED sizeof(__m128i) BYTES BEFORE THE OFFSET width() * (row + 1) - col, NOT AFTER IT
+                    right = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS), MASK);
 
-                    ::_mm_storeu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS, right);
-                    ::_mm_storeu_epi8(pixels + width() * row + col, left);
+                    ::_mm_storeu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS, left);
+                    ::_mm_storeu_epi8(pixels + width() * row + col, right);
                 }
 
-                for (; col < width(); ++col) { // handle the residues
-                    temp                              = pixels[width() * row + col];
-                    pixels[width() * row + col]       = pixels[width() * (row + 1) - col];
-                    pixels[width() * (row + 1) - col] = temp;
-                }
-            }
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            return *this;
-        }
-
-        canvas& hflip_alt() noexcept {
-            RGBQUAD temp {};
-
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            for (long row = 0; row < height(); ++row) {
-                for (long col = 0; col < width() / 2 /* deliberate integer division */; ++col) {
+                // !!! HERE WE SWAP PIXELS NOT BYTES, SO NO NEED TO WORRY ABOUT THE PIXEL BOUNDARIES
+                for (; col < width() / 2; ++col) { // handle the residues
                     temp                              = pixels[width() * row + col];
                     pixels[width() * row + col]       = pixels[width() * (row + 1) - col];
                     pixels[width() * (row + 1) - col] = temp;

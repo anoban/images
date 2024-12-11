@@ -4,14 +4,14 @@
     #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
 #endif
 
+// clang-format off
 #define _AMD64_ // architecture
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_MEAN
 
-// clang-format off
-    #include <errhandlingapi.h>
-    #include <fileapi.h>
-    #include <handleapi.h>
+#include <errhandlingapi.h>
+#include <fileapi.h>
+#include <handleapi.h>
 // clang-format on
 
 #include <cassert>

@@ -11,7 +11,7 @@
 #include <_imageio.hpp>
 
 // most .ico files will have only one bitmap in them, so this is generous enough
-static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 5 };
+static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 6 };
 
 // an ICO file can be imagined as a meta-info struct, called ICONDIR, for ICON DIRectory followed by a bitmap or an array of bitmaps
 // (an .ico file can contain one or more images, hence the name icon directory), these bitmap images are stored contiguously, following the ICONDIR structure.
@@ -23,60 +23,41 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 <
 
 // in summary, the binary representation of an .ico file looks like { ICONDIRENTRY, pixels, <ICONDIRENTRY, pixels> ... }
 
-enum class FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
+enum class ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
-enum class IMAGE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
+enum class ICO_RESOURCE_TYPE : int { BITMAP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
 
 // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
+// UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
+// EVEN CHROMIUM HAS THESE STRUCTURES HANDROLLED IN ITS SOURCE :(
 
-// typedef struct GRPICONDIRENTRY { // wingdi
-//     BYTE  bWidth;
-//     BYTE  bHeight;
-//     BYTE  bColorCount;
-//     BYTE  bReserved;
-//     WORD  wPlanes;
-//     WORD  wBitCount;
-//     DWORD dwBytesInRes;
-//     DWORD dwImageOffset;
-// }
-
-struct ICONDIRENTRY final {
-        unsigned char  width;       // width of the associated bitmap in pixels (must be in the range of 0 to 256)
-        unsigned char  height;      // height of the associated bitmap in pixels (must be in the range of 0 to 256)
-        unsigned char  color_count; // number of colours in the colur palette, must be 0 if the bitmap doesn't use a colour palette.
-        unsigned char  __;          // reserved byte, must always be 0.
-        unsigned short planes;      // specifies the colour planes (should be 0 or 1) - for ICON
-        // planes specifies the horizontal coordinate of the hotspot as offset from the left, in pixels - for CURSOR
-        unsigned short bit_count; // specifies pixel depth - for ICON
-        // bit_count specifies the vertical coordinate of the hotspot as offset from the top, in pixels - for CURSOR
-        // Windows cursors have a hotspot location, that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
-        unsigned long  size;   // size of the associated bitmap in bytes
-        unsigned long  offset; // offset of the associated bitmap data, from the beginning of the .ico or .cur file
-        friend class icondirectory;
+struct GRPICONDIRENTRY final {
+        BYTE  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
+        BYTE  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
+        BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
+        BYTE  bReserved;   // reserved byte, must always be 0
+        WORD  wPlanes;     // for icons- specifies the colour planes (should be 0 or 1)
+        // for cursors - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
+        WORD  wBitCount; // for icons - specifies pixel depth
+        // for cursors - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
+        // Windows cursors have a hotspot location that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
+        DWORD dwBytesInRes;  // size of the associated image in bytes
+        DWORD dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
 };
 
-static_assert(sizeof(ICONDIRENTRY) == 16, "");
-static_assert(std::is_standard_layout<ICONDIRENTRY>::value, "");
+static_assert(sizeof(GRPICONDIRENTRY) == 16);
+static_assert(std::is_standard_layout_v<GRPICONDIRENTRY>);
 
-//  typedef struct GRPICONDIR { // wingdi
-//      WORD idReserved;
-//      WORD idType;
-//      WORD idCount;
-//      GRPICONDIRENTRY idEntries[];
-//  } GRPICONDIR;
-
-struct ICONDIR final {
-        unsigned short reserved;  // reserved field, must always be 0
-        FILE_TYPE      type;      // specifies the type of the resources contained, values other than 1 and 2 are invalid
-                                  // a given ICONDIR can store one or more of either icon or cursor type images
-                                  // heterogeneous types aren't allowed inside an ICONDIR
-        unsigned short count;     // number of resources (images) stored in the given .ico file
-        ICONDIRENTRY*  resources; // marks the beginning of the first ICONDIRENTRY struct in the ICONDIR
-        friend class icondirectory;
+struct GRPICONDIR final {
+        WORD            idReserved; // reserved, must always be 0
+        WORD            idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
+            // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
+        WORD            idCount;     // number of resources (images) stored in the given .ico file
+        GRPICONDIRENTRY idEntries[]; // marks the beginning of the first GRPICONDIRENTRY struct in the ICONDIR
 };
 
-static_assert(sizeof(ICONDIR) == 16, "");
-static_assert(std::is_standard_layout<ICONDIR>::value, "");
+static_assert(sizeof(GRPICONDIR) == 8);
+static_assert(std::is_standard_layout_v<GRPICONDIR>);
 
 class icondirectory final { // represents an .ico file
 
@@ -90,7 +71,7 @@ class icondirectory final { // represents an .ico file
         unsigned long  file_size;   // file size
         unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
         unsigned short reserved;    // must be 0
-        FILE_TYPE      type;
+        ICO_FILE_TYPE  type;
         unsigned short entry_count;        // number of ICONDIRENTRYs in the file
         std::vector<ICONDIRENTRY> entries; // entries stored in the file
 
@@ -109,10 +90,10 @@ class icondirectory final { // represents an .ico file
                 return false;
             }
 
-            type = static_cast<FILE_TYPE>(
+            type = static_cast<ICO_FILE_TYPE>(
                 *reinterpret_cast<const unsigned short*>(imstream + 2) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             );
-            if (type != FILE_TYPE::ICON && type != FILE_TYPE::CURSOR) { // cannot be anything else
+            if (type != ICO_FILE_TYPE::ICON && type != ICO_FILE_TYPE::CURSOR) { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
                 return false;
             }
