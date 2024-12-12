@@ -24,7 +24,7 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 <
 
 // in summary, the binary representation of an .ico file looks like { GRPICONDIRENTRY, pixels, <GRPICONDIRENTRY, pixels> ... }
 
-class icondirectory                 final { // represents an .ico file
+class icon_directory                final { // represents an .ico file
 
     public:
         // type of the file
@@ -38,8 +38,8 @@ class icondirectory                 final { // represents an .ico file
         // EVEN CHROMIUM HAS THESE STRUCTURES HANDROLLED IN ITS SOURCE :(
 
         struct ICONDIRENTRY final {
-                BYTE  bWidth;  // width of the associated image in pixels (must be in the range of 0 to 256)
-                BYTE  bHeight; // height of the associated image in pixels (must be in the range of 0 to 256)
+                BYTE  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
+                BYTE  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
                 BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
                 BYTE  bReserved; // reserved byte, must always be 0
                 WORD  wPlanes;   // for .ico - specifies the colour planes (should be 0 or 1)
@@ -196,13 +196,13 @@ class icondirectory                 final { // represents an .ico file
         }
 
     public:
-        icondirectory() noexcept = default; // will be good enough
+        icon_directory() noexcept = delete;
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
-        explicit icondirectory(_In_ const wchar_t* const filename) noexcept :
+        explicit icon_directory(_In_ const wchar_t* const filename) noexcept :
             buffer { internal::open(filename, file_size) },
             buffer_size { file_size },
-            directory { icondirectory::parse_icondirectory(buffer, buffer_size) } {
+            directory { icon_directory::parse_icondirectory(buffer, buffer_size) } {
             if (!buffer) [[unlikely]] {
                 file_size = 0;
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
@@ -212,34 +212,34 @@ class icondirectory                 final { // represents an .ico file
             // if any errors encountered in the reading and parsing the functions responsible for those taks will take care of the error reporting
 
             entries.resize(directory.idCount);
-            unsigned long long caret { 6 }; // skip the first six bytes and jump to the first GRPICONDIRENTRY
+            unsigned long long caret { 6 }; // skip the first six bytes and jump to the first ICONDIRENTRY structure
             for (unsigned i = 0; i < directory.idCount; ++i) { // try and parse all the ICONDIRENTRYs in the file
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                entries.at(i)  = icondirectory::parse_icondirectory_entry(buffer + caret, file_size);
+                entries.at(i)  = icon_directory::parse_icondirectory_entry(buffer + caret, file_size);
                 // update caret
                 caret         += sizeof(ICONDIRENTRY);
             }
         }
 
-        icondirectory(_In_ const icondirectory& other) noexcept { }
+        icon_directory(_In_ const icon_directory& other) noexcept { }
 
-        icondirectory(_In_ icondirectory&& other) noexcept { }
+        icon_directory(_In_ icon_directory&& other) noexcept { }
 
-        icondirectory& operator=(_In_ const icondirectory& other) noexcept {
+        icon_directory& operator=(_In_ const icon_directory& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
             return *this;
         }
 
-        icondirectory& operator=(_In_ icondirectory&& other) noexcept {
+        icon_directory& operator=(_In_ icon_directory&& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
             return *this;
         }
 
-        ~icondirectory() noexcept {
+        ~icon_directory() noexcept {
             delete[] buffer;
-            ::memset(this, 0U, sizeof(icondirectory)); // NOLINT(bugprone-undefined-memory-manipulation)
+            ::memset(this, 0U, sizeof(icon_directory)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
         size_type resource_count() const noexcept { return directory.idCount; }
@@ -253,16 +253,21 @@ class icondirectory                 final { // represents an .ico file
                 return {};
             }
 
+            // allocate the memory needed to extract the selected icon aa a bitmap object
             bitmap image { entries.at(position).bHeight, entries.at(position).bWidth };
-            // ::memcpy_s(
-            //     image.pixels, image.buffer_size, buffer + entries.at(position).dwImageOffset, entries.at(position).dwBytesInRes - 1000
-            // );
-            image.info_header = icondirectory::parse_info_header(buffer + entries.at(position).dwImageOffset, buffer_size);
+            // !!! TODO: INCORRECT!!! DOESN'T COPY ALL THE BYTES FROM THE ICON RESOURCE BECAUSE FOR SOME REASON WIDTH * HEIGHT * sizeof(RGBQUAD) ends up smaller than dwBytesInRes
+            ::memcpy_s(
+                image.pixels,
+                image.buffer_size,
+                buffer + entries.at(position).dwImageOffset,
+                /* entries.at(position).dwBytesInRes */ image.buffer_size - sizeof(BITMAPFILEHEADER) - sizeof(BITMAPINFOHEADER)
+            );
+            // image.info_header = icon_directory::parse_info_header(buffer + entries.at(position).dwImageOffset, buffer_size);
 
             return image;
         }
 
-        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const icondirectory& image) noexcept {
+        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const icon_directory& image) noexcept {
             wostr << L"---------------------------------------\n";
             wostr << L"| idReserved      " << std::setw(20) << image.directory.idReserved << L"|\n";
             wostr << L"| idType          " << std::setw(20) << image.directory.idType << L"|\n";
@@ -284,5 +289,5 @@ class icondirectory                 final { // represents an .ico file
         }
 };
 
-static_assert(std::is_standard_layout_v<icondirectory>); // well, damn
+// static_assert(std::is_standard_layout_v<icon_directory>); // well, damn
 #undef __INTERNAL

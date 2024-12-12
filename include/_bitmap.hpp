@@ -63,7 +63,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         unsigned long buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
                                    // NOLINTEND(misc-non-private-member-variables-in-classes)
 
-        friend class icondirectory; // to serialize ico objects as bitmaps, we need access to this class's internals
+        friend class icon_directory; // to serialize ico objects as bitmaps, we need access to this class's internals
 
         // using a new buffer to store pixels sounds like a clean design but it brings a string of performance issues
         // 1) entails an additional heap allocation (pixel buffer) and a deallocation (the raw file buffer)
@@ -220,6 +220,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         // this is likely to get more compilcated
         bitmap(_In_ const long height, _In_ const long width) noexcept :
+            // allocate storage for the metadata structs and pixel buffer
             buffer { new (std::nothrow
             ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
