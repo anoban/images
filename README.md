@@ -3,7 +3,7 @@ Caution: `Images in this README.md are JPEG converts of the bitmap files used in
 ### _Usage:_
 --------
 
-Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) support reading, parsing, decoding, encoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap` & `ico`) support reading, parsing, decoding, encoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
 can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for `canvas`).
 
 ```C++

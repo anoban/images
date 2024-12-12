@@ -42,25 +42,28 @@ class icondirectory                 final { // represents an .ico file
                 BYTE  bHeight; // height of the associated image in pixels (must be in the range of 0 to 256)
                 BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
                 BYTE  bReserved; // reserved byte, must always be 0
-                WORD  wPlanes;   // for icons- specifies the colour planes (should be 0 or 1)
-                // for cursors - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
-                WORD  wBitCount; // for icons - specifies pixel depth
-                // for cursors - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
+                WORD  wPlanes;   // for .ico - specifies the colour planes (should be 0 or 1)
+                // for .cur - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
+                WORD  wBitCount; // for .ico - specifies pixel depth
+                // for .cur - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
                 // Windows cursors have a hotspot location that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
                 DWORD dwBytesInRes;  // size of the associated image in bytes
                 DWORD dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
         };
 
         struct ICONDIR final {
-                WORD          idReserved; // reserved, must always be 0
-                WORD          idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
+                WORD         idReserved; // reserved, must always be 0
+                WORD         idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
                     // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
-                WORD          idCount; // number of resources (images) stored in the given .ico file
-                ICONDIRENTRY* idEntries;
+                WORD         idCount;      // number of resources (images) stored in the given .ico file
+                ICONDIRENTRY idEntries[1]; // NOLINT(modernize-avoid-c-arrays)
         };
 
         struct ICONIMAGE final {
-                //
+                BITMAPINFOHEADER icHeader;
+                RGBQUAD          icColors[1]; // NOLINT(modernize-avoid-c-arrays)
+                BYTE             icXOR[1];    // NOLINT(modernize-avoid-c-arrays)
+                BYTE             icAND[1];    // NOLINT(modernize-avoid-c-arrays)
         };
 
         using value_type      = RGBQUAD; // pixel type
@@ -79,7 +82,7 @@ class icondirectory                 final { // represents an .ico file
 #endif
         // clang-format on
 
-        unsigned char* buffer;    // the raw byte buffer
+        unsigned char* buffer;    // the raw file buffer
         unsigned long  file_size; // file size
         unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
         ICONDIR        directory;
@@ -88,7 +91,7 @@ class icondirectory                 final { // represents an .ico file
         [[nodiscard]] static ICONDIR __stdcall parse_icondirectory(
             _In_reads_bytes_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long long& size
         ) noexcept {
-            static_assert(sizeof(ICONDIR) == 16);
+            static_assert(sizeof(ICONDIR) == 24);
             static_assert(std::is_standard_layout_v<ICONDIR>);
             assert(size >= sizeof(ICONDIR));
 
@@ -153,6 +156,45 @@ class icondirectory                 final { // represents an .ico file
             return temp;
         }
 
+        [[nodiscard]] static BITMAPINFOHEADER __stdcall parse_info_header(
+            _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
+        ) noexcept {
+            // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
+            static_assert(sizeof(BITMAPINFOHEADER) == 40LLU);
+            assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
+
+            BITMAPINFOHEADER header {};
+            if (!imstream) [[unlikely]] {
+                ::fputws(L"Error in " __FUNCTIONW__ ", received an empty buffer\n", stderr);
+                return header;
+            }
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+            // if ((header.biSize = *reinterpret_cast<const unsigned*>(imstream + 14) != 40)) [[unlikely]] {
+            //     // size of the BITMAPINFOHEADER struct must be == 40 bytes
+            //     ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
+            //     return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
+            // }
+
+            header.biSize     = *reinterpret_cast<const unsigned*>(imstream + 14);
+            header.biWidth    = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
+            header.biHeight   = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
+                // bitmaps with a negative height may not be compressed
+            header.biPlanes   = *reinterpret_cast<const unsigned short*>(imstream + 26);   // must be 1
+            header.biBitCount = *reinterpret_cast<const unsigned short*>(imstream + 28);   // 1, 4, 8, 16, 24 or 32
+            header.biCompression = static_cast<decltype(BITMAPINFOHEADER::biCompression)>( // compression kind (if compressed)
+                bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
+            );
+            header.biSizeImage = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
+            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38); // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42); // resolution in pixels per meter along the y axis
+            header.biClrUsed = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
+            header.biClrImportant = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+
+            return header;
+        }
+
     public:
         icondirectory() noexcept = default; // will be good enough
 
@@ -212,7 +254,10 @@ class icondirectory                 final { // represents an .ico file
             }
 
             bitmap image { entries.at(position).bHeight, entries.at(position).bWidth };
-            // ::memcpy_s(image.pixels, image.buffer_size, buffer + entries.at(position).dwImageOffset, entries.at(position).dwBytesInRes);
+            // ::memcpy_s(
+            //     image.pixels, image.buffer_size, buffer + entries.at(position).dwImageOffset, entries.at(position).dwBytesInRes - 1000
+            // );
+            image.info_header = icondirectory::parse_info_header(buffer + entries.at(position).dwImageOffset, buffer_size);
 
             return image;
         }
@@ -239,4 +284,5 @@ class icondirectory                 final { // represents an .ico file
         }
 };
 
+static_assert(std::is_standard_layout_v<icondirectory>); // well, damn
 #undef __INTERNAL

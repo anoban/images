@@ -1,6 +1,0 @@
-#pragma once
-
-#ifndef __PNG__
-    #define __PNG__
-    #include <_png.hpp>
-#endif
