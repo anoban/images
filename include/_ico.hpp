@@ -37,7 +37,7 @@ class icondirectory                 final { // represents an .ico file
         // UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
         // EVEN CHROMIUM HAS THESE STRUCTURES HANDROLLED IN ITS SOURCE :(
 
-        struct GRPICONDIRENTRY final {
+        struct ICONDIRENTRY final {
                 BYTE  bWidth;  // width of the associated image in pixels (must be in the range of 0 to 256)
                 BYTE  bHeight; // height of the associated image in pixels (must be in the range of 0 to 256)
                 BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
@@ -51,19 +51,17 @@ class icondirectory                 final { // represents an .ico file
                 DWORD dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
         };
 
-        static_assert(sizeof(GRPICONDIRENTRY) == 16);
-        static_assert(std::is_standard_layout_v<GRPICONDIRENTRY>);
-
-        struct GRPICONDIR final {
-                WORD             idReserved; // reserved, must always be 0
-                WORD             idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
+        struct ICONDIR final {
+                WORD          idReserved; // reserved, must always be 0
+                WORD          idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
                     // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
-                WORD             idCount; // number of resources (images) stored in the given .ico file
-                GRPICONDIRENTRY* idEntries;
+                WORD          idCount; // number of resources (images) stored in the given .ico file
+                ICONDIRENTRY* idEntries;
         };
 
-        static_assert(sizeof(GRPICONDIR) == 16);
-        static_assert(std::is_standard_layout_v<GRPICONDIR>);
+        struct ICONIMAGE final {
+                //
+        };
 
         using value_type      = RGBQUAD; // pixel type
         using pointer         = value_type*;
@@ -84,13 +82,17 @@ class icondirectory                 final { // represents an .ico file
         unsigned char* buffer;    // the raw byte buffer
         unsigned long  file_size; // file size
         unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
-        GRPICONDIR     icondir;
-        std::vector<GRPICONDIRENTRY> entries; // entries stored in the file
+        ICONDIR        directory;
+        std::vector<ICONDIRENTRY> entries; // metadata of entries stored in the file
 
-        [[nodiscard]] static GRPICONDIR __stdcall parse_icondirectory(
-            _In_reads_bytes_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long size
+        [[nodiscard]] static ICONDIR __stdcall parse_icondirectory(
+            _In_reads_bytes_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long long& size
         ) noexcept {
-            GRPICONDIR temp {};
+            static_assert(sizeof(ICONDIR) == 16);
+            static_assert(std::is_standard_layout_v<ICONDIR>);
+            assert(size >= sizeof(ICONDIR));
+
+            ICONDIR temp {};
 
             if (!imstream) [[unlikely]] {
                 ::fputws(L"Error in " __FUNCTIONW__ ", received buffer is empty!\n", stderr);
@@ -104,42 +106,49 @@ class icondirectory                 final { // represents an .ico file
             }
 
             temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2);
-
             if (temp.idType != ICO_FILE_TYPE::ICON && temp.idType != ICO_FILE_TYPE::CURSOR) [[unlikely]] { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
                 return {};
             }
 
             // we're 4 bytes past the beginning of the buffer now
-            // handle if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
-            if ((temp.idCount = *reinterpret_cast<const unsigned short*>(imstream + 4)) > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE)
-                [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
-                return {};
-            }
+            // issue a warning if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
+            if ((temp.idCount = *reinterpret_cast<const unsigned short*>(imstream + 4)) > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) [[unlikely]]
+                ::fputws(L"Warning from " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accommodate!\n", stderr);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             return temp;
         }
 
         // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a GRPICONDIRENTRY
-        [[nodiscard]] static GRPICONDIRENTRY __stdcall parse_icondirectory_entry(
-            _In_count_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long size
+        [[nodiscard]] static ICONDIRENTRY __stdcall parse_icondirectory_entry(
+            _In_count_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long long& size
         ) noexcept {
-            if (!imstream) return {};
-            if (*(imstream + 3)) return {}; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic) must always be 0
+            static_assert(sizeof(ICONDIRENTRY) == 16);
+            static_assert(std::is_standard_layout_v<ICONDIRENTRY>);
+            assert(size >= sizeof(ICONDIRENTRY));
 
-            static constinit GRPICONDIRENTRY temp {};
+            ICONDIRENTRY temp {};
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (!imstream) [[unlikely]] {
+                ::fputws(L"Error in " __FUNCTIONW__ ", received buffer is empty!\n", stderr);
+                return temp;
+            }
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+            if ((temp.bReserved = *(imstream + 3))) { // must always be 0
+                ::fputws(L"Error in " __FUNCTIONW__ ", a non-zero value encountered as bReserved!\n", stderr);
+                return {};
+            }
+
             temp.bWidth        = *imstream;
             temp.bHeight       = *(imstream + 1);
             temp.bColorCount   = *(imstream + 2);
-            temp.bReserved     = *(imstream + 3);
+            // temp.bReserved     = *(imstream + 3);
             temp.wPlanes       = *reinterpret_cast<const unsigned short*>(imstream + 4);
             temp.wBitCount     = *reinterpret_cast<const unsigned short*>(imstream + 6);
             temp.dwBytesInRes  = *reinterpret_cast<const unsigned long*>(imstream + 8);
             temp.dwImageOffset = *reinterpret_cast<const unsigned long*>(imstream + 12);
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
 
             return temp;
         }
@@ -149,38 +158,36 @@ class icondirectory                 final { // represents an .ico file
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
         explicit icondirectory(_In_ const wchar_t* const filename) noexcept :
-            buffer { internal::open(filename, file_size) }, buffer_size { file_size } {
-            if (!buffer) {
+            buffer { internal::open(filename, file_size) },
+            buffer_size { file_size },
+            directory { icondirectory::parse_icondirectory(buffer, buffer_size) } {
+            if (!buffer) [[unlikely]] {
                 file_size = 0;
                 ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
                 return;
             }
 
-            if (!parse_icondirectory(buffer, file_size)) {
-                ::fputws(L"Error inside " __FUNCTIONW__ ", parsing failed, object is default initialized as a fallback\n", stderr);
-                ::memset(this, 0U, sizeof(icondirectory)); // NOLINT(bugprone-undefined-memory-manipulation)
-                return;
-            }
+            // if any errors encountered in the reading and parsing the functions responsible for those taks will take care of the error reporting
 
-            entries.resize(entry_count);
-            unsigned long long caret { 6 };              // skip the first six bytes and jump to the first GRPICONDIRENTRY
-            for (unsigned i = 0; i < entry_count; ++i) { // try and parse all the ICONDIRENTRYs in the file
-                                                         //
+            entries.resize(directory.idCount);
+            unsigned long long caret { 6 }; // skip the first six bytes and jump to the first GRPICONDIRENTRY
+            for (unsigned i = 0; i < directory.idCount; ++i) { // try and parse all the ICONDIRENTRYs in the file
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 entries.at(i)  = icondirectory::parse_icondirectory_entry(buffer + caret, file_size);
                 // update caret
-                caret         += sizeof(GRPICONDIRENTRY) + entries.at(i).size;
+                caret         += sizeof(ICONDIRENTRY);
             }
         }
 
         icondirectory(_In_ const icondirectory& other) noexcept { }
+
+        icondirectory(_In_ icondirectory&& other) noexcept { }
 
         icondirectory& operator=(_In_ const icondirectory& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
             return *this;
         }
-
-        icondirectory(_In_ icondirectory&& other) noexcept { }
 
         icondirectory& operator=(_In_ icondirectory&& other) noexcept {
             if (std::addressof(other) == this) return *this;
@@ -193,14 +200,41 @@ class icondirectory                 final { // represents an .ico file
             ::memset(this, 0U, sizeof(icondirectory)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
-        size_type image_count() const noexcept { return entry_count; }
+        size_type resource_count() const noexcept { return directory.idCount; }
 
         bool      to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
 
-        bitmap    image_to_bitmap(_In_opt_ const unsigned position = 0) const noexcept { }
-
-        friend std::wostream& operator<<(_In_ const icondirectory& ico, _Inout_ std::wostream& wostr) noexcept {
+        bitmap    to_bitmap(_In_opt_ const unsigned long long& position = 0) const noexcept {
             //
+            if (position >= directory.idCount) {
+                //
+                return {};
+            }
+
+            bitmap image { entries.at(position).bHeight, entries.at(position).bWidth };
+            // ::memcpy_s(image.pixels, image.buffer_size, buffer + entries.at(position).dwImageOffset, entries.at(position).dwBytesInRes);
+
+            return image;
+        }
+
+        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const icondirectory& image) noexcept {
+            wostr << L"---------------------------------------\n";
+            wostr << L"| idReserved      " << std::setw(20) << image.directory.idReserved << L"|\n";
+            wostr << L"| idType          " << std::setw(20) << image.directory.idType << L"|\n";
+            wostr << L"| idCount         " << std::setw(20) << image.directory.idCount << L"|\n";
+            wostr << L"---------------------------------------\n";
+            for (const auto& entry : image.entries) {
+                wostr << L"| bWidth          " << std::setw(20) << entry.bWidth << L"|\n";
+                wostr << L"| bHeight         " << std::setw(20) << entry.bHeight << L"|\n";
+                wostr << L"| bColorCount     " << std::setw(20) << entry.bColorCount << L"|\n";
+                wostr << L"| bReserved       " << std::setw(20) << entry.bReserved << L"|\n";
+                wostr << L"| wPlanes         " << std::setw(20) << entry.wPlanes << L"|\n";
+                wostr << L"| wBitCount       " << std::setw(20) << entry.wBitCount << L"|\n";
+                wostr << L"| dwBytesInRes    " << std::setw(20) << entry.dwBytesInRes << L"|\n";
+                wostr << L"| dwImageOffset   " << std::setw(20) << entry.dwImageOffset << L"|\n";
+                wostr << L"=======================================\n";
+            }
+            wostr << L"---------------------------------------\n";
             return wostr;
         }
 };

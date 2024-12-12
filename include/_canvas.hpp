@@ -305,14 +305,14 @@ class canvas final : public bitmap {
             return *this;
         }
 
-        template<DEGREES> canvas& rotate() noexcept;
+        template<ANGLES> canvas& rotate() noexcept;
 
-        template<> canvas&        rotate<DEGREES::NINETY>() noexcept { }
+        template<> canvas&       rotate<ANGLES::NINETY>() noexcept { }
 
         // returns a deep copy of self
-        [[nodiscard]] canvas      copy() const noexcept { return *this; }
+        [[nodiscard]] canvas     copy() const noexcept { return *this; }
 
-        [[nodiscard]] bitmap      unwrap() const noexcept {
+        [[nodiscard]] bitmap     unwrap() const noexcept {
             static_assert(sizeof(bitmap) == sizeof(canvas));
             return *this; // a non-destructive object slicing happens here
         }

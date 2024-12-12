@@ -138,6 +138,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             }
 
+            // header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
             header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
             header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
                 // bitmaps with a negative height may not be compressed
