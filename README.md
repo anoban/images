@@ -3,7 +3,7 @@ Caution: `Images in this README.md are JPEG converts of the bitmap files used in
 ### _Usage:_
 --------
 
-Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap` & `ico`) support reading, parsing, decoding, encoding and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap` & `ico`) support reading, parsing and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
 can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for `canvas`).
 
 ```C++
@@ -137,7 +137,7 @@ board.to_file(LR"(./mandelbrot.bmp)");
 ### _Warning:_
 --------
 
-Owing to the non-opt-in use of `SSSE3`, `AVX1`, `AVX2` and `AVX512` compiler (`MSVC` & `LLVM`) intrinsics, If compiles, will probably raise an illegal instruction hardware exception at runtime on unsupported CPU architectures (anything other than `AMD64`). Unfortunately my expertise is very Windows centric hence, I have no desire to accommodate the `linux/g++` toolchain in this project.
+Owing to the non-opt-in use of `SSSE3`, `AVX1`, `AVX2` and `AVX512` compiler intrinsics (`MSVC` & `LLVM`), If compiles, will probably raise an illegal instruction hardware exception at runtime on `AMD64` CPU architectures that doesn't support the mentioned SIMD instructions. Probably won't compile on non `AMD64` machines unless your compiler supports cross-compiling to `AMD64` and you are in fact cross-compiling. Unfortunately my expertise is very Windows centric hence, I have no desire to accommodate the `linux/g++` toolchain in this project.
 
 ### _Reference:_
 --------
