@@ -4,9 +4,6 @@
     #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
 #endif
 
-#define _AMD64_ // architecture
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_MEAN
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -85,25 +82,27 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         [[nodiscard]] static BITMAPFILEHEADER __stdcall parse_file_header(
             _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
         ) noexcept {
-            static_assert(sizeof(BITMAPFILEHEADER) == 14LLU, "struct BITMAPFILEHEADER must be 14 bytes in size");
+            static_assert(sizeof(BITMAPFILEHEADER) == 14LLU);
             assert(length >= sizeof(BITMAPFILEHEADER));
-            BITMAPFILEHEADER header {};
-            if (!imstream) return header;
 
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            BITMAPFILEHEADER header {};
+            if (!imstream) [[unlikely]] {
+                ::fputws(L"Error in " __FUNCTIONW__ ", received an empty buffer\n", stderr);
+                return header;
+            }
+
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (imstream[0] != 'B' && imstream[1] != 'M') [[unlikely]] { // validate that the passed buffer is of a bitmap file
                 ::fputws(L"Error in " __FUNCTIONW__ ", file isn't recognized as a Windows bitmap file\n", stderr);
                 return header;
             }
 
-            header.bfType      = SOI; // 'B', 'M'
-                                      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            header.bfSize      = *reinterpret_cast<const unsigned int*>(imstream + 2); // file size in bytes
-            header.bfReserved1 = header.bfReserved2 = 0;                               // 4 reserved bytes
+            header.bfType      = SOI;                                              // 'B', 'M'
+            header.bfSize      = *reinterpret_cast<const unsigned*>(imstream + 2); // file size in bytes
+            header.bfReserved1 = header.bfReserved2 = 0;                           // 4 reserved bytes
             // offset from the beginning of BITMAPFILEHEADER struct to the start of pixel data
-            header.bfOffBits = *reinterpret_cast<const unsigned int*>( // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                imstream + 10
-            );
+            header.bfOffBits                        = *reinterpret_cast<const unsigned*>(imstream + 10);
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return header;
         }
 
@@ -123,34 +122,36 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
         ) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
-            static_assert(sizeof(BITMAPINFOHEADER) == 40LLU, "struct BITMAPINFOHEADER must be 40 bytes in size");
+            static_assert(sizeof(BITMAPINFOHEADER) == 40LLU);
             assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
-            BITMAPINFOHEADER header {};
-            if (!imstream) return header;
 
-            if (*reinterpret_cast<const unsigned int*>(imstream + 14U) != 40) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                [[unlikely]] {
-                // header size must be == 40 bytes
-                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
+            BITMAPINFOHEADER header {};
+            if (!imstream) [[unlikely]] {
+                ::fputws(L"Error in " __FUNCTIONW__ ", received an empty buffer\n", stderr);
                 return header;
             }
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            header.biSize          = *reinterpret_cast<const unsigned int*>(imstream + 14); // size of the BITMAPINFOHEADER struct
-            header.biWidth         = *reinterpret_cast<const int*>(imstream + 18);          // width of the bitmap image in pixels
-            header.biHeight        = *reinterpret_cast<const int*>(imstream + 22);          // height of the bitmap image in pixels
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+            if ((header.biSize = *reinterpret_cast<const unsigned*>(imstream + 14) != 40)) [[unlikely]] {
+                // size of the BITMAPINFOHEADER struct must be == 40 bytes
+                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
+                return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
+            }
+
+            header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
+            header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
                 // bitmaps with a negative height may not be compressed
             header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
             header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
             header.biCompression   = static_cast<decltype(BITMAPINFOHEADER::biCompression)>(  // compression kind (if compressed)
-                bitmap::get_compression_kind(*reinterpret_cast<const unsigned int*>(imstream + 30U))
+                bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
             );
-            header.biSizeImage     = *reinterpret_cast<const unsigned int*>(imstream + 34); // 0 if not compressed
-            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38);    // resolution in pixels per meter along the x axis
-            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);    // resolution in pixels per meter along the y axis
-            header.biClrUsed = *reinterpret_cast<const unsigned int*>(imstream + 46); // number of entries in the colourmap that are used
-            header.biClrImportant = *reinterpret_cast<const unsigned int*>(imstream + 50); // number of important colors
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            header.biSizeImage     = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
+            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38);      // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
+            header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
+            header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
 
             return header;
         }

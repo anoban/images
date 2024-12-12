@@ -55,14 +55,14 @@ class icondirectory                 final { // represents an .ico file
         static_assert(std::is_standard_layout_v<GRPICONDIRENTRY>);
 
         struct GRPICONDIR final {
-                WORD            idReserved; // reserved, must always be 0
-                WORD            idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
+                WORD             idReserved; // reserved, must always be 0
+                WORD             idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
                     // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
-                WORD            idCount;     // number of resources (images) stored in the given .ico file
-                GRPICONDIRENTRY idEntries[]; // NOLINT(modernize-avoid-c-arrays)
+                WORD             idCount; // number of resources (images) stored in the given .ico file
+                GRPICONDIRENTRY* idEntries;
         };
 
-        static_assert(sizeof(GRPICONDIR) == 8);
+        static_assert(sizeof(GRPICONDIR) == 16);
         static_assert(std::is_standard_layout_v<GRPICONDIR>);
 
         using value_type      = RGBQUAD; // pixel type
@@ -87,23 +87,23 @@ class icondirectory                 final { // represents an .ico file
         GRPICONDIR     icondir;
         std::vector<GRPICONDIRENTRY> entries; // entries stored in the file
 
-        // will initialize reserved, type and entry_count members of the class
         [[nodiscard]] static GRPICONDIR __stdcall parse_icondirectory(
             _In_reads_bytes_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long size
         ) noexcept {
-            static constinit GRPICONDIR temp {};
+            GRPICONDIR temp {};
 
             if (!imstream) [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTIONW__ ", the received buffer is empty!\n", stderr);
-                return {};
+                ::fputws(L"Error in " __FUNCTIONW__ ", received buffer is empty!\n", stderr);
+                return temp;
             }
 
+            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             if ((temp.idReserved = *reinterpret_cast<const unsigned short*>(imstream))) [[unlikely]] { // must be 0
                 ::fputws(L"Error in " __FUNCTIONW__ ", a non-zero value encountered as idReserved!\n", stderr);
                 return {};
             }
 
-            temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2);
 
             if (temp.idType != ICO_FILE_TYPE::ICON && temp.idType != ICO_FILE_TYPE::CURSOR) [[unlikely]] { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
@@ -117,7 +117,7 @@ class icondirectory                 final { // represents an .ico file
                 ::fputws(L"Error in " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accomodate!\n", stderr);
                 return {};
             }
-
+            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             return temp;
         }
 
