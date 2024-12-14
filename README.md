@@ -71,8 +71,8 @@ canvas board { LR"(./grapes.bmp)" };
 board.to_negative().to_file(LR"(negative.bmp)");
 ```
 <div>
-    <img src="./readme/guitar.jpg"  width=45%>
-    <img src="./readme/negative.jpg" width=45%>
+    <img src="./readme/guitar.jpg"  width=30%>
+    <img src="./readme/negative.jpg" width=30%>
 </div>
 
 ---------

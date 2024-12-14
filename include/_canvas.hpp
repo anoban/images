@@ -41,7 +41,9 @@ class canvas final : public bitmap {
 
         ~canvas() noexcept = default;
 
-        bool    resize() noexcept { }
+        bool    resize(_In_ const long height, _In_ const long width) noexcept { }
+
+        bool    resize_for_overwrite(_In_ const long height, _In_ const long width) noexcept { }
 
         //----------------------------------------------------------------------------------------------------------------------------------//
         //                                              IMAGE TRANSFORMATION ROUTINES                                                       //
