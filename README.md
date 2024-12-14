@@ -23,8 +23,8 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(
 
 ```
 <div>
-    <img src="./readme/average.jpg" width=45% >
-    <img src="./readme/weighted_average.jpg" width=45% >
+    <img src="./readme/average.jpg" width=30% >
+    <img src="./readme/weighted_average.jpg" width=30% >
 </div>
 
 ---------
@@ -33,8 +33,8 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 <div>
-    <img src="./readme/luminosity.jpg" width=45% >
-    <img src="./readme/binary.jpg" width=45% >
+    <img src="./readme/luminosity.jpg" width=30% >
+    <img src="./readme/binary.jpg" width=30% >
 </div>
 
 ---------
@@ -43,8 +43,8 @@ image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); 
 image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)"); // remove red & blue
 ```
 <div>
-    <img src="./readme/redgreen.jpg" width=45% >
-    <img src="./readme/green.jpg" width=45% >
+    <img src="./readme/redgreen.jpg" width=30% >
+    <img src="./readme/green.jpg" width=30% >
 </div>
 
 ```C++
@@ -52,8 +52,8 @@ image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); 
 image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)"); // remove red & green
 ```
 <div>
-    <img src="./readme/bluegreen.jpg" width=45% >
-    <img src="./readme/blue.jpg" width=45% >
+    <img src="./readme/bluegreen.jpg" width=30% >
+    <img src="./readme/blue.jpg" width=30% >
 </div>
 
 ```C++
@@ -61,8 +61,8 @@ image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); 
 image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)"); // remove green & blue
 ```
 <div>
-    <img src="./readme/redblue.jpg" width=45% >
-    <img src="./readme/red.jpg" width=45% >
+    <img src="./readme/redblue.jpg" width=30% >
+    <img src="./readme/red.jpg" width=30% >
 </div>
 
 ---------
