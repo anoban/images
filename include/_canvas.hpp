@@ -48,7 +48,7 @@ class canvas final : public bitmap {
         //----------------------------------------------------------------------------------------------------------------------------------//
 
         // most methods that involve transformations of some sort return a reference to self in order to facilitate method chaining
-        canvas& fill(_In_ const RGBQUAD& pixel) noexcept {
+        canvas& fill_with(_In_ const RGBQUAD& pixel) noexcept {
             std::fill(begin(), end(), pixel);
             return *this;
         }
@@ -61,6 +61,11 @@ class canvas final : public bitmap {
                 case rgb::BW_TRANSFORMATION::LUMINOSITY       : std::for_each(begin(), end(), rgb::transformers::luminosity); break;
                 case rgb::BW_TRANSFORMATION::BINARY           : std::for_each(begin(), end(), rgb::transformers::binary); break;
             }
+            return *this;
+        }
+
+        canvas& to_negative() noexcept {
+            std::for_each(begin(), end(), rgb::negative);
             return *this;
         }
 
