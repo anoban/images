@@ -12,7 +12,7 @@ can be used to manipulate these images (internally, the converting constructor w
 // read in a bitmap from disk as a canvas object
 canvas image {LR"(./image.bmp)"};
 ```
-<img src="./readme/image.jpg" width=80% >
+<img src="./readme/image.jpg" width=40% >
 
 ---------
 ```C++
@@ -24,33 +24,26 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 <div>
-    <img src="./readme/average.jpg" width=22.5% >
-    <img src="./readme/weighted_average.jpg" width=22.5% >
-    <img src="./readme/luminosity.jpg" width=22.5% >
-    <img src="./readme/binary.jpg" width=22.5% >
+    <img src="./readme/average.jpg" width=24% >
+    <img src="./readme/weighted_average.jpg" width=24% >
+    <img src="./readme/luminosity.jpg" width=24% >
+    <img src="./readme/binary.jpg" width=24% >
 </div>
 
 ---------
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
+image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)"); // remove red & blue
 ```
 <img src="./readme/redgreen.jpg" width=45% >
-
-```C++
-// remove red & blue
-image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
-```
 <img src="./readme/green.jpg" width=45% >
+
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
+image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)"); // remove red & green
 ```
 <img src="./readme/bluegreen.jpg" width=45% >
-
-```C++
-// remove red & green
-image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
-```
 <img src="./readme/blue.jpg" width=45% >
 
 ```C++
