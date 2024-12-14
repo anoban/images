@@ -12,7 +12,7 @@ int wmain() {
     //     image.to_file(std::format(L"icon_{:03d}.bmp", i).c_str());
     // }
 
-    canvas board { LR"(./grapes.bmp)" };
+    canvas board { LR"(./guitar.bmp)" };
     board.to_negative().to_file(LR"(negative.bmp)");
 
     return EXIT_SUCCESS;
