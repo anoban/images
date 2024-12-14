@@ -27,7 +27,7 @@ class canvas final : public bitmap {
 
         canvas(_In_ const canvas& other) = default;
 
-        canvas& operator=(_In_ const canvas& other) noexcept {
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& operator=(_In_ const canvas& other) noexcept {
             if (this == std::addressof(other)) return *this;
             // since class canvas does not have any data members of its own, take advantage of the base class's copy assignment operator
             *static_cast<bitmap*>(this) = static_cast<bitmap>(other);
@@ -37,13 +37,26 @@ class canvas final : public bitmap {
         // since class canvas does not have any data members of its own, take advantage of the base class's move constructor
         canvas(_In_ canvas&& other) noexcept : bitmap(std::move(other)) { }
 
-        canvas& operator=(_In_ canvas&& other) noexcept { }
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& operator=(_In_ canvas&& other) noexcept { }
 
         ~canvas() noexcept = default;
 
-        bool    resize(_In_ const long height, _In_ const long width) noexcept { }
+        // resizes the pixel buffer and updates the metadata and remaps the old pixels to the new buffer
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize(_In_ const long height, _In_ const long width) noexcept { }
 
-        bool    resize_for_overwrite(_In_ const long height, _In_ const long width) noexcept { }
+        // this is a crude resize operation that just resizes the existing pixel buffer and updates the metadata accordingly
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize_for_overwrite(_In_ const long height, _In_ const long width) noexcept {
+            info_header.biHeight = height;
+            info_header.biWidth  = width;
+
+            const auto newsize { sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width };
+            if (buffer_size < newsize) {
+                // handle the reallocation
+            }
+
+            metadata_to_buffer(); // sink the updated width and height to file buffer
+            return *this;
+        }
 
         //----------------------------------------------------------------------------------------------------------------------------------//
         //                                              IMAGE TRANSFORMATION ROUTINES                                                       //
@@ -178,7 +191,7 @@ class canvas final : public bitmap {
         // these fractal functions behave as if the scanlines in the pixel buffer are ordered top-down, since these are fractals, this is not much of an issue here
 
         // look up https://en.wikipedia.org/wiki/Julia_set
-        canvas& julia(
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& julia(
             _In_ const colourmaps::colourmap& cmap,
             _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
@@ -211,7 +224,7 @@ class canvas final : public bitmap {
         }
 
         // lookup https://en.wikipedia.org/wiki/Julia_set
-        canvas& multijulia(
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& multijulia(
             _In_ const colourmaps::colourmap& cmap,
             _In_ const double& escape_radius // choose escape_radius > 0 such that escape_radius**2 - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
@@ -283,7 +296,7 @@ class canvas final : public bitmap {
         }
 
         // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
-        canvas& tricorn(_In_ const colourmaps::colourmap& cmap) noexcept {
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& tricorn(_In_ const colourmaps::colourmap& cmap) noexcept {
             // NOLINTNEXTLINE(readability-isolate-declaration)
             ::complex<double>  scaled_coords {}, coords {}, squares {}; // x (-2.5, 1) y (-1, 1)
             double             xtemp {};
@@ -312,14 +325,14 @@ class canvas final : public bitmap {
             return *this;
         }
 
-        template<ANGLES> canvas& rotate() noexcept;
+        template<ANGLES> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate() noexcept;
 
-        template<> canvas&       rotate<ANGLES::NINETY>() noexcept { }
+        template<> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas&       rotate<ANGLES::NINETY>() noexcept { }
 
         // returns a deep copy of self
-        [[nodiscard]] canvas     copy() const noexcept { return *this; }
+        [[nodiscard]] canvas                                                 copy() const noexcept { return *this; }
 
-        [[nodiscard]] bitmap     unwrap() const noexcept {
+        [[nodiscard]] bitmap                                                 unwrap() const noexcept {
             static_assert(sizeof(bitmap) == sizeof(canvas));
             return *this; // a non-destructive object slicing happens here
         }

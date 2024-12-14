@@ -78,6 +78,23 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         // the best (admittedly less elegant) way to circumnavigate this is to hold an alias pointer that points to the beginning of the pixel buffer
         // inside the raw file buffer - no additional heap allocations and we could just sink the buffer to the disk when a serialization is needed
+        // find the type of compression used in the BMP file, bitmap files, in general aren't compressed
+
+        [[nodiscard]] static constexpr SCANLINE_ORDERING __stdcall get_scanline_order(_In_ const BITMAPINFOHEADER& header) noexcept {
+            // BITMAPINFOHEADER::biHeight is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
+            return header.biHeight >= 0 ? SCANLINE_ORDERING::BOTTOMUP : SCANLINE_ORDERING::TOPDOWN;
+        }
+
+        [[nodiscard]] static constexpr COMPRESSION_KIND __stdcall get_compression_kind(_In_ const unsigned kind) noexcept {
+            switch (kind) {
+                case 0  : return COMPRESSION_KIND::RGB; // uncompressed RGBQUAD pixels
+                case 1  : return COMPRESSION_KIND::RLE8;
+                case 2  : return COMPRESSION_KIND::RLE4;
+                case 3  : return COMPRESSION_KIND::BITFIELDS;
+                default : break;
+            }
+            return COMPRESSION_KIND::UNKNOWN;
+        }
 
         [[nodiscard]] static BITMAPFILEHEADER __stdcall parse_file_header(
             _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
@@ -104,18 +121,6 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             header.bfOffBits                        = *reinterpret_cast<const unsigned*>(imstream + 10);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return header;
-        }
-
-        // find the type of compression used in the BMP file, bitmap files, in general aren't compressed
-        [[nodiscard]] static constexpr COMPRESSION_KIND __stdcall get_compression_kind(_In_ const unsigned kind) noexcept {
-            switch (kind) {
-                case 0  : return COMPRESSION_KIND::RGB; // uncompressed RGBQUAD pixels
-                case 1  : return COMPRESSION_KIND::RLE8;
-                case 2  : return COMPRESSION_KIND::RLE4;
-                case 3  : return COMPRESSION_KIND::BITFIELDS;
-                default : break;
-            }
-            return COMPRESSION_KIND::UNKNOWN;
         }
 
         [[nodiscard]] static BITMAPINFOHEADER __stdcall parse_info_header(
@@ -157,9 +162,15 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return header;
         }
 
-        [[nodiscard]] static constexpr SCANLINE_ORDERING __stdcall get_scanline_order(_In_ const BITMAPINFOHEADER& header) noexcept {
-            // BITMAPINFOHEADER::biHeight is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
-            return header.biHeight >= 0 ? SCANLINE_ORDERING::BOTTOMUP : SCANLINE_ORDERING::TOPDOWN;
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] static void __stdcall cleanup() noexcept { }
+
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] static void __stdcall cleanup(_Inout_ bitmap& other) noexcept { }
+
+        // copy the contents of the BITMAPFILEHEADER and BITMAPINFOHEADER to the file buffer
+        void __stdcall metadata_to_buffer() noexcept {
+            ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            ::memcpy_s(buffer + sizeof(BITMAPFILEHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
         }
 
     public:
@@ -206,7 +217,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
     protected:
         // an aggregate initializer style private constructor
         bitmap(
-            _In_ unsigned char* const    imstream,
+            _In_ unsigned char* const    imstream, // this buffer is assumed to have the metadata structs serialized in it
             _In_ const BITMAPFILEHEADER& file,
             _In_ const BITMAPINFOHEADER& info,
             _In_ const unsigned          size
@@ -251,9 +262,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return;
             }
 
-            ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            ::memcpy_s(buffer + sizeof(BITMAPFILEHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
+            metadata_to_buffer();
         }
 
     public:
