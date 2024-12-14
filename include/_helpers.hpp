@@ -71,6 +71,33 @@ std::basic_ostream<_TyChar>& operator<<(_Inout_ std::basic_ostream<_TyChar>& ost
     return ostr;
 }
 
+namespace ascii {
+
+    // isalpha() from <cctype> is not constexpr :(
+    [[nodiscard]] static constexpr bool __stdcall is_alphabet(_In_ const char& character) noexcept {
+        return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
+    }
+
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    template<unsigned long long length>
+    [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(_In_ const char (&array)[length]) noexcept {
+        bool result { true };
+        for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
+        return result;
+    }
+
+    // isupper() from <cctype> is not constexpr
+    [[nodiscard]] static constexpr bool __stdcall is_uppercase(_In_ const char& character) noexcept {
+        return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
+    }
+
+    // islower() from <cctype> is not constexpr
+    [[nodiscard]] static constexpr bool __stdcall is_lowercase(_In_ const char& character) noexcept {
+        return character >= 97 && character <= 122; /* a - 97 and z - 122 */
+    }
+
+} // namespace ascii
+
 namespace rgb {
 
     // RGB combinations of colours
@@ -143,33 +170,6 @@ namespace rgb {
     } // namespace removers
 
 } // namespace rgb
-
-namespace ascii {
-
-    // isalpha() from <cctype> is not constexpr :(
-    [[nodiscard]] static constexpr bool __stdcall is_alphabet(_In_ const char& character) noexcept {
-        return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
-    }
-
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    template<unsigned long long length>
-    [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(_In_ const char (&array)[length]) noexcept {
-        bool result { true };
-        for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
-        return result;
-    }
-
-    // isupper() from <cctype> is not constexpr
-    [[nodiscard]] static constexpr bool __stdcall is_uppercase(_In_ const char& character) noexcept {
-        return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
-    }
-
-    // islower() from <cctype> is not constexpr
-    [[nodiscard]] static constexpr bool __stdcall is_lowercase(_In_ const char& character) noexcept {
-        return character >= 97 && character <= 122; /* a - 97 and z - 122 */
-    }
-
-} // namespace ascii
 
 namespace crc { // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
 

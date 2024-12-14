@@ -6,6 +6,44 @@
 
 #include <gtest/gtest.h>
 
+static constexpr char ASCII_UPPERCASE[] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                                          'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+
+static constexpr char ASCII_LOWERCASE[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                                          'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+
+static constexpr char ASCII_LETTERS[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+                                        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                                        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+
+static constexpr char ASCII_PRINTABLE[] { '0',  '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a',  'b',  'c',  'd',    'e',   'f', 'g',
+                                          'h',  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',  's',  't',  'u',    'v',   'w', 'x',
+                                          'y',  'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',  'J',  'K',  'L',    'M',   'N', 'O',
+                                          'P',  'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',  '!',  '"',  '#',    '$',   '%', '&',
+                                          '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';',  '<',  '=',  '>',    '?',   '@', '[',
+                                          '\"', ']', '^', '_', '`', '{', '|', '}', '~', ' ', '\t', '\n', '\r', '\x0b', '\x0c' };
+
+struct RgbQuadFixture : public testing::Test {
+        RGBQUAD pixel;
+
+        static unsigned char __stdcall fill() noexcept {
+            // main() will seed the PRN generator by calling ::srand()
+            return ::rand() % std::numeric_limits<unsigned char>::max();
+        }
+
+        void __stdcall SetUp() noexcept override {
+            pixel = { .rgbBlue { fill() }, .rgbGreen { fill() }, .rgbRed { fill() }, .rgbReserved { 0xFF } };
+        }
+
+        void __stdcall TearDown() noexcept override {
+            pixel = { .rgbBlue { 0x00 }, .rgbGreen { 0x00 }, .rgbRed { 0x00 }, .rgbReserved { 0x00 } };
+        }
+};
+
+//--------------------------------------------------------------------------------------------------------------------------------------//
+//                                                 TEST FOR MISCELLANEOUS HELER FUNCTIONS                                               //
+//--------------------------------------------------------------------------------------------------------------------------------------//
+
 TEST(MISC, TO_UNDERLYING) {
     enum class TENS : unsigned long { ZERO = 0, TEN = 10, HUNDRED = 100, THOUSAND = 1000, TENTHOUSAND = 10'000 };
     enum class DAYS : long long { MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY };
@@ -35,42 +73,9 @@ TEST(MISC, IS_IN) {
     EXPECT_FALSE(::is_in(4LL, 0, 1U, 9, 10LU));
 }
 
-TEST(RGB, RGBQUAD_EQUALITY_OPERATORS) {
-    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA }));
-    EXPECT_NE((RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-    EXPECT_NE((RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-    EXPECT_NE((RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-}
-
-struct RgbQuadFixture : public testing::Test {
-        RGBQUAD        pixel;
-
-        constexpr void SetUp() noexcept override {
-            pixel = { .rgbBlue { 0xFF }, .rgbGreen { 0xFF }, .rgbRed { 0xFF }, .rgbReserved { 0xFF } };
-        }
-
-        constexpr void TearDown() noexcept override {
-            pixel = { .rgbBlue { 0x00 }, .rgbGreen { 0x00 }, .rgbRed { 0x00 }, .rgbReserved { 0x00 } };
-        }
-};
-
-static constexpr char ASCII_UPPERCASE[] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-                                          'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
-
-static constexpr char ASCII_LOWERCASE[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-                                          'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
-
-static constexpr char ASCII_LETTERS[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-                                        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-                                        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
-
-static constexpr char ASCII_PRINTABLE[] { '0',  '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a',  'b',  'c',  'd',    'e',   'f', 'g',
-                                          'h',  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',  's',  't',  'u',    'v',   'w', 'x',
-                                          'y',  'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',  'J',  'K',  'L',    'M',   'N', 'O',
-                                          'P',  'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',  '!',  '"',  '#',    '$',   '%', '&',
-                                          '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';',  '<',  '=',  '>',    '?',   '@', '[',
-                                          '\"', ']', '^', '_', '`', '{', '|', '}', '~', ' ', '\t', '\n', '\r', '\x0b', '\x0c' };
+//--------------------------------------------------------------------------------------------------------------------------------------//
+//                                                      TEST FOR ASCII HELER FUNCTIONS                                                  //
+//--------------------------------------------------------------------------------------------------------------------------------------//
 
 TEST(ASCII, IS_ALPHABET) {
     EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_alphabet));
@@ -108,6 +113,54 @@ TEST(ASCII, IS_LOWERCASE) {
 
     EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_lowercase));
     EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_lowercase));
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------------//
+//                                                   TESTS FOR RGBQUAD HELER FUNCTIONS                                                  //
+//--------------------------------------------------------------------------------------------------------------------------------------//
+
+TEST(RGB, RGBQUAD_EQUALITY_OPERATORS) {
+    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA }));
+    EXPECT_NE((RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_NE((RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_NE((RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+}
+
+TEST_F(RgbQuadFixture, TRANSFORMERS_AVERAGE) {
+    const auto mean { static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L) };
+    rgb::transformers::average(pixel);
+    EXPECT_EQ(pixel.rgbBlue, mean);
+    EXPECT_EQ(pixel.rgbGreen, mean);
+    EXPECT_EQ(pixel.rgbRed, mean);
+    EXPECT_EQ(pixel.rgbReserved, 0xFF);
+}
+
+TEST_F(RgbQuadFixture, TRANSFORMERS_WEIGHTEDAVERAGE) {
+    const auto mean { static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L) };
+    rgb::transformers::weighted_average(pixel);
+    EXPECT_EQ(pixel.rgbBlue, mean);
+    EXPECT_EQ(pixel.rgbGreen, mean);
+    EXPECT_EQ(pixel.rgbRed, mean);
+    EXPECT_EQ(pixel.rgbReserved, 0xFF);
+}
+
+TEST_F(RgbQuadFixture, TRANSFORMERS_LUMINOSITY) {
+    const auto mean { static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L) };
+    rgb::transformers::luminosity(pixel);
+    EXPECT_EQ(pixel.rgbBlue, mean);
+    EXPECT_EQ(pixel.rgbGreen, mean);
+    EXPECT_EQ(pixel.rgbRed, mean);
+    EXPECT_EQ(pixel.rgbReserved, 0xFF);
+}
+
+TEST_F(RgbQuadFixture, TRANSFORMERS_BINARY) {
+    const auto mean { (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8 };
+    rgb::transformers::binary(pixel);
+    EXPECT_EQ(pixel.rgbBlue, mean);
+    EXPECT_EQ(pixel.rgbGreen, mean);
+    EXPECT_EQ(pixel.rgbRed, mean);
+    EXPECT_EQ(pixel.rgbReserved, 0xFF);
 }
 
 static constexpr std::array<unsigned char, 1000> bytes {

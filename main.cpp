@@ -1,13 +1,16 @@
 #include <canvas>
+#include <format>
 #include <ico>
 
 int wmain() {
     icon_directory icon { LR"(./ico/intel.ico)" };
     std::wcout << icon;
 
-    const auto image { icon.to_bitmap(0) };
-    std::wcout << image;
-    image.to_file(LR"(convert.bmp)");
+    for (unsigned long i = 0; i < icon.resource_count(); ++i) {
+        const auto image { icon.to_bitmap(i) };
+        std::wcout << image;
+        image.to_file(std::format(L"icon_{:03d}.bmp", i).c_str());
+    }
 
     return EXIT_SUCCESS;
 }
