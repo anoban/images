@@ -35,17 +35,19 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./bina
 image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
 image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)"); // remove red & blue
 ```
-<img src="./readme/redgreen.jpg" width=45% >
-<img src="./readme/green.jpg" width=45% >
-
+<div>
+    <img src="./readme/redgreen.jpg" width=45% >
+    <img src="./readme/green.jpg" width=45% >
+</div>
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
 image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)"); // remove red & green
 ```
-<img src="./readme/bluegreen.jpg" width=45% >
-<img src="./readme/blue.jpg" width=45% >
-
+<div>
+    <img src="./readme/bluegreen.jpg" width=45% >
+    <img src="./readme/blue.jpg" width=45% >
+</div>
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
 ```
