@@ -12,66 +12,58 @@ can be used to manipulate these images (internally, the converting constructor w
 // read in a bitmap from disk as a canvas object
 canvas image {LR"(./image.bmp)"};
 ```
-<img src="./readme/image.jpg" width=50% >
+<img src="./readme/image.jpg" width=80% >
 
 ---------
 ```C++
 // .copy() returns a deep copy so that the original stays as is during the transformation
-image.copy(). // specify a preferred RGB to black and white mapping method
-to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
-```
-<img src="./readme/average.jpg" width=50% >
-
-```C++
-image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().
-to_file(LR"(./weighted_average.bmp)");
-```
-<img src="./readme/weighted_average.jpg" width=50% >
-
-```C++
+// specify a preferred RGB to black and white mapping method
+image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
+image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(./weighted_average.bmp)");
+image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
-<img src="./readme/binary.jpg" width=50% >
-
-```C++
-image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
-```
-<img src="./readme/luminosity.jpg" width=50% >
+<div>
+    <img src="./readme/average.jpg" width=22.5% >
+    <img src="./readme/weighted_average.jpg" width=22.5% >
+    <img src="./readme/luminosity.jpg" width=22.5% >
+    <img src="./readme/binary.jpg" width=22.5% >
+</div>
 
 ---------
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file(LR"(.\redgreen.bmp)"); // remove blue
 ```
-<img src="./readme/redgreen.jpg" width=50% >
+<img src="./readme/redgreen.jpg" width=45% >
 
 ```C++
 // remove red & blue
 image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file(LR"(.\green.bmp)");
 ```
-<img src="./readme/green.jpg" width=50% >
+<img src="./readme/green.jpg" width=45% >
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file(LR"(.\bluegreen.bmp)"); // remove red
 ```
-<img src="./readme/bluegreen.jpg" width=50% >
+<img src="./readme/bluegreen.jpg" width=45% >
 
 ```C++
 // remove red & green
 image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)");
 ```
-<img src="./readme/blue.jpg" width=50% >
+<img src="./readme/blue.jpg" width=45% >
 
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
 ```
-<img src="./readme/redblue.jpg" width=50% >
+<img src="./readme/redblue.jpg" width=45% >
 
 
 ```C++
 // remove green & blue
 image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
 ```
-<img src="./readme/red.jpg" width=50% >
+<img src="./readme/red.jpg" width=45% >
 
 ---------
 ```C++
@@ -79,8 +71,8 @@ canvas board { LR"(./grapes.bmp)" };
 board.to_negative().to_file(LR"(negative.bmp)");
 ```
 <div>
-    <img src="./readme/grapes.jpg"  width=50%>
-    <img src="./readme/negative.jpg" width=50%>
+    <img src="./readme/grapes.jpg"  width=45%>
+    <img src="./readme/negative.jpg" width=45%>
 </div>
 
 ---------
@@ -106,7 +98,7 @@ board.fill_with(RGBQUAD { static_cast<unsigned char>(reng() % std::numeric_limit
                      0XFF });
 board.to_file(LR"(colour.bmp)");
 ```
-<img src="./readme/colour.jpg" width=50% >
+<img src="./readme/colour.jpg" width=45% >
 
 ---------
 ```C++
@@ -114,14 +106,14 @@ canvas board { 1080, 1920 };
 board.waves();
 board.to_file(LR"(waves.bmp)");
 ```
-<img src="./readme/waves.jpg" width=50% >
+<img src="./readme/waves.jpg" width=45% >
 
 ```C++
 canvas board { 8640, 15360 };
 board.mandelbrot(colourmaps::VGA);  // choose a colourmap of your liking, provided by <cmaps>
 board.to_file(LR"(./mandelbrot.bmp)");
 ```
-<img src="./readme/mandelbrot.jpg" width=50% >
+<img src="./readme/mandelbrot.jpg" width=45% >
 
 
 ---------
