@@ -20,14 +20,21 @@ canvas image {LR"(./image.bmp)"};
 // specify a preferred RGB to black and white mapping method
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::AVERAGE>().to_file(LR"(./average.bmp)");
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::WEIGHTED_AVERAGE>().to_file(LR"(./weighted_average.bmp)");
+
+```
+<div>
+    <img src="./readme/average.jpg" width=45% >
+    <img src="./readme/weighted_average.jpg" width=45% >
+</div>
+
+---------
+```C++
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::LUMINOSITY>().to_file(LR"(./luminosity.bmp)");
 image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file(LR"(./binary.bmp)");
 ```
 <div>
-    <img src="./readme/average.jpg" width=24% >
-    <img src="./readme/weighted_average.jpg" width=24% >
-    <img src="./readme/luminosity.jpg" width=24% >
-    <img src="./readme/binary.jpg" width=24% >
+    <img src="./readme/luminosity.jpg" width=45% >
+    <img src="./readme/binary.jpg" width=45% >
 </div>
 
 ---------
@@ -48,17 +55,15 @@ image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file(LR"(.\blue.bmp)"); 
     <img src="./readme/bluegreen.jpg" width=45% >
     <img src="./readme/blue.jpg" width=45% >
 </div>
+
 ```C++
 image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file(LR"(.\redblue.bmp)"); // remove green
+image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)"); // remove green & blue
 ```
-<img src="./readme/redblue.jpg" width=45% >
-
-
-```C++
-// remove green & blue
-image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)");
-```
-<img src="./readme/red.jpg" width=45% >
+<div>
+    <img src="./readme/redblue.jpg" width=45% >
+    <img src="./readme/red.jpg" width=45% >
+</div>
 
 ---------
 ```C++
