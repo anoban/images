@@ -55,13 +55,13 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // clang-format on
 
         // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-        unsigned char*                  buffer; // this will point to the original file buffer, this is the one that needs deallocation!
-        RGBQUAD*                        pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
-        BITMAPFILEHEADER                file_header;
-        BITMAPINFOHEADER                info_header;
-        unsigned long                   file_size; // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
-        unsigned long buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
-                                   // NOLINTEND(misc-non-private-member-variables-in-classes)
+        unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
+        RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
+        BITMAPFILEHEADER file_header;
+        BITMAPINFOHEADER info_header;
+        unsigned long    file_size;   // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
+        unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+                                      // NOLINTEND(misc-non-private-member-variables-in-classes)
 
         friend class icon_directory; // to serialize ico objects as bitmaps, we need access to this class's internals
 
@@ -370,7 +370,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return wostr;
         }
 
-        bool     to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
+        bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
 
         iterator begin() noexcept { // NOLINT(readability-make-member-function-const)
             return { pixels, static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
@@ -412,16 +412,16 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         }
 
-        pointer                         data() noexcept { return pixels; } // NOLINT(readability-make-member-function-const)
+        pointer data() noexcept { return pixels; } // NOLINT(readability-make-member-function-const)
 
-        const_pointer                   data() const noexcept { return pixels; }
+        const_pointer data() const noexcept { return pixels; }
 
         // returns the height and width of the bitmap, in that order
         std::pair<size_type, size_type> dim() const noexcept { return { info_header.biHeight, info_header.biWidth }; }
 
-        long                            height() const noexcept { return info_header.biHeight; }
+        long height() const noexcept { return info_header.biHeight; }
 
-        long                            width() const noexcept { return info_header.biWidth; }
+        long width() const noexcept { return info_header.biWidth; }
 };
 
 #undef __INTERNAL

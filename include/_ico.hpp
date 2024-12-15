@@ -24,7 +24,7 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 <
 
 // in summary, the binary representation of an .ico file looks like { GRPICONDIRENTRY, pixels, <GRPICONDIRENTRY, pixels> ... }
 
-class icon_directory                final { // represents an .ico file
+class icon_directory final { // represents an .ico file
 
     public:
         // type of the file
@@ -41,8 +41,8 @@ class icon_directory                final { // represents an .ico file
                 BYTE  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
                 BYTE  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
                 BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
-                BYTE  bReserved; // reserved byte, must always be 0
-                WORD  wPlanes;   // for .ico - specifies the colour planes (should be 0 or 1)
+                BYTE  bReserved;   // reserved byte, must always be 0
+                WORD  wPlanes;     // for .ico - specifies the colour planes (should be 0 or 1)
                 // for .cur - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
                 WORD  wBitCount; // for .ico - specifies pixel depth
                 // for .cur - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
@@ -53,7 +53,7 @@ class icon_directory                final { // represents an .ico file
 
         struct ICONDIR final {
                 WORD         idReserved; // reserved, must always be 0
-                WORD         idType; // specifies the type of the resources contained, values other than 1 and 2 are invalid
+                WORD         idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
                     // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
                 WORD         idCount;      // number of resources (images) stored in the given .ico file
                 ICONDIRENTRY idEntries[1]; // NOLINT(modernize-avoid-c-arrays)
@@ -82,8 +82,8 @@ class icon_directory                final { // represents an .ico file
 #endif
         // clang-format on
 
-        unsigned char* buffer;    // the raw file buffer
-        unsigned long  file_size; // file size
+        unsigned char* buffer;      // the raw file buffer
+        unsigned long  file_size;   // file size
         unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
         ICONDIR        directory;
         std::vector<ICONDIRENTRY> entries; // metadata of entries stored in the file
@@ -176,20 +176,20 @@ class icon_directory                final { // represents an .ico file
             //     return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             // }
 
-            header.biSize     = *reinterpret_cast<const unsigned*>(imstream + 14);
-            header.biWidth    = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
-            header.biHeight   = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
+            header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
+            header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
+            header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
                 // bitmaps with a negative height may not be compressed
-            header.biPlanes   = *reinterpret_cast<const unsigned short*>(imstream + 26);   // must be 1
-            header.biBitCount = *reinterpret_cast<const unsigned short*>(imstream + 28);   // 1, 4, 8, 16, 24 or 32
-            header.biCompression = static_cast<decltype(BITMAPINFOHEADER::biCompression)>( // compression kind (if compressed)
+            header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
+            header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
+            header.biCompression   = static_cast<decltype(BITMAPINFOHEADER::biCompression)>(  // compression kind (if compressed)
                 bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
             );
-            header.biSizeImage = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
-            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38); // resolution in pixels per meter along the x axis
-            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42); // resolution in pixels per meter along the y axis
-            header.biClrUsed = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
-            header.biClrImportant = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
+            header.biSizeImage     = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
+            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38);      // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
+            header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
+            header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
 
             return header;
@@ -212,7 +212,7 @@ class icon_directory                final { // represents an .ico file
             // if any errors encountered in the reading and parsing the functions responsible for those taks will take care of the error reporting
 
             entries.resize(directory.idCount);
-            unsigned long long caret { 6 }; // skip the first six bytes and jump to the first ICONDIRENTRY structure
+            unsigned long long caret { 6 };                    // skip the first six bytes and jump to the first ICONDIRENTRY structure
             for (unsigned i = 0; i < directory.idCount; ++i) { // try and parse all the ICONDIRENTRYs in the file
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 entries.at(i)  = icon_directory::parse_icondirectory_entry(buffer + caret, file_size);
@@ -244,9 +244,9 @@ class icon_directory                final { // represents an .ico file
 
         size_type resource_count() const noexcept { return directory.idCount; }
 
-        bool      to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
+        bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
 
-        bitmap    to_bitmap(_In_opt_ const unsigned long long& position = 0) const noexcept {
+        bitmap to_bitmap(_In_opt_ const unsigned long long& position = 0) const noexcept {
             //
             if (position >= directory.idCount) {
                 //

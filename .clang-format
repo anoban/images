@@ -113,7 +113,7 @@ AlignConsecutiveBitFields:      # Same as `AlignConsecutiveAssignments`, but for
 
 AlignConsecutiveDeclarations:   # Same as `AlignConsecutiveAssignments`, but for declarations.
   Enabled:         true
-  AcrossEmptyLines: true
+  AcrossEmptyLines: false # WITHOUT THE ABILITY TO SPECIFY AlignFunctionDeclarations THIS TRIES TO ALIGNS FUNCTION DECLARATIONS AND DEFINITIONS TOO
   # AlignFunctionDeclarations: false
   AlignFunctionPointers: true
   AcrossComments:  true
@@ -734,7 +734,7 @@ KeepEmptyLines:
   #   bar();                               }
   # }
   AtStartOfFile: false
-  
+
 LambdaBodyIndentation: Signature       # The indentation style of lambda bodies. Signature (the default) causes the lambda body to be indented
                                        # one additional level relative to the indentation level of the signature. OuterScope forces the lambda
                                        # body to be indented one additional level relative to the parent scope containing the lambda signature.

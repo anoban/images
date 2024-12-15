@@ -323,11 +323,11 @@ class complex final { // doesn't provide the arithmetic functionalities like std
 
         constexpr _Ty& x() noexcept { return __x; }
 
-        constexpr _Ty  x() const noexcept { return __x; }
+        constexpr _Ty x() const noexcept { return __x; }
 
         constexpr _Ty& y() noexcept { return __y; }
 
-        constexpr _Ty  y() const noexcept { return __y; }
+        constexpr _Ty y() const noexcept { return __y; }
 };
 
 enum class ANGLES : unsigned short { NINETY = 90, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };

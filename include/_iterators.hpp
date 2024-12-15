@@ -85,15 +85,15 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
 
         ~random_access_iterator() noexcept { cleanup(); }
 
-        constexpr reference __stdcall               operator*() noexcept { return _rsrc[_offset]; }
+        constexpr reference __stdcall operator*() noexcept { return _rsrc[_offset]; }
 
-        constexpr const_reference __stdcall         operator*() const noexcept { return _rsrc[_offset]; }
+        constexpr const_reference __stdcall operator*() const noexcept { return _rsrc[_offset]; }
 
-        constexpr pointer                           _unwrapped() noexcept { return _rsrc; }
+        constexpr pointer _unwrapped() noexcept { return _rsrc; }
 
-        constexpr const_pointer                     _unwrapped() const noexcept { return _rsrc; }
+        constexpr const_pointer _unwrapped() const noexcept { return _rsrc; }
 
-        constexpr void                              reset() noexcept { _offset = 0; }
+        constexpr void reset() noexcept { _offset = 0; }
 
         constexpr random_access_iterator& __stdcall operator++() noexcept {
             _offset++;
