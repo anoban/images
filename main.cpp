@@ -13,7 +13,8 @@ int wmain() {
     // }
 
     canvas board { LR"(./guitar.bmp)" };
-    board.to_negative().to_file(LR"(negative.bmp)");
+    std::wcout << board;
+    board.resize_for_overwrite(2600, 1600).to_file(LR"(resized_for_overwrite.bmp)");
 
     return EXIT_SUCCESS;
 }

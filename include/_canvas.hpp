@@ -50,16 +50,29 @@ class canvas final : public bitmap {
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize(_In_ const long height, _In_ const long width) noexcept { }
 
         // this is a crude resize operation that just resizes the existing pixel buffer and updates the metadata accordingly
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize_for_overwrite(_In_ const long height, _In_ const long width) noexcept {
-            info_header.biHeight = height;
-            info_header.biWidth  = width;
-
+        canvas&                                             resize_for_overwrite(_In_ const long height, _In_ const long width) noexcept {
+            // the members the need to be updated after a resize operation are [buffer], [pixels], [buffer_size], file_header, info_header, file_size
             const auto newsize { sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width };
-            if (buffer_size < newsize) {
-                // handle the reallocation
+            if (buffer_size < newsize) { // handle the reallocation
+                auto* const temp_buffer { new (std::nothrow) unsigned char[newsize] };
+                if (!temp_buffer) {
+                    ::fputws(L"Error inside " __FUNCTIONW__ ", object is left in its original state\n", stderr);
+                    return *this;
+                }
+
+                buffer = temp_buffer;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                pixels = reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
+                buffer_size = newsize;
             }
 
-            metadata_to_buffer(); // sink the updated width and height to file buffer
+            // keep the old buffer, pixels and buffer_size but update the others
+            file_header.bfSize   = newsize;
+            info_header.biHeight = height;
+            info_header.biWidth  = width;
+            file_size            = newsize;
+
+            bitmap::metadata_to_buffer(); // sink the updated width and height to buffer
             return *this;
         }
 

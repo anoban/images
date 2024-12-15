@@ -59,7 +59,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         RGBQUAD*                        pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER                file_header;
         BITMAPINFOHEADER                info_header;
-        unsigned long                   file_size; // file size
+        unsigned long                   file_size; // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
         unsigned long buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
                                    // NOLINTEND(misc-non-private-member-variables-in-classes)
 
@@ -137,15 +137,15 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             }
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
-            if ((header.biSize = *reinterpret_cast<const unsigned*>(imstream + 14) != 40)) [[unlikely]] {
+            if ((header.biSize = *reinterpret_cast<const long*>(imstream + 14)) != 40) [[unlikely]] {
                 // size of the BITMAPINFOHEADER struct must be == 40 bytes
                 ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
                 return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             }
 
             // header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
-            header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
-            header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
+            header.biWidth         = *reinterpret_cast<const long*>(imstream + 18); // width of the bitmap image in pixels
+            header.biHeight        = *reinterpret_cast<const long*>(imstream + 22); // height of the bitmap image in pixels
                 // bitmaps with a negative height may not be compressed
             header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
             header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
@@ -153,8 +153,8 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
             );
             header.biSizeImage     = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
-            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38);      // resolution in pixels per meter along the x axis
-            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
+            header.biXPelsPerMeter = *reinterpret_cast<const long*>(imstream + 38);     // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = *reinterpret_cast<const long*>(imstream + 42);     // resolution in pixels per meter along the y axis
             header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
             header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
