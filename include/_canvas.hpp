@@ -27,17 +27,22 @@ class canvas final : public bitmap {
 
         canvas(_In_ const canvas& other) = default;
 
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& operator=(_In_ const canvas& other) noexcept {
+        canvas& operator=(_In_ const canvas& other) noexcept {
             if (this == std::addressof(other)) return *this;
             // since class canvas does not have any data members of its own, take advantage of the base class's copy assignment operator
-            *static_cast<bitmap*>(this) = static_cast<bitmap>(other);
+            bitmap::operator=(other);
             return *this;
         }
 
         // since class canvas does not have any data members of its own, take advantage of the base class's move constructor
         canvas(_In_ canvas&& other) noexcept : bitmap(std::move(other)) { }
 
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& operator=(_In_ canvas&& other) noexcept { }
+        canvas& operator=(_In_ canvas&& other) noexcept {
+            if (this == std::addressof(other)) return *this;
+            // again, leveraging the base class's move constructor
+            bitmap::operator=(std::move(other));
+            return *this;
+        }
 
         ~canvas() noexcept = default;
 

@@ -67,7 +67,7 @@ image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file(LR"(.\red.bmp)"); 
 
 ---------
 ```C++
-canvas board { LR"(./grapes.bmp)" };
+canvas board { LR"(./guitar.bmp)" };
 board.to_negative().to_file(LR"(negative.bmp)");
 ```
 <div>
