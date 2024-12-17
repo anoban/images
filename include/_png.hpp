@@ -4,6 +4,7 @@
     #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
 #endif
 
+// https://www.w3.org/TR/png-3/
 class png final {
     public:
         static constexpr unsigned long long PNG_CHUNK_NAME_LENGTH { 4 };

@@ -1,5 +1,0 @@
-#pragma once
-#ifndef __IMAGEIO
-    #define __IMAGEIO
-    #include <_imageio.hpp>
-#endif
