@@ -1,10 +1,10 @@
-#include <algorithm>
-#include <helpers>
-
+// clang-format off
+#include <_helpers.hpp>
 #include <WinSock2.h> // for ntohxx() family of functions
-#pragma comment(lib, "Ws2_32.lib")
-
+#include <algorithm>
 #include <gtest/gtest.h>
+#pragma comment(lib, "Ws2_32.lib")
+// clang-format on
 
 static constexpr std::array<unsigned char, 1000> bytes {
     { 167, 94,  14,  194, 22,  111, 153, 190, 246, 199, 160, 99,  51,  232, 51,  77,  162, 67,  82,  207, 137, 194, 103, 148, 176, 163, 240,
@@ -73,12 +73,10 @@ struct RgbQuadFixture : public testing::Test {
         }
 
         void __stdcall SetUp() noexcept override {
-            pixel = { .rgbBlue { fill() }, .rgbGreen { fill() }, .rgbRed { fill() }, .rgbReserved { 0xFF } };
+            pixel = { .rgbBlue = fill(), .rgbGreen = fill(), .rgbRed = fill(), .rgbReserved = 0xFF };
         }
 
-        void __stdcall TearDown() noexcept override {
-            pixel = { .rgbBlue { 0x00 }, .rgbGreen { 0x00 }, .rgbRed { 0x00 }, .rgbReserved { 0x00 } };
-        }
+        void __stdcall TearDown() noexcept override { pixel = { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0x00 }; }
 };
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
@@ -89,29 +87,29 @@ TEST(MISC, TO_UNDERLYING) {
     enum class TENS : unsigned long { ZERO = 0, TEN = 10, HUNDRED = 100, THOUSAND = 1000, TENTHOUSAND = 10'000 };
     enum class DAYS : long long { MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY };
 
-    EXPECT_EQ((::to_underlying(TENS::ZERO)), 0);
-    EXPECT_EQ((::to_underlying(TENS::TEN)), 10);
-    EXPECT_EQ((::to_underlying(TENS::HUNDRED)), 100);
-    EXPECT_EQ((::to_underlying(TENS::THOUSAND)), 1000);
-    EXPECT_EQ((::to_underlying(TENS::TENTHOUSAND)), 10'000);
+    EXPECT_EQ((internal::to_underlying(TENS::ZERO)), 0);
+    EXPECT_EQ((internal::to_underlying(TENS::TEN)), 10);
+    EXPECT_EQ((internal::to_underlying(TENS::HUNDRED)), 100);
+    EXPECT_EQ((internal::to_underlying(TENS::THOUSAND)), 1000);
+    EXPECT_EQ((internal::to_underlying(TENS::TENTHOUSAND)), 10'000);
 
-    EXPECT_EQ((::to_underlying(DAYS::MONDAY)), 0);
-    EXPECT_EQ((::to_underlying(DAYS::TUESDAY)), 1);
-    EXPECT_EQ((::to_underlying(DAYS::WEDNESDAY)), 2);
-    EXPECT_EQ((::to_underlying(DAYS::THURSDAY)), 3);
-    EXPECT_EQ((::to_underlying(DAYS::FRIDAY)), 4);
-    EXPECT_EQ((::to_underlying(DAYS::SATURDAY)), 5);
-    EXPECT_EQ((::to_underlying(DAYS::SUNDAY)), 6);
+    EXPECT_EQ((internal::to_underlying(DAYS::MONDAY)), 0);
+    EXPECT_EQ((internal::to_underlying(DAYS::TUESDAY)), 1);
+    EXPECT_EQ((internal::to_underlying(DAYS::WEDNESDAY)), 2);
+    EXPECT_EQ((internal::to_underlying(DAYS::THURSDAY)), 3);
+    EXPECT_EQ((internal::to_underlying(DAYS::FRIDAY)), 4);
+    EXPECT_EQ((internal::to_underlying(DAYS::SATURDAY)), 5);
+    EXPECT_EQ((internal::to_underlying(DAYS::SUNDAY)), 6);
 }
 
 TEST(MISC, IS_IN) {
-    EXPECT_TRUE(::is_in(10, 10U));
-    EXPECT_TRUE(::is_in(0, 0L, -1, 2LL, 3LLU, 4, 'Z', 6, 7, 8, 9, 10));
-    EXPECT_TRUE(::is_in(10, 0L, 1, 2LLU, 3, '{', 5, '%', 9LL, 10U));
-    EXPECT_TRUE(::is_in(8, 0, 5, -6, '-', 8U, 9, 10));
-    EXPECT_FALSE(::is_in(7, 'X'));
-    EXPECT_FALSE(::is_in(31, '[', 1, 2, '@', 4, 5LL, 6, 7, 8U, 9LU, 10));
-    EXPECT_FALSE(::is_in(4LL, 0, 1U, 9, 10LU));
+    EXPECT_TRUE(internal::is_in(10, 10U));
+    EXPECT_TRUE(internal::is_in(0, 0L, -1, 2LL, 3LLU, 4, 'Z', 6, 7, 8, 9, 10));
+    EXPECT_TRUE(internal::is_in(10, 0L, 1, 2LLU, 3, '{', 5, '%', 9LL, 10U));
+    EXPECT_TRUE(internal::is_in(8, 0, 5, -6, '-', 8U, 9, 10));
+    EXPECT_FALSE(internal::is_in(7, 'X'));
+    EXPECT_FALSE(internal::is_in(31, '[', 1, 2, '@', 4, 5LL, 6, 7, 8U, 9LU, 10));
+    EXPECT_FALSE(internal::is_in(4LL, 0, 1U, 9, 10LU));
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
@@ -119,41 +117,41 @@ TEST(MISC, IS_IN) {
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
 TEST(ASCII, IS_ALPHABET) {
-    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_alphabet));
-    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), ascii::is_alphabet));
-    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_alphabet));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), internal::ascii::is_alphabet));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), internal::ascii::is_alphabet));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), internal::ascii::is_alphabet));
 
-    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_alphabet));
-    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_alphabet));
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), internal::ascii::is_alphabet));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), internal::ascii::is_alphabet));
 }
 
 TEST(ASCII, IS_ALPHABETARRAY) {
-    EXPECT_TRUE(ascii::is_alphabet_array(ASCII_UPPERCASE));
-    EXPECT_TRUE(ascii::is_alphabet_array(ASCII_LOWERCASE));
-    EXPECT_TRUE(ascii::is_alphabet_array(ASCII_LETTERS));
-    EXPECT_FALSE(ascii::is_alphabet_array(ASCII_PRINTABLE));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_UPPERCASE));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LOWERCASE));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LETTERS));
+    EXPECT_FALSE(internal::ascii::is_alphabet_array(ASCII_PRINTABLE));
 }
 
 TEST(ASCII, IS_UPPERCASE) {
-    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_uppercase));
-    EXPECT_FALSE(std::any_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), ascii::is_uppercase));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), internal::ascii::is_uppercase));
+    EXPECT_FALSE(std::any_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), internal::ascii::is_uppercase));
 
-    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_uppercase));
-    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_uppercase));
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), internal::ascii::is_uppercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), internal::ascii::is_uppercase));
 
-    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_uppercase));
-    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_uppercase));
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), internal::ascii::is_uppercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), internal::ascii::is_uppercase));
 }
 
 TEST(ASCII, IS_LOWERCASE) {
-    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), ascii::is_lowercase));
-    EXPECT_FALSE(std::any_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), ascii::is_lowercase));
+    EXPECT_TRUE(std::all_of(std::cbegin(ASCII_LOWERCASE), std::cend(ASCII_LOWERCASE), internal::ascii::is_lowercase));
+    EXPECT_FALSE(std::any_of(std::cbegin(ASCII_UPPERCASE), std::cend(ASCII_UPPERCASE), internal::ascii::is_lowercase));
 
-    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_lowercase));
-    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), ascii::is_lowercase));
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), internal::ascii::is_lowercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_LETTERS), std::cend(ASCII_LETTERS), internal::ascii::is_lowercase));
 
-    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_lowercase));
-    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), ascii::is_lowercase));
+    EXPECT_TRUE(std::any_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), internal::ascii::is_lowercase));
+    EXPECT_FALSE(std::all_of(std::cbegin(ASCII_PRINTABLE), std::cend(ASCII_PRINTABLE), internal::ascii::is_lowercase));
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
@@ -174,7 +172,7 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_AVERAGE) {
     for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
         SetUp();
         auto mean { static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L) };
-        rgb::transformers::average(pixel);
+        internal::rgb::transformers::average(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
         EXPECT_EQ(pixel.rgbGreen, mean);
         EXPECT_EQ(pixel.rgbRed, mean);
@@ -186,7 +184,7 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_WEIGHTEDAVERAGE) {
     for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
         SetUp();
         auto mean { static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L) };
-        rgb::transformers::weighted_average(pixel);
+        internal::rgb::transformers::weighted_average(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
         EXPECT_EQ(pixel.rgbGreen, mean);
         EXPECT_EQ(pixel.rgbRed, mean);
@@ -198,7 +196,7 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_LUMINOSITY) {
     for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
         SetUp();
         auto mean { static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L) };
-        rgb::transformers::luminosity(pixel);
+        internal::rgb::transformers::luminosity(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
         EXPECT_EQ(pixel.rgbGreen, mean);
         EXPECT_EQ(pixel.rgbRed, mean);
@@ -210,7 +208,7 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_BINARY) {
     for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
         SetUp();
         auto mean { (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8 };
-        rgb::transformers::binary(pixel);
+        internal::rgb::transformers::binary(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
         EXPECT_EQ(pixel.rgbGreen, mean);
         EXPECT_EQ(pixel.rgbRed, mean);
@@ -224,7 +222,7 @@ TEST_F(RgbQuadFixture, NEGATIVE) {
         auto r = pixel.rgbRed >= 128 ? 255Ui8 : 0Ui8;
         auto g = pixel.rgbGreen >= 128 ? 255Ui8 : 0Ui8;
         auto b = pixel.rgbBlue >= 128 ? 255Ui8 : 0Ui8;
-        rgb::negative(pixel);
+        internal::rgb::negative(pixel);
         EXPECT_EQ(pixel.rgbRed, r);
         EXPECT_EQ(pixel.rgbGreen, g);
         EXPECT_EQ(pixel.rgbBlue, b);
@@ -244,17 +242,24 @@ TEST_F(RgbQuadFixture, REMOVERS) { }
 TEST(ENDIAN, USHORT_FROM_BE_BYTES) {
     for (unsigned long long i = 0; i <= bytes.size() - sizeof(unsigned short); ++i)
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        EXPECT_EQ(endian::ushort_from_be_bytes(bytes.data() + i), ::ntohs(*reinterpret_cast<const unsigned short*>(bytes.data() + i)));
+        EXPECT_EQ(
+            internal::endian::ushort_from_be_bytes(bytes.data() + i), ::ntohs(*reinterpret_cast<const unsigned short*>(bytes.data() + i))
+        );
 }
 
 TEST(ENDIAN, ULONG_FROM_BE_BYTES) {
     for (unsigned long long i = 0; i <= bytes.size() - sizeof(unsigned long); ++i)
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        EXPECT_EQ(endian::ulong_from_be_bytes(bytes.data() + i), ::ntohl(*reinterpret_cast<const unsigned long*>(bytes.data() + i)));
+        EXPECT_EQ(
+            internal::endian::ulong_from_be_bytes(bytes.data() + i), ::ntohl(*reinterpret_cast<const unsigned long*>(bytes.data() + i))
+        );
 }
 
 TEST(ENDIAN, ULLONG_FROM_BE_BYTES) {
     for (unsigned long long i = 0; i <= bytes.size() - sizeof(unsigned long long); ++i)
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        EXPECT_EQ(endian::ullong_from_be_bytes(bytes.data() + i), ::ntohll(*reinterpret_cast<const unsigned long long*>(bytes.data() + i)));
+        EXPECT_EQ(
+            internal::endian::ullong_from_be_bytes(bytes.data() + i),
+            ::ntohll(*reinterpret_cast<const unsigned long long*>(bytes.data() + i))
+        );
 }

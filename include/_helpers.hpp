@@ -4,7 +4,14 @@
     #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
 #endif
 
-#define NOMINMAX
+#define NOMINMAX // NOMINMAX only works with <Windows.h>, when system headers are directly included without relying on <Windows.h>
+// NOMINMAX offers no help as it seems only <Windows.h> has the #undef directives receptive to NOMINMAX
+#ifdef min
+    #undef min
+#endif
+#ifdef max
+    #undef max
+#endif
 
 #include <array>
 #include <iostream>
@@ -37,7 +44,7 @@ enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENB
 // mechanism to be used in converting the pixels to black and white
 enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
 
-enum class ANGLES : unsigned short { NINETY = 90, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
+enum class ANGLES : unsigned short { NINETY = 0x5A, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
 
 // for the sake of convenience
 static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
@@ -78,12 +85,14 @@ namespace internal {
 
         // isalpha() from <cctype> is not constexpr :(
         [[nodiscard]] static constexpr bool __stdcall is_alphabet(_In_ const char& character) noexcept {
-            return (character >= 65 && character <= 90) /* A - Z */ || (character >= 97 && character <= 122); /* a - z */
+            return (character >= 0x41 && character <= 0x5A) /* A - Z */ || (character >= 0x61 && character <= 0x7A); /* a - z */
         }
 
         // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-        template<unsigned long long length>
-        [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(_In_ const char (&array)[length]) noexcept {
+
+        [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(
+            _In_ const char* const array, _In_ const unsigned long long length
+        ) noexcept {
             bool result { true };
             for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
             return result;
@@ -91,12 +100,12 @@ namespace internal {
 
         // isupper() from <cctype> is not constexpr
         [[nodiscard]] static constexpr bool __stdcall is_uppercase(_In_ const char& character) noexcept {
-            return character >= 65 && character <= 90; /* A - 65 and Z - 90 */
+            return character >= 0x41 && character <= 0x5A; /* A - 0x41 and Z - 0x5A */
         }
 
         // islower() from <cctype> is not constexpr
         [[nodiscard]] static constexpr bool __stdcall is_lowercase(_In_ const char& character) noexcept {
-            return character >= 97 && character <= 122; /* a - 97 and z - 122 */
+            return character >= 0x61 && character <= 0x7A; /* a - 0x61 and z - 0x7A */
         }
 
     } // namespace ascii
@@ -211,7 +220,7 @@ namespace internal {
 
         // works great, tested and produces the same results as Python's binascii.crc32()
         [[nodiscard]] static constexpr unsigned __stdcall get(
-            _In_count_(length) const unsigned char* const bytestream, _In_ const size_t length
+            _In_count_(length) const unsigned char* const bytestream, _In_ const unsigned long long length
         ) noexcept {
             unsigned crc { 0xFFFFFFFF }; // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
