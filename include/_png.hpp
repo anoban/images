@@ -80,12 +80,15 @@ namespace internal {
             explicit IHDR(_In_ const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
                 width { internal::endian::ulong_from_be_bytes(data) },
+                // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 height { internal::endian::ulong_from_be_bytes(data + 4) },
                 bit_depth { *(data + 8) },
                 colour_type { *(data + 9) },
                 compression_method { *(data + 10) },
                 filter_method { *(data + 11) },
-                interlace_method { *(data + 12) } { }
+                interlace_method { *(data + 12) } {
+                // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            }
 
             friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const IHDR& header) noexcept {
                 basic_chunk::print(wostr, header);
