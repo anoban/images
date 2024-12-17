@@ -1,5 +1,4 @@
-#pragma once
 #ifndef __CANVAS
-    #define __CANVAS
-    #include <_canvas.hpp>
+#define __CANVAS
+#include <_canvas.hpp>
 #endif

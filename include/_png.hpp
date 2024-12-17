@@ -15,8 +15,7 @@ class png final {
         static constexpr unsigned char      PNG_SIGNATURE[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
         static constexpr unsigned long long PNG_CHUNK_NAME_LENGTH { 4 };
 
-    public:
-        class basic_chunk {
+        class basic_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
             private:
                 unsigned       length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
                 char           name[PNG_CHUNK_NAME_LENGTH]; // NOLINT(modernize-avoid-c-arrays)
