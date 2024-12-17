@@ -5,11 +5,12 @@
 
 int wmain() {
     unsigned long     size {};
-    const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
+    const auto* const pngstream { internal::open(LR"(./sydney.png)", size) };
     std::wcout << size << L'\n';
 
-    internal::basic_chunk ihdr { pngstream + 8 };
+    internal::IHDR ihdr { pngstream + 8 };
     std::wcout << ihdr;
+    std::wcout << std::boolalpha << ihdr.is_checksum_valid() << L'\n';
 
     delete[] pngstream;
 

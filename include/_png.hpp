@@ -26,6 +26,17 @@ namespace internal {
             const unsigned char* data;     // the actual chunk data (length bytes long)
             unsigned long        checksum; // CRC32 checksum of chunk name + chunk data i.e (length + 4) bytes
 
+            static void print(_Inout_ std::wostream& wostr, _In_ const basic_chunk& chunk) noexcept {
+                wostr << L"-------------------------------------------\n";
+                wostr << L"| Length              " << std::setw(20) << chunk.length << L"|\n";
+                wostr << L"| Name                " << std::setw(17) << static_cast<wchar_t>(chunk.name[0])
+                      << static_cast<wchar_t>(chunk.name[1]) << static_cast<wchar_t>(chunk.name[2]) << static_cast<wchar_t>(chunk.name[3])
+                      << L"|\n";
+                wostr << L"| Data                " << std::setw(20) << std::hex << std::uppercase << chunk.data << L"|\n";
+                wostr << std::dec;
+                wostr << L"| Checksum            " << std::setw(20) << chunk.checksum << L"|\n";
+            }
+
         public:
             explicit basic_chunk(
                 _In_ const unsigned char* const
@@ -51,29 +62,42 @@ namespace internal {
             bool __stdcall is_checksum_valid() const noexcept {
                 return checksum == internal::crc::get(name, PNG_CHUNK_NAME_LENGTH + length);
             }
-
-            friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const basic_chunk& chunk) noexcept {
-                wostr << L"---------------------------------------\n";
-                wostr << L"| Length      " << std::setw(20) << chunk.length << L"|\n";
-                wostr << L"| Name        " << std::setw(20) << static_cast<wchar_t>(chunk.name[0]) << static_cast<wchar_t>(chunk.name[1])
-                      << static_cast<wchar_t>(chunk.name[2]) << static_cast<wchar_t>(chunk.name[3]) << L"|\n";
-                wostr << L"| Data        " << std::setw(20) << std::hex << std::uppercase << chunk.data << L"|\n";
-                wostr << std::dec;
-                wostr << L"| Checksum    " << std::setw(20) << chunk.checksum << L"|\n";
-                wostr << L"---------------------------------------\n";
-                return wostr;
-            }
     };
 
     // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
     // IHDR stands for Image HeaDeR, which is the first chunk in a PNG data stream
     class IHDR final : public basic_chunk {
-        public:
-            explicit IHDR(_In_ const unsigned char* const filebuffer) noexcept : basic_chunk(filebuffer) { }
+        private: // IHDR specific data
+            unsigned long width;
+            unsigned long height;
+            unsigned char bit_depth;
+            unsigned char colour_type;
+            unsigned char compression_method;
+            unsigned char filter_method;
+            unsigned char interlace_method;
 
-            bool is_valid() const noexcept {
-                return is_checksum_valid() && !length && !data;
-                // && ::strcmp(name, "IHDR") won't work here since it expects two null terminated strings
+        public:
+            explicit IHDR(_In_ const unsigned char* const chunkstream) noexcept :
+                basic_chunk(chunkstream),
+                width { internal::endian::ulong_from_be_bytes(data) },
+                height { internal::endian::ulong_from_be_bytes(data + 4) },
+                bit_depth { *(data + 8) },
+                colour_type { *(data + 9) },
+                compression_method { *(data + 10) },
+                filter_method { *(data + 11) },
+                interlace_method { *(data + 12) } { }
+
+            friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const IHDR& header) noexcept {
+                basic_chunk::print(wostr, header);
+                wostr << L"| Width               " << std::setw(20) << header.width << L"|\n";
+                wostr << L"| Height              " << std::setw(20) << header.height << L"|\n";
+                wostr << L"| Bit depth           " << std::setw(20) << header.bit_depth << L"|\n";
+                wostr << L"| Colour type         " << std::setw(20) << header.colour_type << L"|\n";
+                wostr << L"| Compression method  " << std::setw(20) << header.compression_method << L"|\n";
+                wostr << L"| Filter method       " << std::setw(20) << header.filter_method << L"|\n";
+                wostr << L"| Interlace method    " << std::setw(20) << header.interlace_method << L"|\n";
+                wostr << L"-------------------------------------------\n";
+                return wostr;
             }
     };
 
