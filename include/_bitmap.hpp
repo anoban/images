@@ -416,9 +416,6 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         const_pointer data() const noexcept { return pixels; }
 
-        // returns the height and width of the bitmap, in that order
-        std::pair<size_type, size_type> dim() const noexcept { return { info_header.biHeight, info_header.biWidth }; }
-
         long height() const noexcept { return info_header.biHeight; }
 
         long width() const noexcept { return info_header.biWidth; }
