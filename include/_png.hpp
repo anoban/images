@@ -11,12 +11,12 @@
 // look up https://www.w3.org/TR/png-3/
 
 namespace internal {
-
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
     static constexpr unsigned char      PNG_SIGNATURE[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
     static constexpr unsigned long long PNG_CHUNK_NAME_LENGTH { 4 };
 
     class basic_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
-        private:
+        protected:
             unsigned       length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
             char           name[PNG_CHUNK_NAME_LENGTH]; // NOLINT(modernize-avoid-c-arrays)
             unsigned char* data;
@@ -26,11 +26,12 @@ namespace internal {
             explicit basic_chunk(_In_ const unsigned char* const pngstream) noexcept : length {}, name {}, data {}, crc {} { }
     };
 
+    class IHDR final : public basic_chunk { };
 } // namespace internal
 
 class png final {
     private:
-        // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+        [[nodiscard]] bool __stdcall scan_and_parse() noexcept { }
 
     public:
 };
