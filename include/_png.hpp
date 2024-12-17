@@ -54,10 +54,12 @@ namespace internal {
 
             friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const basic_chunk& chunk) noexcept {
                 wostr << L"---------------------------------------\n";
-                wostr << L"| length     " << std::setw(20) << chunk.length << L"|\n";
-                wostr << L"| name       " << std::setw(20) << chunk.name[0] << chunk.name[1] << chunk.name[2] << chunk.name[3] << L"|\n";
-                wostr << L"| data       " << std::setw(20) << std::hex << std::uppercase << chunk.data << L"|\n";
-                wostr << L"| checksum   " << std::setw(20) << chunk.checksum << L"|\n";
+                wostr << L"| Length      " << std::setw(20) << chunk.length << L"|\n";
+                wostr << L"| Name        " << std::setw(20) << static_cast<wchar_t>(chunk.name[0]) << static_cast<wchar_t>(chunk.name[1])
+                      << static_cast<wchar_t>(chunk.name[2]) << static_cast<wchar_t>(chunk.name[3]) << L"|\n";
+                wostr << L"| Data        " << std::setw(20) << std::hex << std::uppercase << chunk.data << L"|\n";
+                wostr << std::dec;
+                wostr << L"| Checksum    " << std::setw(20) << chunk.checksum << L"|\n";
                 wostr << L"---------------------------------------\n";
                 return wostr;
             }

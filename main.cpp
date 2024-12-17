@@ -1,20 +1,17 @@
 #include <canvas>
 #include <format>
 #include <ico>
+#include <png>
 
 int wmain() {
-    // icon_directory icon { LR"(./ico/intel.ico)" };
-    // std::wcout << icon;
-    //
-    // for (unsigned long i = 0; i < icon.resource_count(); ++i) {
-    //     const auto image { icon.to_bitmap(i) };
-    //     std::wcout << image;
-    //     image.to_file(std::format(L"icon_{:03d}.bmp", i).c_str());
-    // }
+    unsigned long     size {};
+    const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
+    std::wcout << size << L'\n';
 
-    canvas board { LR"(./guitar.bmp)" };
-    std::wcout << board;
-    board.resize_for_overwrite(2600, 1600).to_file(LR"(resized_for_overwrite.bmp)");
+    internal::basic_chunk ihdr { pngstream + 8 };
+    std::wcout << ihdr;
+
+    delete[] pngstream;
 
     return EXIT_SUCCESS;
 }
