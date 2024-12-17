@@ -12,6 +12,12 @@
 
 // look up https://www.w3.org/TR/png-3/ for the official PNG specification document
 
+struct pixel final {
+        unsigned char red;
+        unsigned char green;
+        unsigned char blue;
+};
+
 namespace internal {
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
     static constexpr unsigned char      PNG_SIGNATURE[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
@@ -102,6 +108,8 @@ namespace internal {
                 wostr << L"-------------------------------------------\n";
                 return wostr;
             }
+
+            ~IHDR() noexcept = default;
     };
 
     class PLTE final : public basic_chunk { };
