@@ -1,4 +1,0 @@
-#ifndef __ICO
-#define __ICO
-#include <_ico.hpp>
-#endif

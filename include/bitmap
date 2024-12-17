@@ -1,4 +1,0 @@
-#ifndef __BITMAP
-#define __BITMAP
-#include <_bitmap.hpp>
-#endif

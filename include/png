@@ -1,4 +1,0 @@
-#ifndef __PNG
-#define __PNG
-#include <_png.hpp>
-#endif
