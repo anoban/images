@@ -115,17 +115,17 @@ namespace internal {
         private: // IHDR specific data
 #endif
             // clang-format on
-            unsigned long   width;  // width of a PNG image in pixels, 0 is an invalid value
-            unsigned long   height; // height of a PNG image in pixels, 0 is an invalid value
-            unsigned char   bit_depth;
-            PNG_COLOUR_TYPE colour_type;
+            unsigned long          width;  // width of a PNG image in pixels, 0 is an invalid value
+            unsigned long          height; // height of a PNG image in pixels, 0 is an invalid value
+            unsigned char          bit_depth;
+            PNG_COLOUR_TYPE        colour_type;
             // only compression method 0 (deflate compression with a sliding window of at most 32768 bytes) is valid
-            unsigned char   compression_method;
+            unsigned char          compression_method;
             // only filter method 0 (adaptive filtering with five basic filter types) is defined in the PNG specification
-            unsigned char   filter_method;
-            unsigned char   interlace_method;
+            unsigned char          filter_method;
+            PNG_INTERLACING_METHOD interlace_method;
 
-            [[nodiscard]] bool __stdcall is_colourtype_and_bitdepth_combo_valid() const noexcept {
+            [[nodiscard]] bool __stdcall is_colourtype_bitdepth_invariants_valid() const noexcept {
                 switch (colour_type) {
                     case PNG_COLOUR_TYPE::GREYSCALE             : return internal::is_in(bit_depth, 1, 2, 4, 8, 16);
                     case PNG_COLOUR_TYPE::INDEXED_COLOUR        : return internal::is_in(bit_depth, 1, 2, 4, 8);
@@ -151,17 +151,24 @@ namespace internal {
             }
 
             [[nodiscard]] bool __stdcall is_valid() const noexcept {
-                // for an IHDR chunk,
-                // 1) the data segment cannot be empty
-                // 2) length must be 13
-                // 3) height and width cannot be empty
-                // 4) combinations of colour type and bit depth must be valid
-                // 5) compression method must be 0
-                // 6) filtering method must be 0
-                // 7) interlacing method must be 0 or 1
-                return basic_chunk::is_checksum_valid() && basic_chunk::is_name("IHDR") && data && (length == 13U) && height && width &&
-                       is_colourtype_and_bitdepth_combo_valid() && !compression_method && !filter_method &&
-                       (interlace_method == PNG_INTERLACING_METHOD::NONE || interlace_method == PNG_INTERLACING_METHOD::ADAM7);
+                // for an IHDR chunk
+                return basic_chunk::is_checksum_valid() &&
+                       basic_chunk::is_name("IHDR")
+                       // 1) the data segment cannot be empty
+                       && data
+                       // 2) length must be 13
+                       && (length == 13U)
+                       // 3) height and width cannot be empty
+                       && height &&
+                       width
+                       // 4) combinations of colour type and bit depth must be valid
+                       && is_colourtype_bitdepth_invariants_valid()
+                       // 5) compression method must be 0
+                       && !compression_method
+                       // 6) filtering method must be 0
+                       && !filter_method
+                       // 7) interlacing method must be 0 or 1
+                       && (interlace_method == PNG_INTERLACING_METHOD::NONE || interlace_method == PNG_INTERLACING_METHOD::ADAM7);
             }
 
             friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const IHDR& header) noexcept {
