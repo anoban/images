@@ -10,7 +10,11 @@ int wmain() {
 
     internal::IHDR ihdr { pngstream + 8 };
     std::wcout << ihdr;
-    std::wcout << std::boolalpha << ihdr.is_checksum_valid() << L'\n';
+    std::wcout << std::boolalpha << ihdr.is_valid() << L'\n';
+
+    internal::IEND iend { pngstream + size - 12 };
+    std::wcout << iend;
+    std::wcout << std::boolalpha << iend.is_valid() << L'\n';
 
     delete[] pngstream;
 
