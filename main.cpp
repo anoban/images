@@ -5,7 +5,7 @@
 
 int wmain() {
     unsigned long     size {};
-    const auto* const pngstream { internal::open(LR"(./sydney.png)", size) };
+    const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
     std::wcout << size << L'\n';
 
     internal::IHDR ihdr { pngstream + 8 };
