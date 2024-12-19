@@ -102,7 +102,7 @@ namespace internal {
     class IHDR final : public basic_chunk {
         public:
             // LOOKUP TABLE 12 IN THE PNG SPECIFICATION
-            enum PNG_COLOUR_TYPE : unsigned char {
+            enum class PNG_COLOUR_TYPE : unsigned char {
                 GREYSCALE             = 0, // each pixel is a greyscale sample, allowed bit depths - 1, 2, 4, 8, 16
                 TRUECOLOUR            = 2, // each pixel is an RGB triple, allowed bit depths - 8, 16
                 INDEXED_COLOUR        = 3, // each pixel is a palette index; a PLTE chunk shall appear, allowed bit depths - 1, 2, 4, 8
@@ -110,7 +110,7 @@ namespace internal {
                 TRUECOLOUR_WITH_ALPHA = 6  // each pixel is an R,G,B triple followed by an alpha sample, alowed bit depths - 8, 16
             };
 
-            enum PNG_INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
+            enum class PNG_INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
 
             // clang-format off
 #ifndef __TEST__
@@ -179,10 +179,10 @@ namespace internal {
                 wostr << L"| Width               " << std::setw(20) << header.width << L"|\n";
                 wostr << L"| Height              " << std::setw(20) << header.height << L"|\n";
                 wostr << L"| Bit depth           " << std::setw(20) << header.bit_depth << L"|\n";
-                wostr << L"| Colour type         " << std::setw(20) << header.colour_type << L"|\n";
+                wostr << L"| Colour type         " << std::setw(20) << internal::to_underlying(header.colour_type) << L"|\n";
                 wostr << L"| Compression method  " << std::setw(20) << header.compression_method << L"|\n";
                 wostr << L"| Filter method       " << std::setw(20) << header.filter_method << L"|\n";
-                wostr << L"| Interlace method    " << std::setw(20) << header.interlace_method << L"|\n";
+                wostr << L"| Interlace method    " << std::setw(20) << internal::to_underlying(header.interlace_method) << L"|\n";
                 wostr << L"-------------------------------------------\n";
                 return wostr;
             }
