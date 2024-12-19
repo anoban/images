@@ -22,12 +22,10 @@ int wmain(_In_opt_ const int argc, _In_opt_ const wchar_t* const argv[]) { // NO
     unsigned long long   ihdr_count {}, idat_count {}, plte_count {}, iend_count {}; // NOLINT(readability-isolate-declaration)
 
     for (long long i = 1; i < argc; ++i) {
-        filebuffer = internal::open(
-            argv[i], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            filesize
-        );
+        filebuffer = internal::open(argv[i], filesize); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (!filebuffer) {
-            ::fputws(L"File buffer is empty\n", stderr);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic, cppcoreguidelines-pro-type-vararg)
+            ::fwprintf_s(stderr, L"File buffer is empty, skipping image %s\n", argv[i]);
             continue;
         }
 

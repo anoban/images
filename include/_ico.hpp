@@ -28,10 +28,10 @@ class icon_directory final { // represents an .ico file
 
     public:
         // type of the file
-        enum ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
+        enum class ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
         // type of the resources contained in the file
-        enum ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
+        enum class ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
 
         // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
         // UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
@@ -109,7 +109,8 @@ class icon_directory final { // represents an .ico file
             }
 
             temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2);
-            if (temp.idType != ICO_FILE_TYPE::ICON && temp.idType != ICO_FILE_TYPE::CURSOR) [[unlikely]] { // cannot be anything else
+            if (temp.idType != internal::to_underlying(ICO_FILE_TYPE::ICON) &&
+                temp.idType != internal::to_underlying(ICO_FILE_TYPE::CURSOR)) [[unlikely]] { // cannot be anything else
                 ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
                 return {};
             }
