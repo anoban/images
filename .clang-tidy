@@ -179,7 +179,6 @@ Checks: >
   misc-misplaced-const,
   misc-new-delete-overloads,
   misc-no-recursion,
-  misc-non-private-member-variables-in-classes,
   misc-static-assert,
   misc-throw-by-value-catch-by-reference,
   misc-unconventional-assign-operator,
@@ -402,11 +401,6 @@ CheckOptions:
     value: true
 
   - key: cppcoreguidelines-pro-type-member-init.IgnoreArrays
-    value: true
-
-  - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
-    value: true
-  - key: misc-non-private-member-variables-in-classes.IgnorePublicMemberVariables
     value: true
 
   - key: misc-throw-by-value-catch-by-reference.CheckThrowTemporaries

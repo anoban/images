@@ -46,6 +46,7 @@ namespace internal {
             const unsigned char* data;     // the actual chunk data (length bytes long)
             unsigned long        checksum; // CRC32 checksum of chunk name + chunk data i.e (length + 4) bytes
 
+            // this operator<< isn't meant to be called directly in places other than derived class member functions
             friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const basic_chunk& chunk) noexcept {
                 wostr << L"-------------------------------------------\n";
                 wostr << L"| Length              " << std::setw(20) << chunk.length << L"|\n";
@@ -60,7 +61,7 @@ namespace internal {
             }
 
         public:
-            explicit basic_chunk( // this constructor doubles as a parser too
+            explicit __stdcall basic_chunk( // this constructor doubles as a parser too
                 _In_ const unsigned char* const
                     pngstream /* this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place */
             ) noexcept : // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -77,12 +78,11 @@ namespace internal {
             basic_chunk& operator=(const basic_chunk&) noexcept = delete;
             basic_chunk(basic_chunk&&) noexcept                 = delete;
             basic_chunk& operator=(basic_chunk&&) noexcept      = delete;
+
             // BECAUSE OF THIS, ALL THE DERIVED CHUNK TYPES WILL HAVE THESE MEMBER FUNCTIONS IMPLICITLY DELETED, COOL :)
 
-            ~basic_chunk() noexcept                             = default;
-
             // compute the chunk's CRC32 checksum and check whether it is same as the one stored in the chunk
-            [[nodiscard]] bool __stdcall is_checksum_valid() const noexcept {
+            [[nodiscard]] constexpr bool __stdcall is_checksum_valid() const noexcept {
                 return checksum ==
                        internal::crc::get(
                            name, // for the CRC32 checksum computation, we use the chunk's name and the bytes in the data segment
@@ -90,9 +90,11 @@ namespace internal {
                        );
             }
 
-            [[nodiscard]] bool __stdcall is_name(_In_reads_(PNG_CHUNK_NAME_LENGTH) const char* const str) const noexcept {
+            [[nodiscard]] constexpr bool __stdcall is_name(_In_reads_(PNG_CHUNK_NAME_LENGTH) const char* const str) const noexcept {
                 return std::equal(str, str + PNG_CHUNK_NAME_LENGTH, name); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             }
+
+            ~basic_chunk() noexcept = default;
     };
 
     // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
@@ -112,9 +114,10 @@ namespace internal {
 
             // clang-format off
 #ifndef __TEST__
-        private: // IHDR specific data
+        private:
 #endif
             // clang-format on
+            // IHDR specific data
             unsigned long          width;  // width of a PNG image in pixels, 0 is an invalid value
             unsigned long          height; // height of a PNG image in pixels, 0 is an invalid value
             unsigned char          bit_depth;
@@ -125,7 +128,7 @@ namespace internal {
             unsigned char          filter_method;
             PNG_INTERLACING_METHOD interlace_method;
 
-            [[nodiscard]] bool __stdcall is_colourtype_bitdepth_invariants_valid() const noexcept {
+            [[nodiscard]] constexpr bool __stdcall is_colourtype_bitdepth_invariants_valid() const noexcept {
                 switch (colour_type) {
                     case PNG_COLOUR_TYPE::GREYSCALE             : return internal::is_in(bit_depth, 1, 2, 4, 8, 16);
                     case PNG_COLOUR_TYPE::INDEXED_COLOUR        : return internal::is_in(bit_depth, 1, 2, 4, 8);
@@ -137,7 +140,7 @@ namespace internal {
             }
 
         public:
-            explicit IHDR(_In_ const unsigned char* const chunkstream) noexcept :
+            explicit __stdcall IHDR(_In_ const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
                 width { internal::endian::ulong_from_be_bytes(data) },
                 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -150,7 +153,7 @@ namespace internal {
                 // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             }
 
-            [[nodiscard]] bool __stdcall is_valid() const noexcept {
+            [[nodiscard]] constexpr bool __stdcall is_valid() const noexcept {
                 // for an IHDR chunk
                 return basic_chunk::is_checksum_valid() &&
                        basic_chunk::is_name("IHDR")
@@ -158,7 +161,7 @@ namespace internal {
                        && data
                        // 2) length must be 13
                        && (length == 13U)
-                       // 3) height and width cannot be empty
+                       // 3) height and width cannot be 0
                        && height &&
                        width
                        // 4) combinations of colour type and bit depth must be valid
@@ -187,7 +190,16 @@ namespace internal {
             ~IHDR() noexcept = default;
     };
 
-    class PLTE final : public basic_chunk { };
+    // any given PNG stream can only contain one PLTE chunk
+    // a PNG PLTE (stands for palette) contains an array of palette entries (RGB pixels, i.e rgbtriple)
+    // the number of palette entries can range from 0 to 256
+    // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
+    class PLTE final : public basic_chunk {
+        public:
+            [[nodiscard]] constexpr bool __stdcall is_valid() const noexcept {
+                //
+            }
+    };
 
     // IDAT stands for Image DATa
     class IDAT final : public basic_chunk { };
@@ -197,8 +209,8 @@ namespace internal {
         public:
             explicit IEND(_In_ const unsigned char* const chunkstream) noexcept : basic_chunk(chunkstream) { }
 
-            [[nodiscard]] bool __stdcall is_valid() const noexcept {
-                // IEND chunk's data filed must be empty and the length must be 0
+            [[nodiscard]] constexpr bool __stdcall is_valid() const noexcept {
+                // IEND chunk's data field must be empty and the length must be 0
                 return basic_chunk::is_checksum_valid() && basic_chunk::is_name("IEND") && !data && !length;
             }
 
@@ -221,9 +233,11 @@ class png final {
 #endif
         // clang-format on
 
-        [[nodiscard]] bool __stdcall scan_and_parse() noexcept { }
-
         // critical chunks
+        internal::IHDR image_header;
+        internal::IEND image_trailer;
+
+        [[nodiscard]] bool __stdcall scan_and_parse() noexcept { }
 
     public:
         friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const png& image) noexcept {
