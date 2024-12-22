@@ -97,6 +97,10 @@ namespace internal {
             ~basic_chunk() noexcept = default;
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------------------//
+    //                                                             CRITICAL CHUNKS                                                          //
+    //--------------------------------------------------------------------------------------------------------------------------------------//
+
     // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
     // IHDR stands for Image HeaDeR, which is the first chunk in a PNG data stream
     class IHDR final : public basic_chunk {
@@ -221,6 +225,55 @@ namespace internal {
             }
 
             ~IEND() noexcept = default;
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------------------//
+    //                                                          ANCILLIARY CHUNKS                                                           //
+    //--------------------------------------------------------------------------------------------------------------------------------------//
+
+    // TRANSPARENCY INFORMATION
+
+    class tRNS final : public basic_chunk { };
+
+    // COLOURSPACE INFORMATION
+
+    class cHRM final : public basic_chunk { };
+
+    class gAMA final : public basic_chunk { };
+
+    class sRGB final : public basic_chunk { };
+
+    // TEXTUAL INFORMATION
+
+    class tEXt final : public basic_chunk { };
+
+    class zTXt final : public basic_chunk { };
+
+    class iTXt final : public basic_chunk { };
+
+    // MISCELLANEOUS INFORMATION
+
+    class bKGD final : public basic_chunk { };
+
+    class hIST final : public basic_chunk { };
+
+    class pHYs final : public basic_chunk { };
+
+    // TIME STAMP
+
+    class tIME final : public basic_chunk {
+            // clang-format off
+#ifdef __TEST__
+        public:
+#endif
+            // clang-format on
+
+            unsigned short year;   // in YYYY format; for example, 1995, not 95
+            unsigned char  month;  // 1-12
+            unsigned char  day;    // 1-31
+            unsigned char  hour;   // 0-23
+            unsigned char  minute; // 0-59
+            unsigned char  second; // 0-60, to allow for leap seconds
     };
 
 } // namespace internal
