@@ -126,10 +126,10 @@ TEST(ASCII, IS_ALPHABET) {
 }
 
 TEST(ASCII, IS_ALPHABETARRAY) {
-    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_UPPERCASE));
-    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LOWERCASE));
-    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LETTERS));
-    EXPECT_FALSE(internal::ascii::is_alphabet_array(ASCII_PRINTABLE));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_UPPERCASE, __crt_countof(ASCII_UPPERCASE)));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LOWERCASE, __crt_countof(ASCII_LOWERCASE)));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LETTERS, __crt_countof(ASCII_LETTERS)));
+    EXPECT_FALSE(internal::ascii::is_alphabet_array(ASCII_PRINTABLE, __crt_countof(ASCII_PRINTABLE)));
 }
 
 TEST(ASCII, IS_UPPERCASE) {

@@ -18,7 +18,7 @@ if ($unrecognized.Count -ne 0) {
 
 $cflags = @(
     "./main.cpp",
-    "./googletest/src/gtest-all.cc",
+    "./googletest/googletest/src/gtest-all.cc",
     "/arch:AVX512",
     "/diagnostics:caret",
     "/DNDEBUG",
@@ -33,8 +33,8 @@ $cflags = @(
     "/GL",
     "/Gw",
     "/I./../include",
-    "/I./googletest",
-    "/I./googletest/include",
+    "/I./googletest/googletest/",    # gtest-all.cc INCLUDES .cc files in the src directory, hence this is needed
+    "/I./googletest/googletest/include",
     "/jumptablerdata",
     "/MP",
     "/MT",

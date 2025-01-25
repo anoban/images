@@ -95,7 +95,8 @@ namespace internal {
             _In_ const char* const array, _In_ const unsigned long long length
         ) noexcept {
             bool result { true };
-            for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
+            for (unsigned i = 0; i < length; ++i)
+                result &= ascii::is_alphabet(array[i]); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return result;
         }
 
