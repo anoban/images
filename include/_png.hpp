@@ -98,7 +98,7 @@ namespace internal {
     };
 
     //--------------------------------------------------------------------------------------------------------------------------------------//
-    //                                                             CRITICAL CHUNKS                                                          //
+    //                                                          CRITICAL CHUNKS                                                             //
     //--------------------------------------------------------------------------------------------------------------------------------------//
 
     // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
@@ -228,7 +228,7 @@ namespace internal {
     };
 
     //--------------------------------------------------------------------------------------------------------------------------------------//
-    //                                                          ANCILLIARY CHUNKS                                                           //
+    //                                                          ANCILLARY CHUNKS                                                            //
     //--------------------------------------------------------------------------------------------------------------------------------------//
 
     // TRANSPARENCY INFORMATION
@@ -274,6 +274,16 @@ namespace internal {
             unsigned char  hour;   // 0-23
             unsigned char  minute; // 0-59
             unsigned char  second; // 0-60, to allow for leap seconds
+
+        public:
+            tIME(_In_ const unsigned char* const chunkstream) noexcept :
+                basic_chunk(chunkstream),
+                year { internal::endian::ushort_from_be_bytes(data) },
+                month { *(data + 1) },
+                day { *(data + 2) },
+                hour { *(data + 3) },
+                minute { *(data + 4) },
+                second { *(data + 5) } { };
     };
 
 } // namespace internal
