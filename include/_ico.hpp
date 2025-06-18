@@ -1,8 +1,8 @@
 #pragma once
-#define __INTERNAL
-#if !defined(__ICO) && !defined(__INTERNAL) && !defined(__TEST__)
-    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
-#endif
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
 
 #include <vector>
 
@@ -54,7 +54,7 @@ class icon_directory final { // represents an .ico file
         struct ICONDIR final {
                 WORD         idReserved; // reserved, must always be 0
                 WORD         idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
-                    // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
+                // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
                 WORD         idCount;      // number of resources (images) stored in the given .ico file
                 ICONDIRENTRY idEntries[1]; // NOLINT(modernize-avoid-c-arrays)
         };
@@ -180,7 +180,7 @@ class icon_directory final { // represents an .ico file
             header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
             header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
             header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
-                // bitmaps with a negative height may not be compressed
+            // bitmaps with a negative height may not be compressed
             header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
             header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
             header.biCompression   = static_cast<decltype(BITMAPINFOHEADER::biCompression)>(  // compression kind (if compressed)

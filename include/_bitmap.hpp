@@ -1,8 +1,8 @@
 #pragma once
-#define __INTERNAL
-#if !defined(__BITMAP) && !defined(__INTERNAL) && !defined(__TEST__)
-    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
-#endif
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
 
 #include <algorithm>
 #include <iomanip>
@@ -144,7 +144,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             // header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
             header.biWidth         = *reinterpret_cast<const long*>(imstream + 18); // width of the bitmap image in pixels
             header.biHeight        = *reinterpret_cast<const long*>(imstream + 22); // height of the bitmap image in pixels
-                // bitmaps with a negative height may not be compressed
+            // bitmaps with a negative height may not be compressed
             header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
             header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
             header.biCompression   = static_cast<decltype(BITMAPINFOHEADER::biCompression)>(  // compression kind (if compressed)
@@ -230,8 +230,9 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // this is likely to get more compilcated
         bitmap(_In_ const long height, _In_ const long width) noexcept :
             // allocate storage for the metadata structs and pixel buffer
-            buffer { new (std::nothrow
-            ) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
+            buffer {
+                new (std::nothrow) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)]
+            },
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { .bfType = 0x4D42,
@@ -266,8 +267,9 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
     public:
         // copy constructor
         bitmap(_In_ const bitmap& other) noexcept :
-            buffer { new (std::nothrow
-            ) unsigned char[other.file_size] }, // don't copy the trailing unused bytes from the bitmap, if present
+            buffer {
+                new (std::nothrow) unsigned char[other.file_size]
+            }, // don't copy the trailing unused bytes from the bitmap, if present
 
             pixels { // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                      reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))

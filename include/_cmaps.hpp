@@ -1,8 +1,8 @@
 #pragma once
-#define __INTERNAL
-#if !defined(__CMAPS) && !defined(__INTERNAL)&& !defined(__TEST__)
-    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
-#endif
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
 
 #include <array>
 

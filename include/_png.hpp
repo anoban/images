@@ -1,8 +1,8 @@
 #pragma once
-#define __INTERNAL
-#if !defined(__IMAGEIO) && !defined(__INTERNAL) && !defined(__TEST__)
-    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
-#endif
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
 
 #include <iomanip>
 
@@ -40,8 +40,8 @@ namespace internal {
 #endif
             // clang-format on
             unsigned long        length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
-                // length accounts only for the bytes in the data segment and excludes itself, chunk name and the checksum
-                // imagine the data member is written as if `unsigned char data[length];`
+            // length accounts only for the bytes in the data segment and excludes itself, chunk name and the checksum
+            // imagine the data member is written as if `unsigned char data[length];`
             const unsigned char* name;     // NOLINT(modernize-avoid-c-arrays), PNG chunk name made of 4 ASCII characters
             const unsigned char* data;     // the actual chunk data (length bytes long)
             unsigned long        checksum; // CRC32 checksum of chunk name + chunk data i.e (length + 4) bytes

@@ -1,8 +1,8 @@
 #pragma once
-#define __INTERNAL
-#if !defined(__INTERNAL) && !defined(__TEST__)
-    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
-#endif
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
 
 #define NOMINMAX // NOMINMAX only works with <Windows.h>, when system headers are directly included without relying on <Windows.h>
 // NOMINMAX offers no help as it seems only <Windows.h> has the #undef directives receptive to NOMINMAX
@@ -237,8 +237,9 @@ namespace internal {
     #error routines inside namespace endian liberally rely on LLVM and MSVC compiler intrinsics, hence probably won't compile with other compilers!
 #endif
 
-        [[maybe_unused, nodiscard]] static constexpr unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2
-        ) const unsigned char* const bytestream) noexcept {
+        [[maybe_unused,
+          nodiscard]] static constexpr unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2)
+                                                                                         const unsigned char* const bytestream) noexcept {
             assert(bytestream);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
@@ -278,8 +279,9 @@ namespace internal {
 #endif
         }
 
-        [[maybe_unused, nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8
-        ) const unsigned char* const bytestream) noexcept {
+        [[maybe_unused,
+          nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8)
+                                                                                   const unsigned char* const bytestream) noexcept {
             assert(bytestream);
 #if defined(__llvm__) && defined(__clang__)
             static constexpr __m64 mask_pi8 { 0x01020304050607 };

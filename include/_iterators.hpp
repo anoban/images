@@ -1,8 +1,8 @@
 #pragma once
-#define __INTERNAL
-#if !defined(__INTERNAL) && !defined(__TEST__)
-    #error DO NOT DIRECTLY INCLUDE HEADERS PREFIXED WITH AN UNDERSCORE IN SOURCE FILES, USE THE UNPREFIXED VARIANTS WITHOUT THE .HPP EXTENSION.
-#endif
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
 
 #include <cassert>
 #include <iterator> // std::random_access_iterator_tag
@@ -143,14 +143,16 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
         }
 
         template<typename _TyInt> // NOLINTNEXTLINE(modernize-use-constraints)
-        constexpr typename std::enable_if<std::is_integral_v<_TyInt>, random_access_iterator>::type operator+(_In_ const _TyInt& stride
+        constexpr typename std::enable_if<std::is_integral_v<_TyInt>, random_access_iterator>::type operator+(
+            _In_ const _TyInt& stride
         ) const noexcept {
             assert(length >= offset + stride);
             return { rsrc, length, offset + stride };
         }
 
         template<typename _TyInt> // NOLINTNEXTLINE(modernize-use-constraints)
-        constexpr typename std::enable_if<std::is_integral<_TyInt>::value, random_access_iterator>::type operator-(_In_ const _TyInt& stride
+        constexpr typename std::enable_if<std::is_integral<_TyInt>::value, random_access_iterator>::type operator-(
+            _In_ const _TyInt& stride
         ) const noexcept {
             assert(length >= offset - stride);
             return { rsrc, length, offset - stride };
