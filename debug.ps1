@@ -3,7 +3,7 @@ $unrecognized = [System.Collections.ArrayList]::new()
 
 
 foreach ($arg in $args) {
-    if ($arg -clike "*.cpp") {
+    if ($arg -clike "*.c") {
         [void]$cfiles.Add($arg.ToString().Replace(".\", ""))
     }
     else {
@@ -37,15 +37,14 @@ $cflags = @(
     "/Od",
     "/Qpar",
     "/Qspectre",
-    "/std:c++20",
-    "/TP",
+    "/std:c23",
+    "/TC",
     "/Wall",
     "/wd4505",
     "/wd4710",
     "/wd4711",
     "/wd4820",
     "/wd5045",
-    "/Zc:__cplusplus",
     "/Zc:preprocessor",
     "/link /DEBUG:FULL"
 )

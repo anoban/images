@@ -3,7 +3,7 @@ $unrecognized = [System.Collections.ArrayList]::new()
 
 
 foreach ($arg in $args) {
-    if ($arg -clike "*.cpp") {
+    if ($arg -clike "*.c") {
         [void]$cfiles.Add($arg.ToString().Replace(".\", ""))
     }
     else {
@@ -38,14 +38,13 @@ $cflags = @(
     "/Oi",
     "/Ot",
     "/Qpar",
-    "/std:c++20",
-    "/TP",
+    "/std:c23",
+    "/TC",
     "/Wall",
     "/wd4505",      # removed unreferenced inline function
     "/wd4710",      # not inlined
     "/wd4711",      # selected for inline expansion
     "/wd4820",      # struct padding
-    "/Zc:__cplusplus",
     "/Zc:preprocessor",
     "/link /DEBUG:NONE"
 )
