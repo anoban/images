@@ -1,7 +1,7 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <internal.h>
 // clang-format on
 
 #define NOMINMAX // NOMINMAX only works with <Windows.h>, when system headers are directly included without relying on <Windows.h>
@@ -13,10 +13,7 @@
     #undef max
 #endif
 
-#include <array>
-#include <cassert>
-#include <iostream>
-#include <type_traits>
+#include <assert.h>
 
 // clang-format off
 #define _AMD64_
