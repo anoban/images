@@ -45,7 +45,7 @@ enum BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, 
 
 enum ANGLES : unsigned short { NINETY = 0x5A, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
 
-[[nodiscard]] static inline bool __stdcall is_alphabet_array(_In_ const char* const array, _In_ const unsigned long long length) {
+static inline bool __stdcall is_alphabet_array(_In_ const char* const array, _In_ const unsigned long long length) {
     bool result = true;
     for (unsigned i = 0; i < length; ++i) result &= isalpha(array[i]); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return result;
@@ -77,35 +77,16 @@ static void __stdcall negative(_Inout_ RGBQUAD* const pixel) {
     pixel->rgbRed   = pixel->rgbRed >= 128 ? 255 : 0;
 }
 
-namespace removers { // this is really verbose but makes mutating the pixel buffers possible with a single std::for_each call
-
-    template<RGB_TAG colour> struct zero;
-
-    template<> struct zero<RGB_TAG::RED> final {
-            void __stdcall operator()(_Inout_ RGBQUAD& pixel) const { pixel.rgbRed = 0; }
-    };
-
-    template<> struct zero<RGB_TAG::GREEN> final {
-            void __stdcall operator()(_Inout_ RGBQUAD& pixel) const { pixel.rgbGreen = 0; }
-    };
-
-    template<> struct zero<RGB_TAG::BLUE> final {
-            void __stdcall operator()(_Inout_ RGBQUAD& pixel) const { pixel.rgbBlue = 0; }
-    };
-
-    template<> struct zero<RGB_TAG::REDGREEN> final {
-            void __stdcall operator()(_Inout_ RGBQUAD& pixel) const { pixel.rgbRed = pixel.rgbGreen = 0; }
-    };
-
-    template<> struct zero<RGB_TAG::GREENBLUE> final {
-            void __stdcall operator()(_Inout_ RGBQUAD& pixel) const { pixel.rgbGreen = pixel.rgbBlue = 0; }
-    };
-
-    template<> struct zero<RGB_TAG::REDBLUE> final {
-            void __stdcall operator()(_Inout_ RGBQUAD& pixel) const { pixel.rgbRed = pixel.rgbBlue = 0; }
-    };
-
-} // namespace removers
+static inline void __stdcall zero_pixel(_Inout_ RGBQUAD* const pixel, _In_ const enum RGB_TAG colour) {
+    switch (colour) {
+        case RED       : pixel->rgbRed = 0; break;
+        case GREEN     : pixel->rgbGreen = 0; break;
+        case BLUE      : pixel->rgbBlue = 0; break;
+        case REDGREEN  : pixel->rgbRed = pixel->rgbGreen = 0; break;
+        case REDBLUE   : pixel->rgbRed = pixel->rgbBlue = 0; break;
+        case GREENBLUE : pixel->rgbGreen = pixel->rgbBlue = 0; break;
+    }
+}
 
 //---------------------------------------------------------------------------------------//
 // CRC32 IMPLEMENTATION https://lxp32.github.io/docs/a-simple-example-crc32-calculation/ //

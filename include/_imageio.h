@@ -22,7 +22,7 @@
 static inline unsigned char* __cdecl open( // NOLINT(readability-redundant-inline-specifier)
         _In_ const wchar_t* const filename,
         _Inout_ unsigned long&    size
-    ) noexcept {
+    )  {
     assert(filename); // ????
 
     unsigned char* buffer {};
@@ -81,7 +81,7 @@ static inline bool __cdecl serialize( // NOLINT(readability-redundant-inline-spe
         _In_ const wchar_t* const                         filename,
         _In_reads_bytes_(size) const unsigned char* const buffer,
         _In_ const unsigned long                          size
-    ) noexcept {
+    )  {
     assert(filename);          // too much??
     if (!buffer) return false; // fail if the buffer is a nullptr
 
