@@ -1,9 +1,8 @@
-#include <canvas>
-#include <format>
-#include <ico>
-#include <png>
+#include <canvas.h>
+#include <ico.h>
+#include <png.h>
 
-int wmain() {
+int wmain(void) {
     unsigned long     size {};
     const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
     std::wcout << size << L'\n';

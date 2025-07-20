@@ -1,10 +1,8 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <internal.h>
 // clang-format on
-
-#include <array>
 
 #define _AMD64_ // architecture
 #define WIN32_LEAN_AND_MEAN

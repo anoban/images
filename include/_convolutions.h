@@ -1,5 +1,5 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <internal.h>
 // clang-format on

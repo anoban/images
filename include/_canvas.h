@@ -1,13 +1,12 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <internal.h>
 // clang-format on
 
+#include <_bitmap.h>
+#include <_cmaps.h>
 #include <immintrin.h>
-
-#include <_bitmap.hpp>
-#include <_cmaps.hpp>
 
 class canvas final : public bitmap {
         // BELOW IS ABSOLUTELY CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
