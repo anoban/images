@@ -1,11 +1,10 @@
 #define __INTERNAL
-#include <algorithm>
-#include <vector>
 
-#include <_imageio.hpp>
+#include <_imageio.h>
 
-template<unsigned long long length>
-[[nodiscard]] constexpr bool is_same(_In_ const unsigned char* const bytestream, _In_ const char (&name)[length]) noexcept {
+static inline bool __stdcall is_same(
+    _In_ const unsigned char* const bytestream, _In_reads_(length) const char* const name, _In_ const unsigned length
+) {
     for (unsigned long i = 0; i < (length - 1 /* offsetting for the null terminator */); ++i)
         if (bytestream[i] != name[i]) return false; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-signed-char-misuse)
     return true;

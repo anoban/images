@@ -16,63 +16,54 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
 // returned memory needs to be freed (`delete[]` ed) by the caller
 static inline unsigned char* __cdecl open( // NOLINT(readability-redundant-inline-specifier)
         _In_ const wchar_t* const filename,
-        _Inout_ unsigned long&    size
+        _Inout_ unsigned long* const    size
     )  {
     assert(filename); // ????
 
-    unsigned char* buffer {};
-    LARGE_INTEGER  fsize {
-         { .LowPart = 0LLU, .HighPart = 0LLU }
+    unsigned char* buffer = nullptr;
+    LARGE_INTEGER  fsize  = {
+        { .LowPart = 0LLU, .HighPart = 0LLU }
     };
-    const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
+    const HANDLE64 file_handle = CreateFileW(filename, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr);
 
     if (file_handle == INVALID_HANDLE_VALUE) {
-        ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                stderr,
-                L"Error %lu in CreateFileW (%s)\n",
-                ::GetLastError(),
-                filename
-            );
+        fwprintf_s(stderr, L"Error %lu in CreateFileW (%s)\n", GetLastError(), filename);
         goto INVALID_HANDLE_ERROR;
     }
 
-    if (!::GetFileSizeEx(file_handle, &fsize)) { // NOLINT(readability-implicit-bool-conversion)
-        ::fwprintf_s(                            // NOLINT(cppcoreguidelines-pro-type-vararg)
-                stderr,
-                L"Error %lu in GetFileSizeEx (%s)\n",
-                ::GetLastError(),
-                filename
-            );
+    if (!GetFileSizeEx(file_handle, &fsize)) { // NOLINT(readability-implicit-bool-conversion)
+        fwprintf_s(stderr, L"Error %lu in GetFileSizeEx (%s)\n", GetLastError(), filename);
         goto GETFILESIZEEX_ERROR;
     }
 
-    buffer = new (std::nothrow) unsigned char[fsize.QuadPart];
+    buffer = malloc(fsize.QuadPart);
     if (!buffer) { // NOLINT(readability-implicit-bool-conversion)
-        ::fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
+        fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
         goto GETFILESIZEEX_ERROR;
     }
 
     // NOLINTNEXTLINE(readability-implicit-bool-conversion)
-    if (!::ReadFile(file_handle, buffer, fsize.QuadPart, &size, nullptr)) {
-        ::fwprintf_s(stderr, L"Error %lu in ReadFile (%s)\n", ::GetLastError(), filename); // NOLINT(cppcoreguidelines-pro-type-vararg)
+    if (!ReadFile(file_handle, buffer, fsize.QuadPart, size, nullptr)) {
+        fwprintf_s(stderr, L"Error %lu in ReadFile (%s)\n", GetLastError(), filename);
         goto READFILE_ERROR;
     }
 
     // let's be optimistic here
-    ::CloseHandle(file_handle);
+    CloseHandle(file_handle);
     return buffer;
 
 READFILE_ERROR:
-    delete[] buffer;
+    free(buffer);
 GETFILESIZEEX_ERROR:
-    ::CloseHandle(file_handle);
+    CloseHandle(file_handle);
 INVALID_HANDLE_ERROR:
-    size = 0;
+    *size = 0;
     return nullptr;
 }
 
@@ -85,38 +76,26 @@ static inline bool __cdecl serialize( // NOLINT(readability-redundant-inline-spe
     assert(filename);          // too much??
     if (!buffer) return false; // fail if the buffer is a nullptr
 
-    const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr) };
-    unsigned long  nbytes {};
+    const HANDLE64 file_handle = CreateFileW(filename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    unsigned long  nbytes      = 0;
 
     if (file_handle == INVALID_HANDLE_VALUE) {
-        ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                stderr,
-                L"Error %4lu in CreateFileW (%s)\n",
-                ::GetLastError(),
-                filename
-            );
+        fwprintf_s(stderr, L"Error %4lu in CreateFileW (%s)\n", GetLastError(), filename);
         goto PREMATURE_RETURN;
     }
 
     // NOLINTNEXTLINE(readability-implicit-bool-conversion)
-    if (!::WriteFile(file_handle, buffer, size, &nbytes, nullptr)) {
-        ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                stderr,
-                L"Error %4lu in WriteFile (%s)\n",
-                ::GetLastError(),
-                filename
-            );
+    if (!WriteFile(file_handle, buffer, size, &nbytes, nullptr)) {
+        fwprintf_s(stderr, L"Error %4lu in WriteFile (%s)\n", GetLastError(), filename);
         goto PREMATURE_RETURN;
     }
 
-    ::CloseHandle(file_handle);
+    CloseHandle(file_handle);
     return true;
 
 PREMATURE_RETURN:
-    ::CloseHandle(file_handle);
+    CloseHandle(file_handle);
     return false;
 }
-
-} // namespace internal
 
 #undef __INTERNAL
