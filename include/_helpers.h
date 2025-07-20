@@ -30,8 +30,8 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #if defined(DEBUG) || defined(_DEBUG)
-    #define dbgputws(...)     ::fputws(__VA_ARGS__, stderr)
-    #define dbgwprintf_s(...) ::fwprintf_s(stderr, __VA_ARGS__);
+    #define dbgputws(...)     fputws(__VA_ARGS__, stderr)
+    #define dbgwprintf_s(...) fwprintf_s(stderr, __VA_ARGS__);
 #else
     #define dbgputws(...)
     #define dbgwprintf_s(...)
@@ -130,101 +130,91 @@ static const unsigned CRC32_LOOKUPTABLE_IEEE[256] {
 };
 
 // works great, tested and produces the same results as Python's binascii.crc32()
-[[nodiscard]] static unsigned __stdcall get(
-    _In_count_(length) const unsigned char* const bytestream, _In_ const unsigned long long length
-) {
-    unsigned crc { 0xFFFFFFFF }; // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
+static inline unsigned __stdcall get(_In_count_(length) const unsigned char* const bytestream, _In_ const unsigned long long length) {
+    unsigned crc = 0xFFFFFFFF; // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE[((bytestream[i] ^ crc) & 0xFF)];
     return ~crc;
 }
-
-} // namespace crc
-
-namespace endian {
 
 #if !defined(__llvm__) && !defined(_MSC_FULL_VER)
     #error routines inside namespace endian liberally rely on LLVM and MSVC compiler intrinsics, hence probably won't compile with other compilers!
 #endif
 
-    [[maybe_unused, nodiscard]] static unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2)
+static inline unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2) const unsigned char* const bytestream) {
+    assert(bytestream);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return (unsigned short) (bytestream[0]) << 8 | bytestream[1];
+}
+
+// WARNING  WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
+static inline unsigned long __stdcall ulong_from_be_bytes(_In_reads_bytes_(8) const unsigned char* const bytestream) {
+    assert(bytestream);
+#if defined(__llvm__) && defined(__clang__)         // LLVM defines __m64 as a vector of 1 long long
+    static __m64 mask_pi8 = { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
+    // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
+
+    return _mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
+
+#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
+
+    static __m128i mask_epi8 {
+        .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
+    };
+
+    const __m128i operand_epi8 {
+        .m128i_u8 { bytestream[0],
+                   bytestream[1],
+                   bytestream[2],
+                   bytestream[3], // followed by 12 filler zeroes
+                    0, 0,
+                   0, 0,
+                   0, 0,
+                   0, 0,
+                   0, 0,
+                   0, 0 }
+    };
+
+    // unlike LLVM, MSVC offers the SSSE3 intrinsic _mm_shuffle_pi8 only in x86 mode, in x64 mode we could only use the AVX1 intrinsic _mm_shuffle_epi8
+    return _mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u32[0]; // MSVC defines __m128i as a union
+#endif
+}
+
+[[maybe_unused, nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8)
                                                                                          const unsigned char* const bytestream) {
-        assert(bytestream);
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
-    }
-
-    // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-    [[maybe_unused, nodiscard]] static unsigned long __stdcall ulong_from_be_bytes(_In_reads_bytes_(8)
-                                                                                       const unsigned char* const bytestream) {
-        assert(bytestream);
-#if defined(__llvm__) && defined(__clang__)           // LLVM defines __m64 as a vector of 1 long long
-        static __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
-        // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
-
-        return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
-
-#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-
-        static __m128i mask_epi8 {
-            .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
-        };
-
-        const __m128i operand_epi8 {
-            .m128i_u8 { bytestream[0],
-                       bytestream[1],
-                       bytestream[2],
-                       bytestream[3], // followed by 12 filler zeroes
-                        0, 0,
-                       0, 0,
-                       0, 0,
-                       0, 0,
-                       0, 0,
-                       0, 0 }
-        };
-
-        // unlike LLVM, MSVC offers the SSSE3 intrinsic _mm_shuffle_pi8 only in x86 mode, in x64 mode we could only use the AVX1 intrinsic _mm_shuffle_epi8
-        return ::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u32[0]; // MSVC defines __m128i as a union
-#endif
-    }
-
-    [[maybe_unused, nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8)
-                                                                                             const unsigned char* const bytestream) {
-        assert(bytestream);
+    assert(bytestream);
 #if defined(__llvm__) && defined(__clang__)
-        static __m64 mask_pi8 { 0x01020304050607 };
-        return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
+    static __m64 mask_pi8 { 0x01020304050607 };
+    return _mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
 
 #elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
 
-        static __m128i mask_epi8 {
-            .m128i_u8 { 7, 6, 5, 4, 3, 2, 1, 0, /* we don't care about the rest */ 8, 9, 10, 11, 12, 13, 14, 15 }
-        };
-        const __m128i operand_epi8 {
-            .m128i_u8 { bytestream[0],
-                       bytestream[1],
-                       bytestream[2],
-                       bytestream[3],
-                       bytestream[4],
-                       bytestream[5],
-                       bytestream[6],
-                       bytestream[7],
-                       0, /* followed by 8 filler zeroes */
-                        0, 0,
-                       0, 0,
-                       0, 0,
-                       0 }
-        };
-        return ::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u64[0];
+    static __m128i mask_epi8 {
+        .m128i_u8 { 7, 6, 5, 4, 3, 2, 1, 0, /* we don't care about the rest */ 8, 9, 10, 11, 12, 13, 14, 15 }
+    };
+    const __m128i operand_epi8 {
+        .m128i_u8 { bytestream[0],
+                   bytestream[1],
+                   bytestream[2],
+                   bytestream[3],
+                   bytestream[4],
+                   bytestream[5],
+                   bytestream[6],
+                   bytestream[7],
+                   0, /* followed by 8 filler zeroes */
+                    0, 0,
+                   0, 0,
+                   0, 0,
+                   0 }
+    };
+    return _mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u64[0];
 #endif
-    }
+}
 
-} // namespace endian
-
-// std::complex<>'s real() and imag() methods return a const reference even when the object is non const
+// stdcomplex<>'s real() and imag() methods return a const reference even when the object is non const
 // and it uses a 2 member array as the internal storage, so to update individual elements we need to expose the array and manually subscript into it
 // opting for a handrolled complex alternative, fucking STL heh???
-template<typename _Ty> requires std::is_arithmetic_v<_Ty>
-class complex final { // doesn't provide the arithmetic functionalities like std::complex<> though
+template<typename _Ty> requires stdis_arithmetic_v<_Ty>
+class complex final { // doesn't provide the arithmetic functionalities like stdcomplex<> though
     private:
         _Ty __x;
         _Ty __y;
@@ -250,7 +240,5 @@ class complex final { // doesn't provide the arithmetic functionalities like std
 
         _Ty y() const { return __y; }
 };
-
-} // namespace internal
 
 #undef __INTERNAL
