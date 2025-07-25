@@ -1,15 +1,14 @@
-pub mod bitmap{
-/*
+pub mod bitmap {
+    /*
 
-unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
-        RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
-        BITMAPFILEHEADER file_header;
-        BITMAPINFOHEADER info_header;
-        unsigned long    file_size;   // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
-        unsigned long    buffer_size;
+    unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
+            RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
+            BITMAPFILEHEADER file_header;
+            BITMAPINFOHEADER info_header;
+            unsigned long    file_size;   // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
+            unsigned long    buffer_size;
 
- */
+     */
 
-pub struct Bitmap {};
-
+    pub struct Bitmap {}
 }
