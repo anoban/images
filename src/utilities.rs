@@ -1,6 +1,26 @@
-mod utils {
+mod utilities {
     mod wingdi {
         // Wingdi data structures
+
+        // order of pixels in the BMP buffer.
+        #[repr(u8)]
+        enum ScanlineOrdering {
+            TOPDOWN,
+            BOTTOMUP,
+        }
+
+        // types of compressions used in BMP files.
+        #[repr(u8)]
+        enum CompressionKind {
+            RGB,
+            RLE8,
+            RLE4,
+            BITFIELDS,
+            UNKNOWN,
+        }
+
+        // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
+        const SOI: u16 = ('B' as u16) | (('M' as u16) << 8); // Start Of Image
 
         #[repr(C)]
         pub struct RgbQuad {
@@ -35,6 +55,17 @@ mod utils {
             pixels_per_meter_y: i32, // LONG  biYPelsPerMeter;
             colours_used: u32,       // DWORD biClrUsed;
             colours_important: u32,  // DWORD biClrImportant;
+        }
+
+        impl BitmapInfoHeader {
+            const fn get_scanline_order(&self) -> ScanlineOrdering {
+                // BitmapInfoHeader::height is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
+                return if self.height >= 0 {
+                    ScanlineOrdering::BOTTOMUP
+                } else {
+                    ScanlineOrdering::TOPDOWN
+                };
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ mod canvas;
 mod colormaps;
 mod convolutions;
 mod imageio;
-mod utils;
+mod utilities;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

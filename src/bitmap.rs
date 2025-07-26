@@ -1,6 +1,5 @@
 pub mod bitmap {
 
-    use utils::wingdi::RgbQuad;
     pub struct BitMap {
         /*
 
@@ -12,5 +11,9 @@ pub mod bitmap {
                 unsigned long    buffer_size;
 
          */
+    }
+
+    impl BitMap {
+        fn new(&mut self, height: i32, width: i32) {}
     }
 }
