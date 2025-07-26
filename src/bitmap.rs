@@ -1,6 +1,6 @@
 pub mod bitmap {
 
-    pub struct BitMap {
+    pub struct Bitmap {
         /*
 
         unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
@@ -13,7 +13,7 @@ pub mod bitmap {
          */
     }
 
-    impl BitMap {
+    impl Bitmap {
         fn new(&mut self, height: i32, width: i32) {}
     }
 }
