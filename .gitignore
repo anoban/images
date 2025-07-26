@@ -29,3 +29,6 @@ target
 
 # image files to keep
 !readme/**
+
+# notebook checkpoints
+.ipynb_checkpoints/*
