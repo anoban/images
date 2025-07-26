@@ -4,7 +4,7 @@ pub mod utilities {
 
         // order of pixels in the BMP buffer.
         #[repr(u8)]
-        enum ScanlineOrdering {
+        enum ScanlineOrder {
             TOPDOWN,
             BOTTOMUP,
         }
@@ -23,6 +23,14 @@ pub mod utilities {
         const SOI: u16 = ('B' as u16) | (('M' as u16) << 8); // Start Of Image
 
         #[repr(C)]
+        pub struct RgbTriple {
+            // typedef struct tagRGBTRIPLE RGBTRIPLE;
+            blue: u8,  // BYTE rgbBlue;
+            green: u8, // BYTE rgbGreen;
+            red: u8,   // BYTE rgbRed;
+        }
+
+        #[repr(C)]
         pub struct RgbQuad {
             // typedef struct tagRGBQUAD RGBQUAD;
             blue: u8,     // BYTE rgbBlue;
@@ -33,7 +41,7 @@ pub mod utilities {
 
         #[repr(C)]
         struct BitmapFileHeader {
-            // typedef struct tagBITMAPFILEHEADER BITMAPFILEHEADER, *LPBITMAPFILEHEADER, *PBITMAPFILEHEADER;
+            // typedef struct tagBITMAPFILEHEADER BITMAPFILEHEADER;
             r#type: u16,      // WORD  bfType;
             size: u32,        // DWORD bfSize;
             reserved_00: u16, // WORD  bfReserved1;
@@ -43,7 +51,7 @@ pub mod utilities {
 
         #[repr(C)]
         struct BitmapInfoHeader {
-            // typedef struct tagBITMAPINFOHEADER BITMAPINFOHEADER, *LPBITMAPINFOHEADER, *PBITMAPINFOHEADER;
+            // typedef struct tagBITMAPINFOHEADER BITMAPINFOHEADER;
             size: u32,               // DWORD biSize;
             width: i32,              // LONG  biWidth;
             height: i32,             // LONG  biHeight;
@@ -58,12 +66,12 @@ pub mod utilities {
         }
 
         impl BitmapInfoHeader {
-            const fn get_scanline_order(&self) -> ScanlineOrdering {
+            const fn get_scanline_order(&self) -> ScanlineOrder {
                 // BitmapInfoHeader::height is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
                 return if self.height >= 0 {
-                    ScanlineOrdering::BOTTOMUP
+                    ScanlineOrder::BOTTOMUP
                 } else {
-                    ScanlineOrdering::TOPDOWN
+                    ScanlineOrder::TOPDOWN
                 };
             }
         }
