@@ -1,5 +1,5 @@
-mod utilities {
-    mod wingdi {
+pub mod utilities {
+    pub mod wingdi {
         // Wingdi data structures
 
         // order of pixels in the BMP buffer.
