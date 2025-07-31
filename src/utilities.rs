@@ -32,10 +32,10 @@ pub mod wingdi {
     #[repr(C)]
     pub struct RgbQuad {
         // typedef struct tagRGBQUAD RGBQUAD;
-        blue: u8,     // BYTE rgbBlue;
-        green: u8,    // BYTE rgbGreen;
-        red: u8,      // BYTE rgbRed;
-        reserved: u8, // BYTE rgbReserved;
+        pub blue: u8,     // BYTE rgbBlue;
+        pub green: u8,    // BYTE rgbGreen;
+        pub red: u8,      // BYTE rgbRed;
+        pub reserved: u8, // BYTE rgbReserved;
     }
 
     #[repr(C)]
