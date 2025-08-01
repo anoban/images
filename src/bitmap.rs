@@ -1,4 +1,7 @@
-use std::vec::Vec;
+use std::{
+    ops::{Index, IndexMut},
+    vec::Vec,
+};
 
 // order of pixels in the BMP buffer.
 #[repr(u8)]
@@ -17,7 +20,7 @@ enum CompressionKind {
     UNKNOWN,
 }
 
-// that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
+// that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses an unsigned short for SOI instead of two chars
 const SOI: u16 = ('B' as u16) | (('M' as u16) << 8); // Start Of Image
 
 #[repr(C)]
@@ -120,3 +123,18 @@ impl Bitmap {
         self.info_header.width
     }
 }
+
+impl Index<usize> for Bitmap {
+    type Output = RgbQuad;
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.pixels[idx]
+    }
+}
+
+impl IndexMut<usize> for Bitmap {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        &mut self.pixels[idx]
+    }
+}
+
+impl Iterator for Bitmap {}
