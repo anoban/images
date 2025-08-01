@@ -138,3 +138,5 @@ impl IndexMut<usize> for Bitmap {
 }
 
 impl Iterator for Bitmap {}
+
+mod tests {}
