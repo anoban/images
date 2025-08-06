@@ -119,25 +119,30 @@ impl Bitmap {
         }
     }
 
-    fn from_file(path: &str) -> Bitmap {}
+    pub fn from_file(path: &str) -> Bitmap {}
 
-    fn height(&self) -> i32 {
-        self.info_header.height
+    #[inline(always)]
+    pub fn height(&self) -> i32 {
+        self.info_header.biHeight
     }
 
-    fn width(&self) -> i32 {
-        self.info_header.width
+    #[inline(always)]
+    pub fn width(&self) -> i32 {
+        self.info_header.biWidth
     }
 }
 
 impl Index<usize> for Bitmap {
     type Output = RgbQuad;
+
+    #[inline(always)]
     fn index(&self, idx: usize) -> &Self::Output {
         &self.pixels[idx]
     }
 }
 
 impl IndexMut<usize> for Bitmap {
+    #[inline(always)]
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         &mut self.pixels[idx]
     }
