@@ -24,52 +24,56 @@ enum CompressionKind {
 const SOI: u16 = ('B' as u16) | (('M' as u16) << 8); // Start Of Image
 
 #[repr(C)]
+#[allow(non_snake_case)]
 pub struct RgbTriple {
     // typedef struct tagRGBTRIPLE RGBTRIPLE;
-    blue: u8,  // BYTE rgbBlue;
-    green: u8, // BYTE rgbGreen;
-    red: u8,   // BYTE rgbRed;
+    rgbBlue: u8,  // BYTE rgbBlue;
+    rgbGreen: u8, // BYTE rgbGreen;
+    rgbRed: u8,   // BYTE rgbRed;
 }
 
 #[repr(C)]
+#[allow(non_snake_case)]
 pub struct RgbQuad {
     // typedef struct tagRGBQUAD RGBQUAD;
-    pub blue: u8,     // BYTE rgbBlue;
-    pub green: u8,    // BYTE rgbGreen;
-    pub red: u8,      // BYTE rgbRed;
-    pub reserved: u8, // BYTE rgbReserved;
+    pub rgbBlue: u8,     // BYTE rgbBlue;
+    pub rgbGreen: u8,    // BYTE rgbGreen;
+    pub rgbRed: u8,      // BYTE rgbRed;
+    pub rgbReserved: u8, // BYTE rgbReserved;
 }
 
 #[repr(C)]
+#[allow(non_snake_case)]
 struct BitmapFileHeader {
     // typedef struct tagBITMAPFILEHEADER BITMAPFILEHEADER;
-    r#type: u16,      // WORD  bfType;
-    size: u32,        // DWORD bfSize;
-    reserved_00: u16, // WORD  bfReserved1;
-    reserved_01: u16, // WORD  bfReserved2;
-    offset_bits: u32, // DWORD bfOffBits;
+    bfType: u16,      // WORD  bfType;
+    bfSize: u32,      // DWORD bfSize;
+    bfReserved1: u16, // WORD  bfReserved1;
+    bfReserved2: u16, // WORD  bfReserved2;
+    bfOffBits: u32,   // DWORD bfOffBits;
 }
 
 #[repr(C)]
+#[allow(non_snake_case)]
 struct BitmapInfoHeader {
     // typedef struct tagBITMAPINFOHEADER BITMAPINFOHEADER;
-    size: u32,               // DWORD biSize;
-    width: i32,              // LONG  biWidth;
-    height: i32,             // LONG  biHeight;
-    planes: u16,             // WORD  biPlanes;
-    bitcount: u16,           // WORD  biBitCount;
-    compression: u32,        // DWORD biCompression;
-    image_size: u32,         // DWORD biSizeImage;
-    pixels_per_meter_x: i32, // LONG  biXPelsPerMeter;
-    pixels_per_meter_y: i32, // LONG  biYPelsPerMeter;
-    colours_used: u32,       // DWORD biClrUsed;
-    colours_important: u32,  // DWORD biClrImportant;
+    biSize: u32,          // DWORD biSize;
+    biWidth: i32,         // LONG  biWidth;
+    biHeight: i32,        // LONG  biHeight;
+    biPlanes: u16,        // WORD  biPlanes;
+    biBitCount: u16,      // WORD  biBitCount;
+    biCompression: u32,   // DWORD biCompression;
+    biSizeImage: u32,     // DWORD biSizeImage;
+    biXPelsPerMeter: i32, // LONG  biXPelsPerMeter;
+    biYPelsPerMeter: i32, // LONG  biYPelsPerMeter;
+    biClrUsed: u32,       // DWORD biClrUsed;
+    biClrImportant: u32,  // DWORD biClrImportant;
 }
 
 impl BitmapInfoHeader {
     #[inline(always)]
     const fn get_scanline_order(&self) -> ScanlineOrder {
-        return if self.height >= 0 {
+        return if self.biHeight >= 0 {
             ScanlineOrder::BOTTOMUP // BitmapInfoHeader::height is usually an unsigned value, indicating the customary bottom up order
         } else {
             ScanlineOrder::TOPDOWN // a negative value indicates that the scanlines are ordered top down
@@ -87,15 +91,15 @@ pub struct Bitmap {
 }
 
 impl Bitmap {
-    fn new(&mut self, height: i32, width: i32) -> Bitmap {
+    fn new(height: i32, width: i32) -> Bitmap {
         Bitmap {
             pixels: Vec::<RgbQuad>::with_capacity(height as usize * width as usize),
             file_header: BitmapFileHeader {
-                r#type: (),
-                size: (),
-                reserved_00: (),
-                reserved_01: (),
-                offset_bits: (),
+                bfType: (),
+                bfSize: (),
+                bfReserved1: (),
+                bfReserved2: (),
+                bfOffBits: (),
             },
             info_header: BitmapInfoHeader {
                 size: (),
@@ -114,6 +118,8 @@ impl Bitmap {
             filesize: 0,
         }
     }
+
+    fn from_file(path: &str) -> Bitmap {}
 
     fn height(&self) -> i32 {
         self.info_header.height

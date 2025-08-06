@@ -7,6 +7,7 @@
 // project headers
 #include <_helpers.h>
 #include <_imageio.h>
+#include <wingdi.h>
 
 // Windows .bmp format supports 1, 4, 8, 16, 24 and 32 bits pixel depths
 // eventhough Windows bitmaps support simple run length compression for pixels with 4 or 8 bits depth, it's rarely used as this compression gives tangible
@@ -153,9 +154,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return header;
         }
 
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] static void __stdcall cleanup() noexcept { }
-
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] static void __stdcall cleanup(_Inout_ bitmap& other) noexcept { }
+       
 
         // copy the contents of the BITMAPFILEHEADER and BITMAPINFOHEADER to the file buffer
         void __stdcall metadata_to_buffer() noexcept {
