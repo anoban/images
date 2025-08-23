@@ -1,7 +1,0 @@
-array_width = 50
-attr_fn_like_width = 100
-binop_separator = "Front"
-brace_style = "SameLineWhere"
-
-struct_lit_single_line = true
-struct_lit_width = 80
