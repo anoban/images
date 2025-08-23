@@ -1,0 +1,32 @@
+CompileFlags:
+  Add: [-Wall, -Wextra, -pedantic, -O0, -std=c++23, -c, -I./, -I./googletest/, -I./googletest/include/, -DDEBUG, -D_DEBUG]
+  Compiler:  clang++.exe
+  CompilationDatabase: None
+
+Completion:
+  AllScopes: Yes
+
+Index:
+  Background: Skip
+  StandardLibrary: Yes
+
+InlayHints:
+  Enabled: Yes
+  BlockEnd: Yes
+  Designators: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  TypeNameLimit: 0
+
+Hover:
+  ShowAKA: Yes
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
+  ClangTidy:
+    FastCheckFilter: None
+
+Style:
+  FullyQualifiedNamespaces: Yes
