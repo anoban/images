@@ -1,14 +1,13 @@
 #pragma once
 
 // clang-format off
-#include <internal.h>
+#include <wingdi.h>
 // clang-format on
 
 // project headers
-#include <wingdi.h>
-
 #include <_helpers.hpp>
 #include <_imageio.hpp>
+#include <_iterator.hpp>
 
 // Windows .bmp format supports 1, 4, 8, 16, 24 and 32 bits pixel depths
 // eventhough Windows bitmaps support simple run length compression for pixels with 4 or 8 bits depth, it's rarely used as this compression gives tangible

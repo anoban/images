@@ -14,9 +14,9 @@
 #include <handleapi.h>
 // clang-format on
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 
 // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
 // returned memory needs to be freed (`delete[]` ed) by the caller

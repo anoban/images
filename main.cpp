@@ -2,7 +2,7 @@
 #include <ico.h>
 #include <png.h>
 
-int wmain(void) {
+auto wmain() -> int {
     unsigned long     size {};
     const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
     std::wcout << size << L'\n';
