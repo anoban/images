@@ -3,7 +3,9 @@
 #include <ico>
 #include <png>
 
-int wmain() {
+int wmain(_In_ const int argc, _In_count_c_(argc) const wchar_t* const wargv[]) {
+    if (argc != 2) return EXIT_FAILURE;
+
     unsigned long     size {};
     const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
     std::wcout << size << L'\n';

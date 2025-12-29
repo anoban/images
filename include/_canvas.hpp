@@ -384,6 +384,8 @@ class canvas final : public bitmap {
 
         template<> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate<ANGLES::NINETY>() noexcept { }
 
+        template<typename _TyChar> [[deprecated("IMPLEMENTATION INCOMPLETE")]] std::basic_string<_TyChar> to_text() noexcept { }
+
         // returns a deep copy of self
         [[nodiscard]] canvas copy() const noexcept { return *this; }
 
