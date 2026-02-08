@@ -6,6 +6,7 @@
 // clang-format on
 
 #include <algorithm>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -291,7 +292,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return;
             }
 
-            ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
+            ::memcpy(buffer, other.buffer, other.file_size);
         }
 
         // copy assignment operator
