@@ -186,9 +186,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         explicit bitmap(const wchar_t* const filename) noexcept : // construct a bitmap from a file on disk
             buffer { internal::open(filename, file_size) },       // a little unorthodox but okay lol
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
-            pixels {
-                reinterpret_cast<wingdi::wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER))
-            },
+            pixels { reinterpret_cast<wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER)) },
             file_header { bitmap::parse_file_header(buffer, file_size) },
             info_header { bitmap::parse_info_header(buffer, file_size) },
             // file_size {}, we want to preserve size's previous state materialized by internal::open()
