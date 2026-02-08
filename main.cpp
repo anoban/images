@@ -3,7 +3,7 @@
 #include <ico>
 #include <png>
 
-int wmain(_In_ const int argc, _In_count_c_(argc) const wchar_t* const wargv[]) {
+int wmain(const int argc, const wchar_t* const wargv[]) {
     if (argc != 2) return EXIT_FAILURE;
 
     unsigned long     size {};

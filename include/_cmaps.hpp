@@ -2,15 +2,10 @@
 
 // clang-format off
 #include <internal.hpp>
+#include <_windef.hpp>
 // clang-format on
 
 #include <array>
-
-#define _AMD64_ // architecture
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_MEAN
-#include <windef.h>
-#include <wingdi.h>
 
 // colourmaps courtesy of https://github.com/ArashPartow/bitmap/blob/master/bitmap_image.hpp
 // his colourmaps use struct rgb_t { unsigned char red; unsigned char green; unsigned char blue; }; as the pixel type (RGB sequence)
@@ -21,7 +16,7 @@
 namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, HSV, HOT, GREY, COPPER and AUTUMN
 
     static constexpr unsigned CMAPSIZE { 1000 };
-    using colourmap = std::array<RGBQUAD, CMAPSIZE>;
+    using colourmap = std::array<wingdi::RGBQUAD, CMAPSIZE>;
 
     static constexpr colourmap YARG {
         { { 0, 0, 0, 255 },       { 0, 0, 0, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },
