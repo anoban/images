@@ -4,59 +4,32 @@
 #include <internal.hpp>
 // clang-format on
 
-// clang-format off
-#define _AMD64_ // architecture
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_MEAN
-
-#include <errhandlingapi.h>
-#include <fileapi.h>
-#include <handleapi.h>
-// clang-format on
-
 #include <cassert>
 #include <cstdio>
 #include <new>
+
+#include <sys/fcntl.h>
+#include <sys/stat.h>
 
 namespace internal {
 
     // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
     // returned memory needs to be freed (`delete[]` ed) by the caller
-    static inline unsigned char* __cdecl open( // NOLINT(readability-redundant-inline-specifier)
-        _In_ const wchar_t* const filename,
-        _Inout_ unsigned long&    size
+    static inline unsigned char*  open( // NOLINT(readability-redundant-inline-specifier)
+         const char* const filename,
+         unsigned long&    size
     ) noexcept {
         assert(filename); // ????
-
         unsigned char* buffer {};
-        LARGE_INTEGER  fsize {
-             { .LowPart = 0LLU, .HighPart = 0LLU }
-        };
-        const HANDLE64 file_handle { ::CreateFileW(filename, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr) };
+        struct stat    fstats {};
 
-        if (file_handle == INVALID_HANDLE_VALUE) {
-            ::fwprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                stderr,
-                L"Error %lu in CreateFileW (%s)\n",
-                ::GetLastError(),
-                filename
-            );
-            goto INVALID_HANDLE_ERROR;
-        }
+        const int filedesc = ::open(filename, O_RDONLY);
 
-        if (!::GetFileSizeEx(file_handle, &fsize)) { // NOLINT(readability-implicit-bool-conversion)
-            ::fwprintf_s(                            // NOLINT(cppcoreguidelines-pro-type-vararg)
-                stderr,
-                L"Error %lu in GetFileSizeEx (%s)\n",
-                ::GetLastError(),
-                filename
-            );
-            goto GETFILESIZEEX_ERROR;
-        }
+        ::fstat(filedesc, &fstats);
 
-        buffer = new (std::nothrow) unsigned char[fsize.QuadPart];
+        buffer = new (std::nothrow) unsigned char[fstats.st_size];
         if (!buffer) { // NOLINT(readability-implicit-bool-conversion)
-            ::fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
+            ::fputs("memory allocation failed inside " __PRETTY_FUNCTION__ "\n", stderr);
             goto GETFILESIZEEX_ERROR;
         }
 
@@ -80,10 +53,10 @@ INVALID_HANDLE_ERROR:
     }
 
     // a file format agnostic write routine to serialize binary image files, if a file with the specified name exists on disk, it will be overwritten
-    static inline bool __cdecl serialize( // NOLINT(readability-redundant-inline-specifier)
-        _In_ const wchar_t* const                         filename,
-        _In_reads_bytes_(size) const unsigned char* const buffer,
-        _In_ const unsigned long                          size
+    static inline bool  serialize( // NOLINT(readability-redundant-inline-specifier)
+         const char* const                         filename,
+         const unsigned char* const buffer,
+         const unsigned long                          size
     ) noexcept {
         assert(filename);          // too much??
         if (!buffer) return false; // fail if the buffer is a nullptr

@@ -1,14 +1,15 @@
 // clang-format off
-#define _AMD64_
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_MEAN
-#include <windef.h>
-#include <wingdi.h>
+#include <internal.hpp>
+#include <_windef.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <limits>
+
+// NOLINTBEGIN(readability-redundant-inline-specifier,modernize-avoid-c-arrays)
 
 namespace _to_text_impl {
 
@@ -17,145 +18,116 @@ namespace _to_text_impl {
     constexpr auto ONE { 1.000000000F };
 
     // characters in ascending order of luminance
-    static constexpr wchar_t palette_minimal[] = { L'_', L'.', L',', L'-', L'=', L'+', L':', L';', L'c', L'b', L'a', L'!', L'?', L'1',
-                                                   L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L'$', L'W', L'#', L'@', L'N' };
+    static constexpr char palette_minimal[]  = { '_', '.', ',', '-', '=', '+', ':', ';', 'c', 'b', 'a', '!', '?', '1',
+                                                 '2', '3', '4', '5', '6', '7', '8', '9', '$', 'W', '#', '@', 'N' };
 
-    static constexpr wchar_t palette[]         = { L' ', L'.', L'-', L',', L':', L'+', L'~', L';', L'(', L'%', L'x', L'1', L'*', L'n', L'u',
-                                                   L'T', L'3', L'J', L'5', L'$', L'S', L'4', L'F', L'P', L'G', L'O', L'V', L'X', L'E', L'Z',
-                                                   L'8', L'A', L'U', L'D', L'H', L'K', L'W', L'@', L'B', L'Q', L'#', L'0', L'M', L'N' };
+    static constexpr char palette[]          = { ' ', '.', '-', ',', ':', '+', '~', ';', '(', '%', 'x', '1', '*', 'n', 'u',
+                                                 'T', '3', 'J', '5', '$', 'S', '4', 'F', 'P', 'G', 'O', 'V', 'X', 'E', 'Z',
+                                                 '8', 'A', 'U', 'D', 'H', 'K', 'W', '@', 'B', 'Q', '#', '0', 'M', 'N' };
 
-    static constexpr wchar_t palette_extended[] = { L' ',  L'.', L'\'', L'`', L'^', L'"', L',', L':', L';', L'I', L'l', L'!', L'i', L'>',
-                                                    L'<',  L'~', L'+',  L'_', L'-', L'?', L']', L'[', L'}', L'{', L'1', L')', L'(', L'|',
-                                                    L'\\', L'/', L't',  L'f', L'j', L'r', L'x', L'n', L'u', L'v', L'c', L'z', L'X', L'Y',
-                                                    L'U',  L'J', L'C',  L'L', L'Q', L'0', L'O', L'Z', L'm', L'w', L'q', L'p', L'd', L'b',
-                                                    L'k',  L'h', L'a',  L'o', L'*', L'#', L'M', L'W', L'&', L'8', L'%', L'B', L'@', L'$' };
+    static constexpr char palette_extended[] = {
+        ' ', '.', '\'', '`', '^',  '"', ',', ':', ';', 'I', 'l', '!', 'i', '>', '<', '~', '+', '_', '-', '?', ']', '[', '}', '{',
+        '1', ')', '(',  '|', '\\', '/', 't', 'f', 'j', 'r', 'x', 'n', 'u', 'v', 'c', 'z', 'X', 'Y', 'U', 'J', 'C',  '',  'Q', '0',
+        'O', 'Z', 'm',  'w', 'q',  'p', 'd', 'b', 'k', 'h', 'a', 'o', '*', '#', 'M', 'W', '&', '8', '%', 'B', '@', '$'
+    };
 
-    // arithmetic average of an RGB pixel values
-    static inline unsigned __stdcall arithmetic_average(_In_ const RGBQUAD* const pixel) {
-        // we don't want overflows or truncations here
-        return (((float) (pixel->rgbBlue)) + pixel->rgbGreen + pixel->rgbRed) / 3.000;
-    }
+    namespace _pixel_ops {
 
-    // weighted average of an RGB pixel values
-    static inline unsigned __stdcall weighted_average(_In_ const RGBQUAD* const pixel) {
-        return pixel->rgbBlue * 0.299 + pixel->rgbGreen * 0.587 + pixel->rgbRed * 0.114;
-    }
+        // arithmetic average of an RGB pixel values
+        static constexpr inline unsigned arithmetic_average(const wingdi::RGBQUAD& pixel) noexcept {
+            // we don't want overflows or truncations here
+            return (static_cast<float>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.000;
+        }
 
-    // average of minimum and maximum RGB values in a pixel
-    static inline unsigned __stdcall minmax_average(_In_ const RGBQUAD* const pixel) {
-        // we don't want overflows or truncations here
-        return (((float) (min(min(pixel->rgbBlue, pixel->rgbGreen), pixel->rgbRed))) +
-                (max(max(pixel->rgbBlue, pixel->rgbGreen), pixel->rgbRed))) /
-               2.0000;
-    }
+        // weighted average of an RGB pixel values
+        static constexpr inline unsigned weighted_average(const wingdi::RGBQUAD& pixel) noexcept {
+            return pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
+        }
 
-    // luminosity of an RGB pixel
-    static inline unsigned __stdcall luminosity(_In_ const RGBQUAD* const pixel) {
-        return pixel->rgbBlue * 0.2126 + pixel->rgbGreen * 0.7152 + pixel->rgbRed * 0.0722;
-    }
+        // average of minimum and maximum RGB values in a pixel
+        static constexpr inline unsigned minmax_average(const wingdi::RGBQUAD& pixel) noexcept {
+            // we don't want overflows or truncations here
+            return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) +
+                    std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
+                   2.0000;
+        }
+
+        // luminosity of an RGB pixel
+        static constexpr inline unsigned luminosity(const wingdi::RGBQUAD& pixel) noexcept {
+            return pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
+        }
+
+    } // namespace _pixel_ops
 
     // taking it for granted that the input will never be a negative value,
-    static inline unsigned __stdcall nudge(_In_ const float _value) { return _value < 1.000000 ? 1 : _value; }
+    static inline unsigned nudge(const float _value) { return _value < 1.000000 ? 1 : _value; }
 
-    static inline wchar_t __stdcall arithmetic_mapper(
-        _In_ const RGBQUAD* const pixel, _In_ const wchar_t* const palette, _In_ const unsigned plength
-    ) {
-        const unsigned offset = (((float) (pixel->rgbBlue)) + pixel->rgbGreen + pixel->rgbRed) / 3.000; // can range from 0 to 255
-        // hence, offset / (float)(UCHAR_MAX) can range from 0.0 to 1.0
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+    static inline wchar_t arithmetic_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+        const unsigned offset = (((float) (pixel.rgbBlue)) + pixel.rgbGreen + pixel.rgbRed) / 3.000; // can range from 0 to 255
+        // hence, offset / (float)(std::numeric_limits<unsigned char>::max()) can range from 0.0 to 1.0
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall weighted_mapper(
-        _In_ const RGBQUAD* const pixel, _In_ const wchar_t* const palette, _In_ const unsigned plength
-    ) {
-        const unsigned offset = pixel->rgbBlue * 0.299 + pixel->rgbGreen * 0.587 + pixel->rgbRed * 0.114;
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+    static inline wchar_t weighted_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+        const unsigned offset = pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall minmax_mapper(
-        _In_ const RGBQUAD* const pixel, _In_ const wchar_t* const palette, _In_ const unsigned plength
-    ) {
-        const unsigned offset = (((float) (min(min(pixel->rgbBlue, pixel->rgbGreen), pixel->rgbRed))) +
-                                 (max(max(pixel->rgbBlue, pixel->rgbGreen), pixel->rgbRed))) /
+    static inline wchar_t minmax_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+        const unsigned offset = (((float) (std::min(std::min(pixel.rgbBlue, pixel.rgbGreen), pixel.rgbRed))) +
+                                 (std::max(std::max(pixel.rgbBlue, pixel.rgbGreen), pixel.rgbRed))) /
                                 2.0000;
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall luminosity_mapper(
-        _In_ const RGBQUAD* const pixel, _In_ const wchar_t* const palette, _In_ const unsigned plength
-    ) {
-        const unsigned offset = pixel->rgbBlue * 0.2126 + pixel->rgbGreen * 0.7152 + pixel->rgbRed * 0.0722;
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+    static inline wchar_t luminosity_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+        const unsigned offset = pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall arithmetic_blockmapper(
-        _In_ const float          rgbBlue,
-        _In_ const float          rgbGreen,
-        _In_ const float          rgbRed,
-        _In_ const wchar_t* const palette,
-        _In_ const unsigned       plength
+    static inline wchar_t arithmetic_blockmapper(
+        const float rgbBlue, const float rgbGreen, const float rgbRed, const wchar_t* const palette, const unsigned plength
     ) {
         const unsigned offset = (rgbBlue + rgbGreen + rgbRed) / 3.000; // can range from 0 to 255
-        // hence, offset / (float)(UCHAR_MAX) can range from 0.0 to 1.0
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+        // hence, offset / (float)(std::numeric_limits<unsigned char>::max()) can range from 0.0 to 1.0
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall weighted_blockmapper(
-        _In_ const float          rgbBlue,
-        _In_ const float          rgbGreen,
-        _In_ const float          rgbRed,
-        _In_ const wchar_t* const palette,
-        _In_ const unsigned       plength
+    static inline wchar_t weighted_blockmapper(
+        const float rgbBlue, const float rgbGreen, const float rgbRed, const wchar_t* const palette, const unsigned plength
     ) {
         const unsigned offset = rgbBlue * 0.299 + rgbGreen * 0.587 + rgbRed * 0.114;
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall minmax_blockmapper(
-        _In_ const float          rgbBlue,
-        _In_ const float          rgbGreen,
-        _In_ const float          rgbRed,
-        _In_ const wchar_t* const palette,
-        _In_ const unsigned       plength
+    static inline wchar_t minmax_blockmapper(
+        const float rgbBlue, const float rgbGreen, const float rgbRed, const wchar_t* const palette, const unsigned plength
     ) {
-        const unsigned offset = (min(min(rgbBlue, rgbGreen), rgbRed) + max(max(rgbBlue, rgbGreen), rgbRed)) / 2.0000;
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+        const unsigned offset = (std::min(std::min(rgbBlue, rgbGreen), rgbRed) + std::max(std::max(rgbBlue, rgbGreen), rgbRed)) / 2.0000;
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t __stdcall luminosity_blockmapper(
-        _In_ const float          rgbBlue,
-        _In_ const float          rgbGreen,
-        _In_ const float          rgbRed,
-        _In_ const wchar_t* const palette,
-        _In_ const unsigned       plength
+    static inline wchar_t luminosity_blockmapper(
+        const float rgbBlue, const float rgbGreen, const float rgbRed, const wchar_t* const palette, const unsigned plength
     ) {
         const unsigned offset = rgbBlue * 0.2126 + rgbGreen * 0.7152 + rgbRed * 0.0722;
-        return palette[offset ? nudge(offset / (float) (UCHAR_MAX) *plength) - 1 : 0];
+        return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-#define spalette                   palette                                                    // PICK ONE OF THE THREE AVALIABLE PALETTES
-#define map(_pixel)                weighted_mapper(_pixel, spalette, __crt_countof(spalette)) // CHOOSE A BASIC MAPPER OF YOUR LIKING
-
-// CHOOSE A BLOCK MAPPER OF YOUR LIKING
-#define blockmap(blue, green, red) weighted_blockmapper(blue, green, red, spalette, __crt_countof(spalette))
-
-    // IT IS NOT OBLIGATORY FOR BOTH THE BASIC MAPPER AND THE BLOCK MAPPER TO USE THE SAME PALETTE
-    // IF NEED BE, THE PALETTE EXPANDED FROM spalette COULD BE REPLACED BY A REAL PALETTE NAME
-
-    static inline wchar_t* __cdecl to_raw_string(_In_ const bitmap_t* const image) {
+    static inline wchar_t* __cdecl to_raw_string(const bitmap_t* const image) noexcept {
         if (image->_infoheader.biHeight < 0) {
-            fputws(L"Error in to_raw_string, this tool does not support bitmaps with top-down pixel ordering!\n", stderr);
+            ::fputs("Error in to_raw_string, this tool does not support bitmaps with top-down pixel ordering!\n", stderr);
             return NULL;
         }
 
         const int64_t npixels = (int64_t) image->_infoheader.biHeight * image->_infoheader.biWidth; // total pixels in the image
         const int64_t nwchars /* 1 wchar_t for each pixel + 2 additional wchar_ts for CRLF at the end of each scanline */ =
             npixels + 2LLU * image->_infoheader.biHeight;
-        // space for two extra wchar_ts (L'\r', L'\n') to be appended to the end of each line
+        // space for two extra wchar_ts ('\r', '\n') to be appended to the end of each line
 
         wchar_t* const buffer = malloc((nwchars + 1) * sizeof(wchar_t)); // and the +1 is for the NULL terminator
         if (!buffer) {
-            fwprintf_s(stderr, L"Error in %s @ line %d: malloc failed!\n", __FUNCTIONW__, __LINE__);
+            fprintf(stderr, L"Error in %s @ line %d: malloc failed!\n", __FUNCTIONW__, __LINE__);
             return NULL;
         }
 
@@ -175,8 +147,8 @@ namespace _to_text_impl {
             for (int64_t ncols = 0; ncols < image->_infoheader.biWidth; ++ncols) // for each pixel in the row,
                 buffer[caret++] = map(&image->_pixels[nrows * image->_infoheader.biWidth + ncols]);
             // at the end of each scanline, append a CRLF!
-            buffer[caret++] = L'\n';
-            buffer[caret++] = L'\r';
+            buffer[caret++] = '\n';
+            buffer[caret++] = '\r';
         }
 
         buffer[caret] = 0; // null termination of the string
@@ -185,7 +157,7 @@ namespace _to_text_impl {
         return buffer;
     }
 
-    static inline wchar_t* __cdecl to_downscaled_string(_In_ const bitmap_t* const image) {
+    static inline wchar_t* __cdecl to_downscaled_string(const bitmap_t* const image) noexcept {
         if (image->_infoheader.biHeight < 0) {
             fputws(L"Error in to_downscaled_string, this tool does not support bitmaps with top-down pixel ordering!\n", stderr);
             return NULL;
@@ -285,8 +257,8 @@ namespace _to_text_impl {
                 blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
             }
 
-            buffer[caret++] = L'\n';
-            buffer[caret++] = L'\r';
+            buffer[caret++] = '\n';
+            buffer[caret++] = '\r';
         }
 
         assert(row < block_d);
@@ -316,8 +288,8 @@ namespace _to_text_impl {
                 blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
             }
 
-            buffer[caret++] = L'\n';
-            buffer[caret++] = L'\r';
+            buffer[caret++] = '\n';
+            buffer[caret++] = '\r';
         }
 
         buffer[caret++] = 0; // using the last byte as null terminator
@@ -330,8 +302,10 @@ namespace _to_text_impl {
     }
 
     // an image width predicated dispatcher for to_raw_string and to_downscaled_string
-    static inline wchar_t* __cdecl to_string(_In_ const bitmap_t* const image) {
+    static inline wchar_t* __cdecl to_string(const bitmap_t* const image) {
         if (image->_infoheader.biWidth <= CONSOLE_WIDTH) return to_raw_string(image);
         return to_downscaled_string(image);
     }
 } // namespace _to_text_impl
+
+// NOLINTEND(readability-redundant-inline-specifier,modernize-avoid-c-arrays)

@@ -4,15 +4,6 @@
 #include <internal.hpp>
 // clang-format on
 
-#define NOMINMAX // NOMINMAX only works with <Windows.h>, when system headers are directly included without relying on <Windows.h>
-// NOMINMAX offers no help as it seems only <Windows.h> has the #undef directives receptive to NOMINMAX
-#ifdef min
-    #undef min
-#endif
-#ifdef max
-    #undef max
-#endif
-
 #include <array>
 #include <cassert>
 #include <iostream>
@@ -23,17 +14,12 @@
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_MEAN
 #include <intrin.h>
-#include <windef.h>
-#include <wingdi.h>
-#include <WinSock2.h>
+#include <_windef.hpp>
 // clang-format on
-
-#pragma comment(lib, "Gdi32.lib")
-#pragma comment(lib, "Ws2_32.lib")
 
 #if defined(DEBUG) || defined(_DEBUG)
     #define dbgputws(...)     ::fputws(__VA_ARGS__, stderr)
-    #define dbgwprintf_s(...) ::fwprintf_s(stderr, __VA_ARGS__);
+    #define dbgwprintf_s(...) ::fwprintf(stderr, __VA_ARGS__);
 #else
     #define dbgputws(...)
     #define dbgwprintf_s(...)
@@ -48,11 +34,11 @@ enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINO
 enum class ANGLES : unsigned short { NINETY = 0x5A, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
 
 // for the sake of convenience
-static constexpr bool __stdcall operator==(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
+static constexpr bool __stdcall operator==(const RGBQUAD& left, const RGBQUAD& right) noexcept {
     return left.rgbBlue == right.rgbBlue && left.rgbGreen == right.rgbGreen && left.rgbRed == right.rgbRed;
 }
 
-static constexpr bool __stdcall operator!=(_In_ const RGBQUAD& left, _In_ const RGBQUAD& right) noexcept {
+static constexpr bool __stdcall operator!=(const RGBQUAD& left, const RGBQUAD& right) noexcept {
     return left.rgbBlue != right.rgbBlue || left.rgbGreen != right.rgbGreen || left.rgbRed != right.rgbRed;
 }
 
@@ -64,20 +50,20 @@ namespace internal {
         typename std::enable_if<
             std::is_enum<_TyFrom>::value, /* std::is_scoped_enum type trait requires C++23 */
             typename std::underlying_type<_TyFrom>::type>::type>
-    static constexpr _TyTo __stdcall to_underlying(_In_ const _TyFrom& enumeration) noexcept {
+    static constexpr _TyTo __stdcall to_underlying(const _TyFrom& enumeration) noexcept {
         return static_cast<_TyTo>(enumeration);
     }
 
     template<typename _TyCandidate, typename _Ty> // NOLINTNEXTLINE(modernize-use-constraints)
     static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_Ty>::value, bool>::type is_in(
-        _In_ const _TyCandidate& candidate, _In_ const _Ty& last
+        const _TyCandidate& candidate, const _Ty& last
     ) noexcept {
         return candidate == last;
     }
 
     template<typename _TyCandidate, typename _TyFirst, typename... _TyList> // NOLINTNEXTLINE(modernize-use-constraints)
     static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_TyFirst>::value, bool>::type is_in(
-        _In_ const _TyCandidate& candidate, _In_ const _TyFirst& first, _In_ const _TyList&... list
+        const _TyCandidate& candidate, const _TyFirst& first, const _TyList&... list
     ) noexcept {
         return candidate == first || internal::is_in(candidate, list...);
     }
@@ -85,15 +71,13 @@ namespace internal {
     namespace ascii {
 
         // isalpha() from <cctype> is not constexpr :(
-        [[nodiscard]] static constexpr bool __stdcall is_alphabet(_In_ const char& character) noexcept {
+        [[nodiscard]] static constexpr bool __stdcall is_alphabet(const char& character) noexcept {
             return (character >= 0x41 && character <= 0x5A) /* A - Z */ || (character >= 0x61 && character <= 0x7A); /* a - z */
         }
 
         // NOLINTNEXTLINE(modernize-avoid-c-arrays)
 
-        [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(
-            _In_ const char* const array, _In_ const unsigned long long length
-        ) noexcept {
+        [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(const char* const array, const unsigned long long length) noexcept {
             bool result { true };
             for (unsigned i = 0; i < length; ++i)
                 result &= ascii::is_alphabet(array[i]); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -101,12 +85,12 @@ namespace internal {
         }
 
         // isupper() from <cctype> is not constexpr
-        [[nodiscard]] static constexpr bool __stdcall is_uppercase(_In_ const char& character) noexcept {
+        [[nodiscard]] static constexpr bool __stdcall is_uppercase(const char& character) noexcept {
             return character >= 0x41 && character <= 0x5A; /* A - 0x41 and Z - 0x5A */
         }
 
         // islower() from <cctype> is not constexpr
-        [[nodiscard]] static constexpr bool __stdcall is_lowercase(_In_ const char& character) noexcept {
+        [[nodiscard]] static constexpr bool __stdcall is_lowercase(const char& character) noexcept {
             return character >= 0x61 && character <= 0x7A; /* a - 0x61 and z - 0x7A */
         }
 
@@ -222,7 +206,7 @@ namespace internal {
 
         // works great, tested and produces the same results as Python's binascii.crc32()
         [[nodiscard]] static constexpr unsigned __stdcall get(
-            _In_count_(length) const unsigned char* const bytestream, _In_ const unsigned long long length
+            _In_count_(length) const unsigned char* const bytestream, const unsigned long long length
         ) noexcept {
             unsigned crc { 0xFFFFFFFF }; // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
@@ -279,9 +263,9 @@ namespace internal {
 #endif
         }
 
-        [[maybe_unused,
-          nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(_In_reads_bytes_(8)
-                                                                                   const unsigned char* const bytestream) noexcept {
+        [[maybe_unused, nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(
+            _In_reads_bytes_(8) const unsigned char* const bytestream
+        ) noexcept {
             assert(bytestream);
 #if defined(__llvm__) && defined(__clang__)
             static constexpr __m64 mask_pi8 { 0x01020304050607 };

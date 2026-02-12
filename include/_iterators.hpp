@@ -32,12 +32,12 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
         size_type length {}; // number of elements in the iterable
         size_type offset {}; // position in the iterable currently referenced by the iterator
 
-        constexpr void __stdcall cleanup() noexcept {
+        constexpr void cleanup() noexcept {
             rsrc   = nullptr;
             length = offset = 0;
         }
 
-        constexpr void __stdcall cleanup(_Inout_ random_access_iterator& other) const noexcept {
+        constexpr void cleanup(random_access_iterator& other) const noexcept {
             other.rsrc   = nullptr;
             other.length = other.offset = 0;
         }
@@ -45,27 +45,27 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
     public: // NOLINT(readability-redundant-access-specifiers)
         constexpr random_access_iterator() noexcept = default;
 
-        constexpr random_access_iterator(_In_ _Ty* const _res, _In_ const size_type& _len) noexcept : rsrc(_res), length(_len), offset() {
+        constexpr random_access_iterator(_Ty* const _res, const size_type& _len) noexcept : rsrc(_res), length(_len), offset() {
             assert(_res);
             assert(_len);
         }
 
-        constexpr random_access_iterator(_In_ _Ty* const _res, _In_ const size_type& _len, _In_ const size_type& _pos) noexcept :
+        constexpr random_access_iterator(_Ty* const _res, const size_type& _len, const size_type& _pos) noexcept :
             rsrc(_res), length(_len), offset(_pos) {
             assert(_res);
             assert(_len);
             assert(_len >= _pos);
         }
 
-        constexpr random_access_iterator(_In_ const random_access_iterator& other) noexcept :
+        constexpr random_access_iterator(const random_access_iterator& other) noexcept :
             rsrc(other.rsrc), length(other.length), offset(other.offset) { }
 
-        constexpr random_access_iterator(_In_ random_access_iterator&& other) noexcept :
+        constexpr random_access_iterator(random_access_iterator&& other) noexcept :
             rsrc(other.rsrc), length(other.length), offset(other.offset) {
             cleanup(other); // cleanup the stolen from resource
         }
 
-        constexpr random_access_iterator& operator=(_In_ const random_access_iterator& other) noexcept {
+        constexpr random_access_iterator& operator=(const random_access_iterator& other) noexcept {
             if (this == &other) return *this;
             rsrc   = other.rsrc;
             length = other.length;
@@ -73,7 +73,7 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
             return *this;
         }
 
-        constexpr random_access_iterator& operator=(_In_ random_access_iterator&& other) noexcept {
+        constexpr random_access_iterator& operator=(random_access_iterator&& other) noexcept {
             if (this == &other) return *this;
             rsrc   = other.rsrc;
             length = other.length;
@@ -84,9 +84,9 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
 
         ~random_access_iterator() noexcept { cleanup(); }
 
-        constexpr reference __stdcall operator*() noexcept { return rsrc[offset]; }
+        constexpr reference operator*() noexcept { return rsrc[offset]; }
 
-        constexpr const_reference __stdcall operator*() const noexcept { return rsrc[offset]; }
+        constexpr const_reference operator*() const noexcept { return rsrc[offset]; }
 
         constexpr pointer _unwrapped() noexcept { return rsrc; }
 
@@ -94,57 +94,53 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
 
         constexpr void reset() noexcept { offset = 0; }
 
-        constexpr random_access_iterator& __stdcall operator++() noexcept {
+        constexpr random_access_iterator& operator++() noexcept {
             offset++;
             assert(offset <= length);
             return *this;
         }
 
-        constexpr random_access_iterator __stdcall operator++(int) noexcept {
+        constexpr random_access_iterator operator++(int) noexcept {
             offset++;
             assert(offset <= length);
             return { rsrc, length, offset - 1 };
         }
 
-        constexpr random_access_iterator& __stdcall operator--() noexcept {
+        constexpr random_access_iterator& operator--() noexcept {
             offset--;
             assert(offset <= length); // assert(_offset >= 0); won't help because _offset is unsigned so instead, check for wraparounds
             return *this;
         }
 
-        constexpr random_access_iterator __stdcall operator--(int) noexcept {
+        constexpr random_access_iterator operator--(int) noexcept {
             offset--;
             assert(offset <= length);
             return { rsrc, length, offset + 1 };
         }
 
-        constexpr bool __stdcall operator==(_In_ const random_access_iterator& other) const noexcept {
+        constexpr bool operator==(const random_access_iterator& other) const noexcept {
             return rsrc == other.rsrc && offset == other.offset;
         }
 
-        constexpr bool __stdcall operator!=(_In_ const random_access_iterator& other) const noexcept {
+        constexpr bool operator!=(const random_access_iterator& other) const noexcept {
             return rsrc != other.rsrc || offset != other.offset;
         }
 
-        constexpr bool __stdcall operator<(_In_ const random_access_iterator& other) const noexcept {
-            return rsrc == other.rsrc && offset < other.offset;
-        }
+        constexpr bool operator<(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset < other.offset; }
 
-        constexpr bool __stdcall operator<=(_In_ const random_access_iterator& other) const noexcept {
+        constexpr bool operator<=(const random_access_iterator& other) const noexcept {
             return rsrc == other.rsrc && offset <= other.offset;
         }
 
-        constexpr bool __stdcall operator>(_In_ const random_access_iterator& other) const noexcept {
-            return rsrc == other.rsrc && offset > other.offset;
-        }
+        constexpr bool operator>(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset > other.offset; }
 
-        constexpr bool __stdcall operator>=(_In_ const random_access_iterator& other) const noexcept {
+        constexpr bool operator>=(const random_access_iterator& other) const noexcept {
             return rsrc == other.rsrc && offset >= other.offset;
         }
 
         template<typename _TyInt> // NOLINTNEXTLINE(modernize-use-constraints)
         constexpr typename std::enable_if<std::is_integral_v<_TyInt>, random_access_iterator>::type operator+(
-            _In_ const _TyInt& stride
+            const _TyInt& stride
         ) const noexcept {
             assert(length >= offset + stride);
             return { rsrc, length, offset + stride };
@@ -152,19 +148,19 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
 
         template<typename _TyInt> // NOLINTNEXTLINE(modernize-use-constraints)
         constexpr typename std::enable_if<std::is_integral<_TyInt>::value, random_access_iterator>::type operator-(
-            _In_ const _TyInt& stride
+            const _TyInt& stride
         ) const noexcept {
             assert(length >= offset - stride);
             return { rsrc, length, offset - stride };
         }
 
-        constexpr difference_type operator+(_In_ const random_access_iterator& other) const noexcept {
+        constexpr difference_type operator+(const random_access_iterator& other) const noexcept {
             assert(rsrc == other.rsrc && length == other.length);
             assert(offset + other.offset <= length);
             return offset + other.offset;
         }
 
-        constexpr difference_type operator-(_In_ const random_access_iterator& other) const noexcept {
+        constexpr difference_type operator-(const random_access_iterator& other) const noexcept {
             assert(rsrc == other.rsrc && length == other.length);
             assert(offset + other.offset <= length);
             return offset - other.offset;
