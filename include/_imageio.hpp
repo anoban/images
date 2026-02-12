@@ -15,7 +15,7 @@ namespace internal {
 
     // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
     // returned memory needs to be freed (`delete[]` ed) by the caller
-    static inline unsigned char*  open( // NOLINT(readability-redundant-inline-specifier)
+    static inline unsigned char*  read( // NOLINT(readability-redundant-inline-specifier)
          const char* const filename,
          unsigned long&    size
     ) noexcept {
@@ -25,7 +25,7 @@ namespace internal {
 
         const int filedesc = ::open(filename, O_RDONLY);
 
-        ::fstat(filedesc, &fstats);
+        ::fstat(filedesc, &fstats); // make sure this doesn't fail
 
         buffer = new (std::nothrow) unsigned char[fstats.st_size];
         if (!buffer) { // NOLINT(readability-implicit-bool-conversion)

@@ -34,18 +34,18 @@ namespace _to_text_impl {
     namespace _pixel_ops {
 
         // arithmetic average of an RGB pixel values
-        static constexpr inline unsigned arithmetic_average(const wingdi::RGBQUAD& pixel) noexcept {
+        static constexpr inline unsigned arithmetic_average(const RGBQUAD& pixel) noexcept {
             // we don't want overflows or truncations here
             return (static_cast<float>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.000;
         }
 
         // weighted average of an RGB pixel values
-        static constexpr inline unsigned weighted_average(const wingdi::RGBQUAD& pixel) noexcept {
+        static constexpr inline unsigned weighted_average(const RGBQUAD& pixel) noexcept {
             return pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
         }
 
         // average of minimum and maximum RGB values in a pixel
-        static constexpr inline unsigned minmax_average(const wingdi::RGBQUAD& pixel) noexcept {
+        static constexpr inline unsigned minmax_average(const RGBQUAD& pixel) noexcept {
             // we don't want overflows or truncations here
             return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) +
                     std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
@@ -53,7 +53,7 @@ namespace _to_text_impl {
         }
 
         // luminosity of an RGB pixel
-        static constexpr inline unsigned luminosity(const wingdi::RGBQUAD& pixel) noexcept {
+        static constexpr inline unsigned luminosity(const RGBQUAD& pixel) noexcept {
             return pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
         }
 
@@ -62,25 +62,25 @@ namespace _to_text_impl {
     // taking it for granted that the input will never be a negative value,
     static inline unsigned nudge(const float _value) { return _value < 1.000000 ? 1 : _value; }
 
-    static inline wchar_t arithmetic_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+    static inline wchar_t arithmetic_mapper(const RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
         const unsigned offset = (((float) (pixel.rgbBlue)) + pixel.rgbGreen + pixel.rgbRed) / 3.000; // can range from 0 to 255
         // hence, offset / (float)(std::numeric_limits<unsigned char>::max()) can range from 0.0 to 1.0
         return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t weighted_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+    static inline wchar_t weighted_mapper(const RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
         const unsigned offset = pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
         return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t minmax_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+    static inline wchar_t minmax_mapper(const RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
         const unsigned offset = (((float) (std::min(std::min(pixel.rgbBlue, pixel.rgbGreen), pixel.rgbRed))) +
                                  (std::max(std::max(pixel.rgbBlue, pixel.rgbGreen), pixel.rgbRed))) /
                                 2.0000;
         return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }
 
-    static inline wchar_t luminosity_mapper(const wingdi::RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
+    static inline wchar_t luminosity_mapper(const RGBQUAD& pixel, const wchar_t* const palette, const unsigned plength) {
         const unsigned offset = pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
         return palette[offset ? nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * plength) - 1 : 0];
     }

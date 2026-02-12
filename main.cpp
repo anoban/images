@@ -3,11 +3,11 @@
 #include <ico>
 #include <png>
 
-int wmain(const int argc, const wchar_t* const wargv[]) {
+int main(const int argc, const char* const argv[]) {
     if (argc != 2) return EXIT_FAILURE;
 
     unsigned long     size {};
-    const auto* const pngstream { internal::open(LR"(./sweeney.png)", size) };
+    const auto* const pngstream { internal::read(R"(./sweeney.png)", size) };
     std::wcout << size << L'\n';
 
     internal::IHDR ihdr { pngstream + 8 };

@@ -2,6 +2,7 @@
 
 // clang-format off
 #include <internal.hpp>
+#include <_windef.hpp>
 // clang-format on
 
 #include <immintrin.h>
@@ -17,17 +18,17 @@ class canvas final : public bitmap {
     public:
         canvas() noexcept = delete;
 
-        explicit canvas( const wchar_t* const filename) noexcept : bitmap(filename) { }
+        explicit canvas(const wchar_t* const filename) noexcept : bitmap(filename) { }
 
-        canvas( const long height,  const long width) noexcept : bitmap { height, width } { }
+        canvas(const long height, const long width) noexcept : bitmap { height, width } { }
 
-        explicit canvas( const bitmap& image) noexcept : bitmap { image } { }
+        explicit canvas(const bitmap& image) noexcept : bitmap { image } { }
 
-        explicit canvas( bitmap&& image) noexcept : bitmap { std::move(image) } { }
+        explicit canvas(bitmap&& image) noexcept : bitmap { std::move(image) } { }
 
-        canvas( const canvas& other) = default;
+        canvas(const canvas& other) = default;
 
-        canvas& operator=( const canvas& other) noexcept {
+        canvas& operator=(const canvas& other) noexcept {
             if (this == std::addressof(other)) return *this;
             // since class canvas does not have any data members of its own, take
             // advantage of the base class's copy assignment operator
@@ -37,9 +38,9 @@ class canvas final : public bitmap {
 
         // since class canvas does not have any data members of its own, take
         // advantage of the base class's move constructor
-        canvas( canvas&& other) noexcept : bitmap(std::move(other)) { }
+        canvas(canvas&& other) noexcept : bitmap(std::move(other)) { }
 
-        canvas& operator=( canvas&& other) noexcept {
+        canvas& operator=(canvas&& other) noexcept {
             if (this == std::addressof(other)) return *this;
             // again, leveraging the base class's move constructor
             bitmap::operator=(std::move(other));
@@ -50,11 +51,11 @@ class canvas final : public bitmap {
 
         // resizes the pixel buffer and updates the metadata and remaps the old pixels
         // to the new buffer
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize( const long height,  const long width) noexcept { }
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize(const long height, const long width) noexcept { }
 
         // this is a crude resize operation that just resizes the existing pixel
         // buffer and updates the metadata accordingly
-        canvas& resize_for_overwrite( const long height,  const long width) noexcept {
+        canvas& resize_for_overwrite(const long height, const long width) noexcept {
             // the members the need to be updated after a resize operation are [buffer],
             // [pixels], [buffer_size], file_header, info_header, file_size
             const auto newsize { sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width };
@@ -88,7 +89,7 @@ class canvas final : public bitmap {
 
         // most methods that involve transformations of some sort return a reference
         // to self in order to facilitate method chaining
-        canvas& fill_with( const RGBQUAD& pixel) noexcept {
+        canvas& fill_with(const RGBQUAD& pixel) noexcept {
             std::fill(begin(), end(), pixel);
             return *this;
         }
@@ -229,9 +230,9 @@ class canvas final : public bitmap {
 
         // look up https://en.wikipedia.org/wiki/Julia_set
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& julia(
-             const colourmaps::colourmap& cmap,
-             const double&                escape_radius // choose escape_radius > 0 such that escape_radius**2
-                                                            // - escape_radius >= sqrt(cx**2 + cy**2)
+            const colourmaps::colourmap& cmap,
+            const double&                escape_radius // choose escape_radius > 0 such that escape_radius**2
+                                                       // - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
             internal::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
@@ -264,9 +265,9 @@ class canvas final : public bitmap {
 
         // lookup https://en.wikipedia.org/wiki/Julia_set
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& multijulia(
-             const colourmaps::colourmap& cmap,
-             const double&                escape_radius // choose escape_radius > 0 such that escape_radius**2
-                                                            // - escape_radius >= sqrt(cx**2 + cy**2)
+            const colourmaps::colourmap& cmap,
+            const double&                escape_radius // choose escape_radius > 0 such that escape_radius**2
+                                                       // - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
             internal::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
@@ -299,7 +300,7 @@ class canvas final : public bitmap {
         }
 
         // look up https://en.wikipedia.org/wiki/Mandelbrot_set
-        canvas& mandelbrot( const colourmaps::colourmap& cmap) noexcept {
+        canvas& mandelbrot(const colourmaps::colourmap& cmap) noexcept {
             internal ::complex<double> scaled_coords {}, coords {}, squares {}; // NOLINT(readability-isolate-declaration)
             double                     xtemp {};
             unsigned long long         niterations {};
@@ -348,7 +349,7 @@ class canvas final : public bitmap {
         }
 
         // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& tricorn( const colourmaps::colourmap& cmap) noexcept {
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& tricorn(const colourmaps::colourmap& cmap) noexcept {
             // NOLINTNEXTLINE(readability-isolate-declaration)
             internal ::complex<double> scaled_coords {}, coords {}, squares {}; // x (-2.5, 1) y (-1, 1)
             double                     xtemp {};

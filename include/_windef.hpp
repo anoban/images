@@ -1,6 +1,6 @@
 #pragma once
 
-namespace wingdi {
+extern "C" {
 
     // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-rgbquad
     struct RGBQUAD {
@@ -38,4 +38,4 @@ namespace wingdi {
     };
 
 #pragma pack(pop)
-} // namespace wingdi
+}

@@ -25,14 +25,14 @@
 
 // since bitmaps originted in Microsoft, Windows SDK (wingdi.h) comes pre-packed with almost all the necessary data structures and routines to handle bitmaps
 
-// every Windows bitmap file begins with a wingdi::BITMAPFILEHEADER struct, this helps in recognizing the file as a bitmap, the first two bytes will be 'B', 'M'
-// image header comes in two variants, one representing OS/2 bitmap format (BITMAPCOREHEADER) and the other representing the most common Windows bitmap format (wingdi::BITMAPINFOHEADER)
+// every Windows bitmap file begins with a BITMAPFILEHEADER struct, this helps in recognizing the file as a bitmap, the first two bytes will be 'B', 'M'
+// image header comes in two variants, one representing OS/2 bitmap format (BITMAPCOREHEADER) and the other representing the most common Windows bitmap format (BITMAPINFOHEADER)
 // however there are no markers to identify the type of the image header present in the bmp image, the only way to determine this is to examine the struct's size filed, that is the first 4 bytes of the struct
-// from Windows 95 onwards, Windows supports an extended version of wingdi::BITMAPINFOHEADER, which could be larger than 40 bytes
+// from Windows 95 onwards, Windows supports an extended version of BITMAPINFOHEADER, which could be larger than 40 bytes
 
 class bitmap { // this class is designed to represent what Windows calls as DIBs (Device Independent Bitmap)
     public:
-        using value_type      = wingdi::wingdi::RGBQUAD; // pixel type
+        using value_type      = RGBQUAD; // pixel type
         using pointer         = value_type*;
         using const_pointer   = const value_type*;
         using reference       = value_type&;
@@ -48,7 +48,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // types of compressions used in BMP files.
         enum class COMPRESSION_KIND : unsigned char { RGB, RLE8, RLE4, BITFIELDS, UNKNOWN };
 
-        // that's 'M' followed by a 'B' (LE), wingdi's wingdi::BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
+        // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
         static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
         // clang-format off
@@ -57,12 +57,12 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 #endif
         // clang-format on
 
-        unsigned char*           buffer; // this will point to the original file buffer, this is the one that needs deallocation!
-        wingdi::wingdi::RGBQUAD* pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
-        wingdi::BITMAPFILEHEADER file_header;
-        wingdi::BITMAPINFOHEADER info_header;
-        unsigned long            file_size; // REDUNDANT BECAUSE wingdi::BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
-        unsigned long buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+        unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
+        RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
+        BITMAPFILEHEADER file_header;
+        BITMAPINFOHEADER info_header;
+        unsigned long    file_size;   // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
+        unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
 
         friend class icon_directory; // to serialize ico objects as bitmaps, we need access to this class's internals
 
@@ -81,14 +81,14 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // inside the raw file buffer - no additional heap allocations and we could just sink the buffer to the disk when a serialization is needed
         // find the type of compression used in the BMP file, bitmap files, in general aren't compressed
 
-        [[nodiscard]] static constexpr SCANLINE_ORDERING get_scanline_order(const wingdi::BITMAPINFOHEADER& header) noexcept {
-            // wingdi::BITMAPINFOHEADER::biHeight is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
+        [[nodiscard]] static constexpr SCANLINE_ORDERING get_scanline_order(const BITMAPINFOHEADER& header) noexcept {
+            // BITMAPINFOHEADER::biHeight is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
             return header.biHeight >= 0 ? SCANLINE_ORDERING::BOTTOMUP : SCANLINE_ORDERING::TOPDOWN;
         }
 
         [[nodiscard]] static constexpr COMPRESSION_KIND get_compression_kind(const unsigned kind) noexcept {
             switch (kind) {
-                case 0  : return COMPRESSION_KIND::RGB; // uncompressed wingdi::RGBQUAD pixels
+                case 0  : return COMPRESSION_KIND::RGB; // uncompressed RGBQUAD pixels
                 case 1  : return COMPRESSION_KIND::RLE8;
                 case 2  : return COMPRESSION_KIND::RLE4;
                 case 3  : return COMPRESSION_KIND::BITFIELDS;
@@ -97,13 +97,11 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return COMPRESSION_KIND::UNKNOWN;
         }
 
-        [[nodiscard]] static wingdi::BITMAPFILEHEADER parse_file_header(
-            const unsigned char* const imstream, const size_t& length
-        ) noexcept {
-            static_assert(sizeof(wingdi::BITMAPFILEHEADER) == 14LLU);
-            assert(length >= sizeof(wingdi::BITMAPFILEHEADER));
+        [[nodiscard]] static BITMAPFILEHEADER parse_file_header(const unsigned char* const imstream, const size_t& length) noexcept {
+            static_assert(sizeof(BITMAPFILEHEADER) == 14LLU);
+            assert(length >= sizeof(BITMAPFILEHEADER));
 
-            wingdi::BITMAPFILEHEADER header {};
+            BITMAPFILEHEADER header {};
             if (!imstream) [[unlikely]] {
                 ::fputws(L"Error in " __FUNCTION__ ", received an empty buffer\n", stderr);
                 return header;
@@ -118,20 +116,18 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             header.bfType      = SOI;                                              // 'B', 'M'
             header.bfSize      = *reinterpret_cast<const unsigned*>(imstream + 2); // file size in bytes
             header.bfReserved1 = header.bfReserved2 = 0;                           // 4 reserved bytes
-            // offset from the beginning of wingdi::BITMAPFILEHEADER struct to the start of pixel data
+            // offset from the beginning of BITMAPFILEHEADER struct to the start of pixel data
             header.bfOffBits                        = *reinterpret_cast<const unsigned*>(imstream + 10);
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return header;
         }
 
-        [[nodiscard]] static wingdi::BITMAPINFOHEADER parse_info_header(
-            const unsigned char* const imstream, const size_t& length
-        ) noexcept {
-            // alignment of wingdi's wingdi::BITMAPINFOHEADER members makes it inherently packed :)
-            static_assert(sizeof(wingdi::BITMAPINFOHEADER) == 40LLU);
-            assert(length >= (sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER)));
+        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(const unsigned char* const imstream, const size_t& length) noexcept {
+            // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
+            static_assert(sizeof(BITMAPINFOHEADER) == 40LLU);
+            assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
 
-            wingdi::BITMAPINFOHEADER header {};
+            BITMAPINFOHEADER header {};
             if (!imstream) [[unlikely]] {
                 ::fputws(L"Error in " __FUNCTIONW__ ", received an empty buffer\n", stderr);
                 return header;
@@ -139,8 +135,8 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             if ((header.biSize = *reinterpret_cast<const long*>(imstream + 14)) != 40) [[unlikely]] {
-                // size of the wingdi::BITMAPINFOHEADER struct must be == 40 bytes
-                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable wingdi::BITMAPINFOHEADER\n", stderr);
+                // size of the BITMAPINFOHEADER struct must be == 40 bytes
+                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
                 return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             }
 
@@ -148,9 +144,9 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             header.biWidth         = *reinterpret_cast<const long*>(imstream + 18); // width of the bitmap image in pixels
             header.biHeight        = *reinterpret_cast<const long*>(imstream + 22); // height of the bitmap image in pixels
             // bitmaps with a negative height may not be compressed
-            header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26);        // must be 1
-            header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28);        // 1, 4, 8, 16, 24 or 32
-            header.biCompression   = static_cast<decltype(wingdi::BITMAPINFOHEADER::biCompression)>( // compression kind (if compressed)
+            header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
+            header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
+            header.biCompression   = static_cast<decltype(BITMAPINFOHEADER::biCompression)>(  // compression kind (if compressed)
                 bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
             );
             header.biSizeImage     = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
@@ -167,26 +163,21 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] static void cleanup(bitmap& other) noexcept { }
 
-        // copy the contents of the wingdi::BITMAPFILEHEADER and wingdi::BITMAPINFOHEADER to the file buffer
+        // copy the contents of the BITMAPFILEHEADER and BITMAPINFOHEADER to the file buffer
         void metadata_to_buffer() noexcept {
-            ::memcpy_s(buffer, buffer_size, &file_header, sizeof(wingdi::BITMAPFILEHEADER));
+            ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            ::memcpy_s(
-                buffer + sizeof(wingdi::BITMAPFILEHEADER),
-                buffer_size - sizeof(wingdi::BITMAPFILEHEADER),
-                &info_header,
-                sizeof(wingdi::BITMAPINFOHEADER)
-            );
+            ::memcpy_s(buffer + sizeof(BITMAPFILEHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
         }
 
     public:
         bitmap() noexcept = default; // that's good enough
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
-        explicit bitmap(const wchar_t* const filename) noexcept : // construct a bitmap from a file on disk
-            buffer { internal::open(filename, file_size) },       // a little unorthodox but okay lol
+        explicit bitmap(const char* const filename) noexcept : // construct a bitmap from a file on disk
+            buffer { internal::read(filename, file_size) },    // a little unorthodox but okay lol
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
-            pixels { reinterpret_cast<wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER)) },
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { bitmap::parse_file_header(buffer, file_size) },
             info_header { bitmap::parse_info_header(buffer, file_size) },
             // file_size {}, we want to preserve size's previous state materialized by internal::open()
@@ -204,7 +195,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         ) noexcept :
             buffer { new (std::nothrow) unsigned char[size] }, // cannot take ownership of the incoming buffer, so let's copy it
                                                                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
-            pixels { reinterpret_cast<wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER)) },
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             // if _buffer is nullptr, the __parse_xxx family of helpers will default initialize the cognate header structs
             file_header { bitmap::parse_file_header(imstream, size) },
             info_header { bitmap::parse_info_header(imstream, size) },
@@ -222,13 +213,13 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
     protected:
         // an aggregate initializer style private constructor
         bitmap(
-            unsigned char* const            imstream, // this buffer is assumed to have the metadata structs serialized in it
-            const wingdi::BITMAPFILEHEADER& file,
-            const wingdi::BITMAPINFOHEADER& info,
-            const unsigned                  size
+            unsigned char* const    imstream, // this buffer is assumed to have the metadata structs serialized in it
+            const BITMAPFILEHEADER& file,
+            const BITMAPINFOHEADER& info,
+            const unsigned          size
         ) noexcept :
             buffer { imstream },
-            pixels { reinterpret_cast<wingdi::RGBQUAD*>(imstream) },
+            pixels { reinterpret_cast<RGBQUAD*>(imstream) },
             file_header { file },
             info_header { info },
             file_size { size },
@@ -237,18 +228,18 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // this is likely to get more compilcated
         bitmap(const long height, const long width) noexcept :
             // allocate storage for the metadata structs and pixel buffer
-            buffer { new (std::nothrow) unsigned char
-                         [sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER) + width * height * sizeof(wingdi::RGBQUAD)] },
+            buffer {
+                new (std::nothrow) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)]
+            },
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            pixels { reinterpret_cast<wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER)) },
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { .bfType = 0x4D42,
-                          .bfSize = static_cast<unsigned>(
-                              sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER) + width * height * sizeof(wingdi::RGBQUAD)
-                          ),
+                          .bfSize =
+                              static_cast<unsigned>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)),
                           .bfReserved1 = 0,
                           .bfReserved2 = 0,
-                          .bfOffBits   = sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER) },
-            info_header { .biSize          = sizeof(wingdi::BITMAPINFOHEADER),
+                          .bfOffBits   = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) },
+            info_header { .biSize          = sizeof(BITMAPINFOHEADER),
                           .biWidth         = width,
                           .biHeight        = height,
                           .biPlanes        = 1,
@@ -278,7 +269,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             }, // don't copy the trailing unused bytes from the bitmap, if present
 
             pixels { // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                     reinterpret_cast<wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER))
+                     reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
             },
             file_header { other.file_header },
             info_header { other.info_header },
@@ -314,7 +305,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
             ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            pixels      = reinterpret_cast<wingdi::RGBQUAD*>(buffer + sizeof(wingdi::BITMAPFILEHEADER) + sizeof(wingdi::BITMAPINFOHEADER));
+            pixels      = reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
             file_header = other.file_header;
             info_header = other.info_header;
 
