@@ -2,6 +2,7 @@
 
 // clang-format off
 #include <internal.hpp>
+#include <_windef.hpp>
 // clang-format on
 
 #include <array>
@@ -9,20 +10,15 @@
 #include <iostream>
 #include <type_traits>
 
-// clang-format off
-#define _AMD64_
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_MEAN
-#include <intrin.h>
-#include <_windef.hpp>
-// clang-format on
+#include <immintrin.h> // AVX
+#include <xmmintrin.h> // SSE
 
 #if defined(DEBUG) || defined(_DEBUG)
-    #define dbgputws(...)     ::fputws(__VA_ARGS__, stderr)
-    #define dbgwprintf_s(...) ::fwprintf(stderr, __VA_ARGS__);
+    #define dbgputs(...)   ::fputs(__VA_ARGS__, stderr)
+    #define dbgprintf(...) ::fprintf(stderr, __VA_ARGS__);
 #else
-    #define dbgputws(...)
-    #define dbgwprintf_s(...)
+    #define dbgputs(...)
+    #define dbgprintf(...)
 #endif
 
 // RGB combinations of colours
@@ -34,11 +30,11 @@ enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINO
 enum class ANGLES : unsigned short { NINETY = 0x5A, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
 
 // for the sake of convenience
-static constexpr bool __stdcall operator==(const RGBQUAD& left, const RGBQUAD& right) noexcept {
+static constexpr bool operator==(const RGBQUAD& left, const RGBQUAD& right) noexcept {
     return left.rgbBlue == right.rgbBlue && left.rgbGreen == right.rgbGreen && left.rgbRed == right.rgbRed;
 }
 
-static constexpr bool __stdcall operator!=(const RGBQUAD& left, const RGBQUAD& right) noexcept {
+static constexpr bool operator!=(const RGBQUAD& left, const RGBQUAD& right) noexcept {
     return left.rgbBlue != right.rgbBlue || left.rgbGreen != right.rgbGreen || left.rgbRed != right.rgbRed;
 }
 
@@ -50,7 +46,7 @@ namespace internal {
         typename std::enable_if<
             std::is_enum<_TyFrom>::value, /* std::is_scoped_enum type trait requires C++23 */
             typename std::underlying_type<_TyFrom>::type>::type>
-    static constexpr _TyTo __stdcall to_underlying(const _TyFrom& enumeration) noexcept {
+    static constexpr _TyTo to_underlying(const _TyFrom& enumeration) noexcept {
         return static_cast<_TyTo>(enumeration);
     }
 
@@ -71,13 +67,11 @@ namespace internal {
     namespace ascii {
 
         // isalpha() from <cctype> is not constexpr :(
-        [[nodiscard]] static constexpr bool __stdcall is_alphabet(const char& character) noexcept {
+        [[nodiscard]] static constexpr bool is_alphabet(const char& character) noexcept {
             return (character >= 0x41 && character <= 0x5A) /* A - Z */ || (character >= 0x61 && character <= 0x7A); /* a - z */
         }
 
-        // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-
-        [[nodiscard]] static constexpr bool __stdcall is_alphabet_array(const char* const array, const unsigned long long length) noexcept {
+        [[nodiscard]] static constexpr bool is_alphabet_array(const char* const array, const unsigned long long length) noexcept {
             bool result { true };
             for (unsigned i = 0; i < length; ++i)
                 result &= ascii::is_alphabet(array[i]); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -85,13 +79,13 @@ namespace internal {
         }
 
         // isupper() from <cctype> is not constexpr
-        [[nodiscard]] static constexpr bool __stdcall is_uppercase(const char& character) noexcept {
-            return character >= 0x41 && character <= 0x5A; /* A - 0x41 and Z - 0x5A */
+        [[nodiscard]] static constexpr bool is_uppercase(const char& character) noexcept {
+            return character >= 0x41 && character <= 0x5A; // A - 0x41 and Z - 0x5A
         }
 
         // islower() from <cctype> is not constexpr
-        [[nodiscard]] static constexpr bool __stdcall is_lowercase(const char& character) noexcept {
-            return character >= 0x61 && character <= 0x7A; /* a - 0x61 and z - 0x7A */
+        [[nodiscard]] static constexpr bool is_lowercase(const char& character) noexcept {
+            return character >= 0x61 && character <= 0x7A; // a - 0x61 and z - 0x7A
         }
 
     } // namespace ascii
@@ -101,34 +95,34 @@ namespace internal {
         namespace transformers {
 
             // each colour value in the pixel is updated to their arithmetic average
-            static constexpr void __stdcall average(_Inout_ RGBQUAD& pixel) noexcept {
+            static constexpr void average(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L);
             }
 
-            static constexpr void __stdcall weighted_average(_Inout_ RGBQUAD& pixel) noexcept {
+            static constexpr void weighted_average(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L);
             }
 
-            static constexpr void __stdcall luminosity(_Inout_ RGBQUAD& pixel) noexcept {
+            static constexpr void luminosity(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L);
             }
 
             // every colour value gets scaled down to 0 or scaled up to 255 depending on the average value of colours in a pixel
-            static constexpr void __stdcall binary(_Inout_ RGBQUAD& pixel) noexcept {
+            static constexpr void binary(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
-                    (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8;
+                    (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255 : 0;
             }
 
         } // namespace transformers
 
         // each colour value gets scaled down to 0 or scaled up to 255 depending on the corresponding value
-        static constexpr void __stdcall negative(_Inout_ RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255Ui8 : 0Ui8;
-            pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255Ui8 : 0Ui8;
-            pixel.rgbRed   = pixel.rgbRed >= 128 ? 255Ui8 : 0Ui8;
+        static constexpr void negative(RGBQUAD& pixel) noexcept {
+            pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255 : 0;
+            pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255 : 0;
+            pixel.rgbRed   = pixel.rgbRed >= 128 ? 255 : 0;
         }
 
         namespace removers { // this is really verbose but makes mutating the pixel buffers possible with a single std::for_each call
@@ -136,27 +130,27 @@ namespace internal {
             template<RGB_TAG colour> struct zero;
 
             template<> struct zero<RGB_TAG::RED> final {
-                    constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
+                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
             };
 
             template<> struct zero<RGB_TAG::GREEN> final {
-                    constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
+                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
             };
 
             template<> struct zero<RGB_TAG::BLUE> final {
-                    constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
+                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
             };
 
             template<> struct zero<RGB_TAG::REDGREEN> final {
-                    constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
+                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
             };
 
             template<> struct zero<RGB_TAG::GREENBLUE> final {
-                    constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
+                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
             };
 
             template<> struct zero<RGB_TAG::REDBLUE> final {
-                    constexpr void __stdcall operator()(_Inout_ RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
+                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
             };
 
         } // namespace removers
@@ -205,9 +199,7 @@ namespace internal {
         };
 
         // works great, tested and produces the same results as Python's binascii.crc32()
-        [[nodiscard]] static constexpr unsigned __stdcall get(
-            _In_count_(length) const unsigned char* const bytestream, const unsigned long long length
-        ) noexcept {
+        [[nodiscard]] static constexpr unsigned get(const unsigned char* const bytestream, const unsigned long long length) noexcept {
             unsigned crc { 0xFFFFFFFF }; // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
             return ~crc;
@@ -217,29 +209,22 @@ namespace internal {
 
     namespace endian {
 
-#if !defined(__llvm__) && !defined(_MSC_FULL_VER)
-    #error routines inside namespace endian liberally rely on LLVM and MSVC compiler intrinsics, hence probably won't compile with other compilers!
-#endif
-
-        [[maybe_unused,
-          nodiscard]] static constexpr unsigned short __stdcall ushort_from_be_bytes(_In_reads_bytes_(2)
-                                                                                         const unsigned char* const bytestream) noexcept {
+        [[nodiscard]] static constexpr unsigned short ushort_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
         }
 
         // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-        [[maybe_unused, nodiscard]] static unsigned long __stdcall ulong_from_be_bytes(_In_reads_bytes_(8)
-                                                                                           const unsigned char* const bytestream) noexcept {
+        [[nodiscard]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
-#if defined(__llvm__) && defined(__clang__)                         // LLVM defines __m64 as a vector of 1 long long
+#if defined(__llvm__) || defined(__GNUG__)                          // LLVM defines __m64 as a vector of 1 long long
             static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
             // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
 
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
 
-#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
+#elif defined(_MSC_VER) || defined(_MSC_FULL_VER)
 
             static constexpr __m128i mask_epi8 {
                 .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
@@ -263,11 +248,9 @@ namespace internal {
 #endif
         }
 
-        [[maybe_unused, nodiscard]] static unsigned long long __stdcall ullong_from_be_bytes(
-            _In_reads_bytes_(8) const unsigned char* const bytestream
-        ) noexcept {
+        [[nodiscard]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
-#if defined(__llvm__) && defined(__clang__)
+#if defined(__llvm__) || defined(__GNUG__)
             static constexpr __m64 mask_pi8 { 0x01020304050607 };
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
 

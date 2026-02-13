@@ -16,7 +16,7 @@
 namespace colourmaps { // contains nine colourmaps named YARG, VGA, PRISM, JET, HSV, HOT, GREY, COPPER and AUTUMN
 
     static constexpr unsigned CMAPSIZE { 1000 };
-    using colourmap = std::array<wingdi::RGBQUAD, CMAPSIZE>;
+    using colourmap = std::array<RGBQUAD, CMAPSIZE>;
 
     static constexpr colourmap YARG {
         { { 0, 0, 0, 255 },       { 0, 0, 0, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },       { 1, 1, 1, 255 },

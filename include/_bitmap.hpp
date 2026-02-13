@@ -103,13 +103,13 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
             BITMAPFILEHEADER header {};
             if (!imstream) [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTION__ ", received an empty buffer\n", stderr);
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
                 return header;
             }
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (imstream[0] != 'B' && imstream[1] != 'M') [[unlikely]] { // validate that the passed buffer is of a bitmap file
-                ::fputws(L"Error in " __FUNCTIONW__ ", file isn't recognized as a Windows bitmap file\n", stderr);
+                ::fprintf(stderr, "Error in %s, file isn't recognized as a Windows bitmap file\n", __PRETTY_FUNCTION__);
                 return header;
             }
 
@@ -129,20 +129,20 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
             BITMAPINFOHEADER header {};
             if (!imstream) [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTIONW__ ", received an empty buffer\n", stderr);
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
                 return header;
             }
 
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             if ((header.biSize = *reinterpret_cast<const long*>(imstream + 14)) != 40) [[unlikely]] {
                 // size of the BITMAPINFOHEADER struct must be == 40 bytes
-                ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
+                ::fprintf(stderr, "Error in %s: unparseable BITMAPINFOHEADER\n", __PRETTY_FUNCTION__);
                 return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             }
 
             // header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
-            header.biWidth         = *reinterpret_cast<const long*>(imstream + 18); // width of the bitmap image in pixels
-            header.biHeight        = *reinterpret_cast<const long*>(imstream + 22); // height of the bitmap image in pixels
+            header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
+            header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
             // bitmaps with a negative height may not be compressed
             header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
             header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
@@ -150,8 +150,8 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
             );
             header.biSizeImage     = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
-            header.biXPelsPerMeter = *reinterpret_cast<const long*>(imstream + 38);     // resolution in pixels per meter along the x axis
-            header.biYPelsPerMeter = *reinterpret_cast<const long*>(imstream + 42);     // resolution in pixels per meter along the y axis
+            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38);      // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
             header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
             header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
             // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
@@ -165,9 +165,9 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         // copy the contents of the BITMAPFILEHEADER and BITMAPINFOHEADER to the file buffer
         void metadata_to_buffer() noexcept {
-            ::memcpy_s(buffer, buffer_size, &file_header, sizeof(BITMAPFILEHEADER));
+            ::memcpy(buffer, &file_header, sizeof(BITMAPFILEHEADER));
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            ::memcpy_s(buffer + sizeof(BITMAPFILEHEADER), buffer_size - sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
+            ::memcpy(buffer + sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
         }
 
     public:
@@ -203,7 +203,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { size } {
             if (!buffer) [[unlikely]] {             // has the allocation failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
-                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                ::fputws(L"Error inside %s, object is default initialized as a fallback\n", stderr);
                 return;
             }
 
@@ -226,7 +226,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { size } { }
 
         // this is likely to get more compilcated
-        bitmap(const long height, const long width) noexcept :
+        bitmap(const int& height, const int& width) noexcept :
             // allocate storage for the metadata structs and pixel buffer
             buffer {
                 new (std::nothrow) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)]
@@ -244,7 +244,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                           .biHeight        = height,
                           .biPlanes        = 1,
                           .biBitCount      = 32,
-                          .biCompression   = BI_RGB, // uncompressed RGB
+                          .biCompression   = internal::to_underlying(Compression::BI_RGB), // uncompressed RGB
                           .biSizeImage     = 0,
                           .biXPelsPerMeter = 3780, // an arbitrary choice
                           .biYPelsPerMeter = 3780, // an arbitrary choice
@@ -254,7 +254,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { file_header.bfSize } {
             if (!buffer) [[unlikely]] {
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
-                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                ::fputws(L"Error inside %s, object is default initialized as a fallback\n", stderr);
                 return;
             }
 
@@ -277,7 +277,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { other.file_size /* not buffer_size */ } {
             if (!buffer) [[unlikely]] {
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
-                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                ::fputws(L"Error inside %s, object is default initialized as a fallback\n", stderr);
                 return;
             }
 
@@ -295,7 +295,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 buffer = new (std::nothrow) unsigned char[other.file_size];
                 if (!buffer) [[unlikely]] {             // has the allocation failed
                     ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
-                    ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                    ::fputws(L"Error inside %s, object is default initialized as a fallback\n", stderr);
                     return *this;
                 }
 
