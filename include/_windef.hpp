@@ -40,14 +40,14 @@ extern "C" {
 #pragma pack(pop)
 
     enum class Compression : unsigned char {
-        BI_RGB,
-        BI_RLE8,
-        BI_RLE4,
-        BI_BITFIELDS,
-        BI_JPEG,
-        BI_PNG,
-        BI_CMYK = 0xB,
-        BI_CMYKRLE8,
-        BI_CMYKRLE4,
+        BI_RGB       = 0x1,
+        BI_RLE8      = 0x2,
+        BI_RLE4      = 0x3,
+        BI_BITFIELDS = 0x4,
+        BI_JPEG      = 0x5,
+        BI_PNG       = 0x6,
+        BI_CMYK      = 0xB,
+        BI_CMYKRLE8  = 0xC,
+        BI_CMYKRLE4  = 0xD,
     };
 }
