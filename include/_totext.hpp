@@ -14,9 +14,9 @@
 
 namespace _to_text_impl {
 
-    constexpr auto CONSOLE_WIDTH { 140LLU };
-    constexpr auto CONSOLE_WIDTHR { 140.0 };
-    constexpr auto ONE { 1.000000000F };
+    constexpr long   CONSOLE_WIDTH { 140 };
+    constexpr double CONSOLE_WIDTHR { 140.0 };
+    constexpr double ONE { 1.000000000 };
 
     // characters in ascending order of luminance
     static constexpr char palette_minimal[]  = { '_', '.', ',', '-', '=', '+', ':', ';', 'c', 'b', 'a', '!', '?', '1',
@@ -68,15 +68,17 @@ namespace _to_text_impl {
         }
 
         template<typename _TyPixOpFunc, unsigned long _length> static constexpr inline __attribute__((__always_inline__))
-        typename std::enable_if<std::is_same<_TyPixOpFunc, unsigned (*)(const RGBQUAD&) noexcept>::value, char>::type
-        maptochar(const _TyPixOpFunc _function, const RGBQUAD& _pixel, const char (&_palette)[_length]) noexcept {
+        // NOLINTNEXTLINE(modernize-use-constraints)
+        typename std::enable_if<std::is_same<_TyPixOpFunc, unsigned (*)(const RGBQUAD&) noexcept>::value, char>::type maptochar(
+            const _TyPixOpFunc _function, const RGBQUAD& _pixel, const char (&_palette)[_length]
+        ) noexcept {
             const unsigned offset = _function(_pixel);
             return _palette[offset ? __nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * _length) - 1 : 0];
         }
 
     } // namespace _pixeltochar
 
-    template<long unsigned _length> static inline char* to_raw_string(
+    template<unsigned long _length> static inline char* to_raw_string(
         const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
     ) noexcept {
         if (image.height() < 0) {
@@ -121,15 +123,16 @@ namespace _to_text_impl {
         return buffer;
     }
 
-    static inline char* to_downscaled_string(const bitmap& image) noexcept {
+    template<unsigned long _length> static inline char* to_downscaled_string(
+        const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
+    ) noexcept {
         if (image.height() < 0) {
             ::fprintf(stderr, "Error in %s, bitmaps with top-down pixel ordering are not supported!\n", __PRETTY_FUNCTION__);
             return nullptr;
         }
 
-        const unsigned long block_d /* dimension of an individual square block */ = ::ceill(image.width() / CONSOLE_WIDTHR);
-
-        const float blocksize /* number of pixels in a block */                   = block_d * block_d; // since our blocks are square
+        const long  block_d /* dimension of an individual square block */ = ::ceill(image.width() / CONSOLE_WIDTHR);
+        const float blocksize /* number of pixels in a block */           = block_d * block_d; // since our blocks are square
 
         long pblocksize_right = // number of pixels in each block in the rightmost column of incomplete blocks.
             // width of the image - (number of complete blocks * block dimension) will give the residual pixels along the horizontal axis
@@ -166,7 +169,7 @@ namespace _to_text_impl {
         const bool block_columns_end_with_incomplete_blocks = image.height() % block_d;
         // NOLINTEND(readability-isolate-declaration)
 
-        unsigned long full = 0, incomplete = 0, count = 0; // NOLINT(readability-isolate-declaration)
+        unsigned long count {}; // NOLINT(readability-isolate-declaration)
 
         // row = image.height() will get us to the last pixel of the first (last in the buffer) scanline with (r * image.width())
         // hence, row = image.height() - 1 so we can traverse pixels in the first scanline with (r * image.width()) + c
@@ -192,7 +195,7 @@ namespace _to_text_impl {
 
                 assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
 
-                buffer[caret++] = blockmap(blockavg_blue, blockavg_green, blockavg_red);
+                buffer[caret++] = _pixeltochar::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red }, palette);
                 blockavg_blue = blockavg_green = blockavg_red = 0.000;
             }
 
@@ -202,9 +205,9 @@ namespace _to_text_impl {
                     // shift the column delimiter backward by one block, to the end of the last complete block
                     for (long c = col; c < image.width(); ++c) { // start from the end of the last complete block
                         offset          = (r * image.width()) + c;
-                        blockavg_blue  += image->_pixels[offset].rgbBlue;
-                        blockavg_green += image->_pixels[offset].rgbGreen;
-                        blockavg_red   += image->_pixels[offset].rgbRed;
+                        blockavg_blue  += image.data()[offset].rgbBlue;
+                        blockavg_green += image.data()[offset].rgbGreen;
+                        blockavg_red   += image.data()[offset].rgbRed;
                     }
                 }
 
@@ -216,7 +219,7 @@ namespace _to_text_impl {
 
                 assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
 
-                buffer[caret++] = blockmap(blockavg_blue, blockavg_green, blockavg_red);
+                buffer[caret++] = _pixeltochar::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red }, palette);
                 blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
             }
 
@@ -233,9 +236,9 @@ namespace _to_text_impl {
                 for (long r = row; r >= 0; --r) {                // r delimits the start row of the block being defined
                     for (long c = col; c < col + block_d; ++c) { // c delimits the start column of the block being defined
                         offset          = (r * image.width()) + c;
-                        blockavg_blue  += image->_pixels[offset].rgbBlue;
-                        blockavg_green += image->_pixels[offset].rgbGreen;
-                        blockavg_red   += image->_pixels[offset].rgbRed;
+                        blockavg_blue  += image.data()[offset].rgbBlue;
+                        blockavg_green += image.data()[offset].rgbGreen;
+                        blockavg_red   += image.data()[offset].rgbRed;
                     }
                 }
 
@@ -247,7 +250,7 @@ namespace _to_text_impl {
                 //     wprintf_s(L"Average (BGR) = (%.4f, %.4f, %.4f)\n", blockavg_blue, blockavg_green, blockavg_red);
 
                 assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
-                buffer[caret++] = blockmap(blockavg_blue, blockavg_green, blockavg_red);
+                buffer[caret++] = _pixeltochar::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red }, palette);
                 blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
             }
 
@@ -265,9 +268,11 @@ namespace _to_text_impl {
     }
 
     // an image width predicated dispatcher for to_raw_string and to_downscaled_string
-    static inline char* to_string(const bitmap_t* const image) {
-        if (image.width() <= CONSOLE_WIDTH) return to_raw_string(image);
-        return to_downscaled_string(image);
+    template<unsigned long _length> static inline char* to_string(
+        const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
+    ) noexcept {
+        if (image.width() <= CONSOLE_WIDTH) return to_raw_string(image, palette, fnptr);
+        return to_downscaled_string(image, palette, fnptr);
     }
 } // namespace _to_text_impl
 

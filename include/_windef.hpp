@@ -3,7 +3,7 @@
 extern "C" {
 
     // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-rgbquad
-    struct RGBQUAD {
+    struct RGBQUAD final {
             unsigned char rgbBlue;
             unsigned char rgbGreen;
             unsigned char rgbRed;
@@ -11,7 +11,7 @@ extern "C" {
     };
 
     // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-    struct BITMAPINFOHEADER {
+    struct BITMAPINFOHEADER final {
             unsigned       biSize;
             int            biWidth;
             int            biHeight;
@@ -29,7 +29,7 @@ extern "C" {
 
 #pragma pack(push, 2) // this is critical here as this struct is supposed to be 14 bytes in size
 
-    struct BITMAPFILEHEADER {
+    struct BITMAPFILEHEADER final {
             unsigned short bfType;
             unsigned       bfSize;
             unsigned short bfReserved1;
