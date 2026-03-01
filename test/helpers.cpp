@@ -87,19 +87,19 @@ TEST(MISC, TO_UNDERLYING) {
     enum class TENS : unsigned long { ZERO = 0, TEN = 10, HUNDRED = 100, THOUSAND = 1000, TENTHOUSAND = 10'000 };
     enum class DAYS : long long { MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY };
 
-    EXPECT_EQ((internal::to_underlying(TENS::ZERO)), 0);
-    EXPECT_EQ((internal::to_underlying(TENS::TEN)), 10);
-    EXPECT_EQ((internal::to_underlying(TENS::HUNDRED)), 100);
-    EXPECT_EQ((internal::to_underlying(TENS::THOUSAND)), 1000);
-    EXPECT_EQ((internal::to_underlying(TENS::TENTHOUSAND)), 10'000);
+    EXPECT_EQ(internal::to_underlying(TENS::ZERO), 0);
+    EXPECT_EQ(internal::to_underlying(TENS::TEN), 10);
+    EXPECT_EQ(internal::to_underlying(TENS::HUNDRED), 100);
+    EXPECT_EQ(internal::to_underlying(TENS::THOUSAND), 1000);
+    EXPECT_EQ(internal::to_underlying(TENS::TENTHOUSAND), 10'000);
 
-    EXPECT_EQ((internal::to_underlying(DAYS::MONDAY)), 0);
-    EXPECT_EQ((internal::to_underlying(DAYS::TUESDAY)), 1);
-    EXPECT_EQ((internal::to_underlying(DAYS::WEDNESDAY)), 2);
-    EXPECT_EQ((internal::to_underlying(DAYS::THURSDAY)), 3);
-    EXPECT_EQ((internal::to_underlying(DAYS::FRIDAY)), 4);
-    EXPECT_EQ((internal::to_underlying(DAYS::SATURDAY)), 5);
-    EXPECT_EQ((internal::to_underlying(DAYS::SUNDAY)), 6);
+    EXPECT_EQ(internal::to_underlying(DAYS::MONDAY), 0);
+    EXPECT_EQ(internal::to_underlying(DAYS::TUESDAY), 1);
+    EXPECT_EQ(internal::to_underlying(DAYS::WEDNESDAY), 2);
+    EXPECT_EQ(internal::to_underlying(DAYS::THURSDAY), 3);
+    EXPECT_EQ(internal::to_underlying(DAYS::FRIDAY), 4);
+    EXPECT_EQ(internal::to_underlying(DAYS::SATURDAY), 5);
+    EXPECT_EQ(internal::to_underlying(DAYS::SUNDAY), 6);
 }
 
 TEST(MISC, IS_IN) {
@@ -159,11 +159,11 @@ TEST(ASCII, IS_LOWERCASE) {
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
 TEST(RGB, RGBQUAD_EQUALITY_OPERATORS) {
-    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA }));
-    EXPECT_NE((RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-    EXPECT_NE((RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
-    EXPECT_NE((RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_EQ(RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
+    EXPECT_EQ(RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA });
+    EXPECT_NE(RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
+    EXPECT_NE(RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
+    EXPECT_NE(RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
 }
 
 static constexpr long TEST_MAX_ITERATIONS { 0x32 };
