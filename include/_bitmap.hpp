@@ -175,7 +175,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         explicit bitmap(const char* const filename) noexcept : // construct a bitmap from a file on disk
-            buffer { internal::read(filename, file_size) },    // a little unorthodox but okay lol
+            buffer { internal::imopen(filename, file_size) },  // a little unorthodox but okay lol
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { bitmap::parse_file_header(buffer, file_size) },
@@ -367,7 +367,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return wostr;
         }
 
-        bool to_file(const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, file_size); }
+        bool to_file(const wchar_t* const filename) const noexcept { return internal::imwrite(filename, buffer, file_size); }
 
         iterator begin() noexcept { // NOLINT(readability-make-member-function-const)
             return { pixels, static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
