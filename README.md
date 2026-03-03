@@ -123,7 +123,7 @@ board.to_file("./mandelbrot.bmp");
 ### _Warning:_
 --------
 
-Owing to the non-opt-in use of `SSSE3`, `AVX1`, `AVX2` and `AVX512` compiler intrinsics (`MSVC` & `LLVM`), If compiles, will probably raise an illegal instruction hardware exception at runtime on `AMD64` CPU architectures that doesn't support the mentioned SIMD instructions. Probably won't compile on non `AMD64` machines unless your compiler supports cross-compiling to `AMD64` and you are in fact cross-compiling.
+Owing to the non-opt-in use of `SSSE3`, `AVX1`, `AVX2` and `AVX512` compiler intrinsics (`GCC` & `LLVM`), If compiles, will probably raise an illegal instruction hardware exception at runtime on `AMD64` CPU architectures that doesn't support the mentioned SIMD instructions. Probably won't compile on non `AMD64` machines unless your compiler supports cross-compiling to `AMD64` and you are in fact cross-compiling.
 
 ### _Reference:_
 --------
