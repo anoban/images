@@ -41,8 +41,8 @@ image.copy().to_blacknwhite<rgb::BW_TRANSFORMATION::BINARY>().to_file("./binary.
 
 ---------
 ```C++
-image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file("(./redgreen.bmp"); // remove blue
-image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file("(./green.bmp"); // remove red & blue
+image.copy().remove_colour<rgb::RGB_TAG::BLUE>().to_file("./redgreen.bmp"); // remove blue
+image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file("./green.bmp"); // remove red & blue
 ```
 <div>
     <img src="./readme/redgreen.jpg" width=30% >
@@ -50,8 +50,8 @@ image.copy().remove_colour<rgb::RGB_TAG::REDBLUE>().to_file("(./green.bmp"); // 
 </div>
 
 ```C++
-image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file("(./bluegreen.bmp"); // remove red
-image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file("(./blue.bmp"); // remove red & green
+image.copy().remove_colour<rgb::RGB_TAG::RED>().to_file("./bluegreen.bmp"); // remove red
+image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file("./blue.bmp"); // remove red & green
 ```
 <div>
     <img src="./readme/bluegreen.jpg" width=30% >
@@ -59,8 +59,8 @@ image.copy().remove_colour<rgb::RGB_TAG::REDGREEN>().to_file("(./blue.bmp"); // 
 </div>
 
 ```C++
-image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file("(./redblue.bmp"); // remove green
-image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file("(./red.bmp"); // remove green & blue
+image.copy().remove_colour<rgb::RGB_TAG::GREEN>().to_file("./redblue.bmp"); // remove green
+image.copy().remove_colour<rgb::RGB_TAG::GREENBLUE>().to_file("./red.bmp"); // remove green & blue
 ```
 <div>
     <img src="./readme/redblue.jpg" width=30% >
@@ -106,7 +106,7 @@ board.to_file("./colour.bmp");
 ```C++
 canvas board { 1080, 1920 };
 board.waves();
-board.to_file("(./waves.bmp");
+board.to_file("./waves.bmp");
 ```
 <img src="./readme/waves.jpg" width=85% >
 
