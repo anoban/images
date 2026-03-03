@@ -5,6 +5,8 @@
 #include <_windef.hpp>
 // clang-format on
 
+#include <cmath>
+
 #include <immintrin.h>
 
 #include <_bitmap.hpp>
@@ -18,9 +20,9 @@ class canvas final : public bitmap {
     public:
         canvas() noexcept = delete;
 
-        explicit canvas(const wchar_t* const filename) noexcept : bitmap(filename) { }
+        explicit canvas(const char* const filename) noexcept : bitmap(filename) { }
 
-        canvas(const long height, const long width) noexcept : bitmap { height, width } { }
+        canvas(const int& height, const int& width) noexcept : bitmap { height, width } { }
 
         explicit canvas(const bitmap& image) noexcept : bitmap { image } { }
 
@@ -51,18 +53,18 @@ class canvas final : public bitmap {
 
         // resizes the pixel buffer and updates the metadata and remaps the old pixels
         // to the new buffer
-        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize(const long height, const long width) noexcept { }
+        [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize(const int& height, const int& width) noexcept { }
 
         // this is a crude resize operation that just resizes the existing pixel
         // buffer and updates the metadata accordingly
-        canvas& resize_for_overwrite(const long height, const long width) noexcept {
+        canvas& resize_for_overwrite(const int& height, const int& width) noexcept {
             // the members the need to be updated after a resize operation are [buffer],
             // [pixels], [buffer_size], file_header, info_header, file_size
             const auto newsize { sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width };
             if (buffer_size < newsize) { // handle the reallocation
-                auto* const temp_buffer { new (std::nothrow) unsigned char[newsize] };
+                unsigned char* const temp_buffer { new (std::nothrow) unsigned char[newsize] };
                 if (!temp_buffer) {
-                    ::fputws(L"Error inside " __FUNCTIONW__ ", object is left in its original state\n", stderr);
+                    ::fprintf(stderr, "Error inside %s, object is left in its original state\n", __PRETTY_FUNCTION__);
                     return *this;
                 }
 

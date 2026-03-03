@@ -1,4 +1,7 @@
 #pragma once
+#ifndef __DUMMY_WINDEF_HPP
+    #define __DUMMY_WINDEF_HPP 1
+#endif
 
 extern "C" {
 

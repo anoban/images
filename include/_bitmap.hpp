@@ -184,7 +184,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { file_size } {
             if (!buffer) [[unlikely]] {             // if open failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
-                ::fputws(L"Error inside " __FUNCTION__ ", object is default initialized as a fallback\n", stderr);
+                ::fprintf(stderr, "Error inside %s, object is default initialized as a fallback\n", __PRETTY_FUNCTION__);
             }
         }
 
@@ -207,7 +207,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return;
             }
 
-            ::memcpy_s(buffer, file_size, imstream, size);
+            ::memcpy(buffer, imstream, size);
         }
 
     protected:
@@ -254,7 +254,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer_size { file_header.bfSize } {
             if (!buffer) [[unlikely]] {
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
-                ::fputws(L"Error inside %s, object is default initialized as a fallback\n", stderr);
+                ::fputs("Error inside %s, object is default initialized as a fallback\n", stderr);
                 return;
             }
 
@@ -303,7 +303,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             } else                                         // if no reallocation was needed
                 file_size = other.file_size;               // keep the existing buffer_size as we are reusing the existing buffer
 
-            ::memcpy_s(buffer, file_size, other.buffer, other.file_size);
+            ::memcpy(buffer, other.buffer, other.file_size);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             pixels      = reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
             file_header = other.file_header;
@@ -346,28 +346,28 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             ::memset(this, 0, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
-        friend std::wostream& operator<<(std::wostream& wostr, const bitmap& image) noexcept {
-            wostr << L"---------------------------------------\n";
-            wostr << L"| bfType          " << std::setw(20) << image.file_header.bfType << L"|\n";
-            wostr << L"| bfSize          " << std::setw(20) << image.file_header.bfSize << L"|\n";
-            wostr << L"| bfOffBits       " << std::setw(20) << image.file_header.bfOffBits << L"|\n";
-            wostr << L"|-------------------------------------|\n";
-            wostr << L"| biSize          " << std::setw(20) << image.info_header.biSize << L"|\n";
-            wostr << L"| biWidth         " << std::setw(20) << image.info_header.biWidth << L"|\n";
-            wostr << L"| biHeight        " << std::setw(20) << image.info_header.biHeight << L"|\n";
-            wostr << L"| biPlanes        " << std::setw(20) << image.info_header.biPlanes << L"|\n";
-            wostr << L"| biBitCount      " << std::setw(20) << image.info_header.biBitCount << L"|\n";
-            wostr << L"| biCompression   " << std::setw(20) << image.info_header.biCompression << L"|\n";
-            wostr << L"| biSizeImage     " << std::setw(20) << image.info_header.biSizeImage << L"|\n";
-            wostr << L"| biXPelsPerMeter " << std::setw(20) << image.info_header.biXPelsPerMeter << L"|\n";
-            wostr << L"| biYPelsPerMeter " << std::setw(20) << image.info_header.biYPelsPerMeter << L"|\n";
-            wostr << L"| biClrUsed       " << std::setw(20) << image.info_header.biClrUsed << L"|\n";
-            wostr << L"| biClrImportant  " << std::setw(20) << image.info_header.biClrImportant << L"|\n";
-            wostr << L"---------------------------------------\n";
+        friend std::ostream& operator<<(std::ostream& wostr, const bitmap& image) noexcept {
+            wostr << "---------------------------------------\n";
+            wostr << "| bfType          " << std::setw(20) << image.file_header.bfType << "|\n";
+            wostr << "| bfSize          " << std::setw(20) << image.file_header.bfSize << "|\n";
+            wostr << "| bfOffBits       " << std::setw(20) << image.file_header.bfOffBits << "|\n";
+            wostr << "|-------------------------------------|\n";
+            wostr << "| biSize          " << std::setw(20) << image.info_header.biSize << "|\n";
+            wostr << "| biWidth         " << std::setw(20) << image.info_header.biWidth << "|\n";
+            wostr << "| biHeight        " << std::setw(20) << image.info_header.biHeight << "|\n";
+            wostr << "| biPlanes        " << std::setw(20) << image.info_header.biPlanes << "|\n";
+            wostr << "| biBitCount      " << std::setw(20) << image.info_header.biBitCount << "|\n";
+            wostr << "| biCompression   " << std::setw(20) << image.info_header.biCompression << "|\n";
+            wostr << "| biSizeImage     " << std::setw(20) << image.info_header.biSizeImage << "|\n";
+            wostr << "| biXPelsPerMeter " << std::setw(20) << image.info_header.biXPelsPerMeter << "|\n";
+            wostr << "| biYPelsPerMeter " << std::setw(20) << image.info_header.biYPelsPerMeter << "|\n";
+            wostr << "| biClrUsed       " << std::setw(20) << image.info_header.biClrUsed << "|\n";
+            wostr << "| biClrImportant  " << std::setw(20) << image.info_header.biClrImportant << "|\n";
+            wostr << "---------------------------------------\n";
             return wostr;
         }
 
-        bool to_file(const wchar_t* const filename) const noexcept { return internal::imwrite(filename, buffer, file_size); }
+        bool to_file(const char* const filename) const noexcept { return internal::imwrite(filename, buffer, file_size); }
 
         iterator begin() noexcept { // NOLINT(readability-make-member-function-const)
             return { pixels, static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
