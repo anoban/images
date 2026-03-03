@@ -216,7 +216,7 @@ namespace internal {
         }
 
         // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-        [[nodiscard]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[nodiscard, maybe_unused]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
 #if defined(__llvm__) || defined(__GNUG__)                          // LLVM defines __m64 as a vector of 1 long long
             static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
@@ -248,7 +248,7 @@ namespace internal {
 #endif
         }
 
-        [[nodiscard]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[nodiscard, maybe_unused]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
 #if defined(__llvm__) || defined(__GNUG__)
             static constexpr __m64 mask_pi8 { 0x01020304050607 };
