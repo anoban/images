@@ -16,7 +16,7 @@
 #include <_helpers.hpp>
 #include <_imageio.hpp>
 #include <_iterators.hpp>
-#include <_windef.hpp>
+#include <_wingdi.hpp>
 
 // Windows .bmp format supports 1, 4, 8, 16, 24 and 32 bits pixel depths
 // eventhough Windows bitmaps support simple run length compression for pixels with 4 or 8 bits depth, it's rarely used as this compression gives tangible
@@ -244,7 +244,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                           .biHeight        = height,
                           .biPlanes        = 1,
                           .biBitCount      = 32,
-                          .biCompression   = internal::to_underlying(Compression::BI_RGB), // uncompressed RGB
+                          .biCompression   = internal::to_underlying(COMPRESSION::BI_RGB), // uncompressed RGB
                           .biSizeImage     = 0,
                           .biXPelsPerMeter = 3780, // an arbitrary choice
                           .biYPelsPerMeter = 3780, // an arbitrary choice

@@ -4,8 +4,8 @@
 #include <internal.hpp>
 // clang-format on
 
-#ifndef __DUMMY_WINDEF_HPP
-    #define __DUMMY_WINDEF_HPP 1
+#ifndef  __DUMMY_WINGDI_HPP
+    #define  __DUMMY_WINGDI_HPP 1
 #endif
 
 extern "C" {
@@ -47,7 +47,7 @@ extern "C" {
 
 #pragma pack(pop)
 
-    enum class Compression : unsigned char {
+    enum class COMPRESSION : unsigned char {
         BI_RGB       = 0x1,
         BI_RLE8      = 0x2,
         BI_RLE4      = 0x3,

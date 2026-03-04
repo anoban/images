@@ -2,7 +2,7 @@
 
 // clang-format off
 #include <internal.hpp>
-#include <_windef.hpp>
+#include <_wingdi.hpp>
 // clang-format on
 
 #include <cmath>

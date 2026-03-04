@@ -10,7 +10,7 @@
 #include <_helpers.hpp>
 #include <_imageio.hpp>
 #include <_iterators.hpp>
-#include <_windef.hpp>
+#include <_wingdi.hpp>
 
 // most .ico files will have only one bitmap in them, so this is generous enough
 static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 6 };
