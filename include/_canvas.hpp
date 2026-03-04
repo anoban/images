@@ -122,19 +122,14 @@ class canvas final : public bitmap {
 
         canvas& hflip() noexcept {
             // number of RGBQUAD structs a xmm register can hold
-            static constexpr auto XMM_STORABLE_RGBQUADS { sizeof(__m128i) / sizeof(RGBQUAD) };
-
-#if defined(__llvm__) && defined(__clang__)
+            static constexpr auto    XMM_STORABLE_RGBQUADS { sizeof(__m128i) / sizeof(RGBQUAD) };
             static constexpr __v16qu MASK { 12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3 };
-#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-            static constexpr __m128i MASK {
-                // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS
-                // MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
-                // !!! WE DO NOT WANT BYTES WITHIN EACH PIXELS REORDERED AS THIS WILL
-                // CHANGE THE WAY COLOURS ARE INTERPRETED FROM PIXELS
-                .m128i_u8 { 12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3 }
-            };
-#endif
+
+            // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS
+            // MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
+            // !!! WE DO NOT WANT BYTES WITHIN EACH PIXELS REORDERED AS THIS WILL
+            // CHANGE THE WAY COLOURS ARE INTERPRETED FROM PIXELS
+
             __m128i    left {}, right {}; // NOLINT(readability-isolate-declaration)
             const long residues /* in RGBQUADs */ { static_cast<long>((width() / 2) % XMM_STORABLE_RGBQUADS) };
             RGBQUAD    temp {};

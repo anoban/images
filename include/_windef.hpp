@@ -1,4 +1,9 @@
 #pragma once
+
+// clang-format off
+#include <internal.hpp>
+// clang-format on
+
 #ifndef __DUMMY_WINDEF_HPP
     #define __DUMMY_WINDEF_HPP 1
 #endif
@@ -54,3 +59,5 @@ extern "C" {
         BI_CMYKRLE4  = 0xD,
     };
 }
+
+#undef __INTERNAL

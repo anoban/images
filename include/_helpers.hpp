@@ -21,6 +21,10 @@
     #define dbgprintf(...)
 #endif
 
+#if !defined(__llvm__) && !defined(__GNUG__) // will only work with LLVM and GCC
+    #error LLVM and GCC complier SIMD intrinstics are liberally used in this header, other compilers are not supported!
+#endif
+
 // RGB combinations of colours
 enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
 
@@ -218,64 +222,18 @@ namespace internal {
         // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
         [[nodiscard, maybe_unused]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
-#if defined(__llvm__) || defined(__GNUG__)                          // LLVM defines __m64 as a vector of 1 long long
+            // LLVM defines __m64 as a vector of 1 long long
             static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
             // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
 
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
-
-#elif defined(_MSC_VER) || defined(_MSC_FULL_VER)
-
-            static constexpr __m128i mask_epi8 {
-                .m128i_u8 { 3, 2, 1, 0, /* we don't care about the rest */ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
-            };
-
-            const __m128i operand_epi8 {
-                .m128i_u8 { bytestream[0],
-                           bytestream[1],
-                           bytestream[2],
-                           bytestream[3], // followed by 12 filler zeroes
-                            0, 0,
-                           0, 0,
-                           0, 0,
-                           0, 0,
-                           0, 0,
-                           0, 0 }
-            };
-
-            // unlike LLVM, MSVC offers the SSSE3 intrinsic _mm_shuffle_pi8 only in x86 mode, in x64 mode we could only use the AVX1 intrinsic _mm_shuffle_epi8
-            return ::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u32[0]; // MSVC defines __m128i as a union
-#endif
         }
 
         [[nodiscard, maybe_unused]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
-#if defined(__llvm__) || defined(__GNUG__)
+
             static constexpr __m64 mask_pi8 { 0x01020304050607 };
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
-
-#elif defined(_MSC_VER) && defined(_MSC_FULL_VER)
-
-            static constexpr __m128i mask_epi8 {
-                .m128i_u8 { 7, 6, 5, 4, 3, 2, 1, 0, /* we don't care about the rest */ 8, 9, 10, 11, 12, 13, 14, 15 }
-            };
-            const __m128i operand_epi8 {
-                .m128i_u8 { bytestream[0],
-                           bytestream[1],
-                           bytestream[2],
-                           bytestream[3],
-                           bytestream[4],
-                           bytestream[5],
-                           bytestream[6],
-                           bytestream[7],
-                           0, /* followed by 8 filler zeroes */
-                            0, 0,
-                           0, 0,
-                           0, 0,
-                           0 }
-            };
-            return ::_mm_shuffle_epi8(operand_epi8, mask_epi8).m128i_u64[0];
-#endif
         }
 
     } // namespace endian

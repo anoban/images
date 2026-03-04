@@ -14,8 +14,9 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 
-namespace internal {
+//NOLINTBEGIN(readability-redundant-inline-specifier,cppcoreguidelines-pro-type-vararg,dybugprone-assignment-in-if-condition)
 
+namespace internal {
     // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
     // returned memory needs to be freed (`delete[]` ed) by the caller
     [[nodiscard]] static inline unsigned char* imopen(const char* const fpath, unsigned long& nreadbytes) {
@@ -60,7 +61,7 @@ CLOSE_AND_RETURN:
     [[nodiscard]]  static inline bool  imwrite( // NOLINT(readability-redundant-inline-specifier)
          const char* const                         filename,
          const unsigned char* const buffer,
-         const unsigned long&                          size
+         const  long&                          size
     ) noexcept {
         assert(filename); // too much??
         if (!buffer) {
@@ -68,9 +69,9 @@ CLOSE_AND_RETURN:
             return false; // fail if the buffer is a nullptr
         }
 
-        bool          is_success {};                                // has every step succeeded???
-        unsigned long nbytes {};                                    // number of bytes serialized to the disk
-        const int     fdesc { ::open(filename, O_CREAT | O_RDWR) }; // open the file descriptor with create and write privileges
+        bool      is_success {};                                // has every step succeeded???
+        long      nbytes {};                                    // number of bytes serialized to the disk
+        const int fdesc { ::open(filename, O_CREAT | O_RDWR) }; // open the file descriptor with create and write privileges
 
         if (fdesc == -1) {
             ::fprintf(stderr, "Call to open() failed inside %s at line %d!; errno %d\n", __FUNCTION__, __LINE__, errno);
@@ -94,5 +95,7 @@ CLOSE_AND_RETURN:
     }
 
 } // namespace internal
+
+//NOLINTEND(readability-redundant-inline-specifier,cppcoreguidelines-pro-type-vararg,dybugprone-assignment-in-if-condition)
 
 #undef __INTERNAL
