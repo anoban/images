@@ -10,6 +10,7 @@
 #include <_helpers.hpp>
 #include <_imageio.hpp>
 #include <_iterators.hpp>
+#include <_windef.hpp>
 
 // most .ico files will have only one bitmap in them, so this is generous enough
 static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 6 };
@@ -37,35 +38,6 @@ class icon_directory final { // represents an .ico file
         // UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
         // EVEN CHROMIUM HAS THESE STRUCTURES HANDROLLED IN ITS SOURCE :(
 
-        struct ICONDIRENTRY final {
-                BYTE  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
-                BYTE  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
-                BYTE  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
-                BYTE  bReserved;   // reserved byte, must always be 0
-                WORD  wPlanes;     // for .ico - specifies the colour planes (should be 0 or 1)
-                // for .cur - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
-                WORD  wBitCount; // for .ico - specifies pixel depth
-                // for .cur - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
-                // Windows cursors have a hotspot location that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
-                DWORD dwBytesInRes;  // size of the associated image in bytes
-                DWORD dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
-        };
-
-        struct ICONDIR final {
-                WORD         idReserved; // reserved, must always be 0
-                WORD         idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
-                // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
-                WORD         idCount;      // number of resources (images) stored in the given .ico file
-                ICONDIRENTRY idEntries[1]; // NOLINT(modernize-avoid-c-arrays)
-        };
-
-        struct ICONIMAGE final {
-                BITMAPINFOHEADER icHeader;
-                RGBQUAD          icColors[1]; // NOLINT(modernize-avoid-c-arrays)
-                BYTE             icXOR[1];    // NOLINT(modernize-avoid-c-arrays)
-                BYTE             icAND[1];    // NOLINT(modernize-avoid-c-arrays)
-        };
-
         using value_type      = RGBQUAD; // pixel type
         using pointer         = value_type*;
         using const_pointer   = const value_type*;
@@ -88,8 +60,8 @@ class icon_directory final { // represents an .ico file
         ICONDIR        directory;
         std::vector<ICONDIRENTRY> entries; // metadata of entries stored in the file
 
-        [[nodiscard]] static ICONDIR __stdcall parse_icondirectory(
-            _In_reads_bytes_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long long& size
+        [[nodiscard]] static ICONDIR parse_icondirectory(
+            const unsigned char* const imstream, [[maybe_unused]] const unsigned long long& size
         ) noexcept {
             static_assert(sizeof(ICONDIR) == 24);
             static_assert(std::is_standard_layout_v<ICONDIR>);
@@ -124,8 +96,8 @@ class icon_directory final { // represents an .ico file
         }
 
         // it is the caller's responsibility to correctly augment the buffer such that it begins with the binary data of a GRPICONDIRENTRY
-        [[nodiscard]] static ICONDIRENTRY __stdcall parse_icondirectory_entry(
-            _In_count_(size) const unsigned char* const imstream, _In_ [[maybe_unused]] const unsigned long long& size
+        [[nodiscard]] static ICONDIRENTRY parse_icondirectory_entry(
+            const unsigned char* const imstream, [[maybe_unused]] const unsigned long long& size
         ) noexcept {
             static_assert(sizeof(ICONDIRENTRY) == 16);
             static_assert(std::is_standard_layout_v<ICONDIRENTRY>);
@@ -157,9 +129,7 @@ class icon_directory final { // represents an .ico file
             return temp;
         }
 
-        [[nodiscard]] static BITMAPINFOHEADER __stdcall parse_info_header(
-            _In_reads_bytes_(length) const unsigned char* const imstream, _In_ const size_t& length
-        ) noexcept {
+        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(const unsigned char* const imstream, const size_t& length) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
             static_assert(sizeof(BITMAPINFOHEADER) == 40LLU);
             assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
@@ -200,8 +170,8 @@ class icon_directory final { // represents an .ico file
         icon_directory() noexcept = delete;
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
-        explicit icon_directory(_In_ const wchar_t* const filename) noexcept :
-            buffer { internal::open(filename, file_size) },
+        explicit icon_directory(const char* const filename) noexcept :
+            buffer { internal::imopen(filename, file_size) },
             buffer_size { file_size },
             directory { icon_directory::parse_icondirectory(buffer, buffer_size) } {
             if (!buffer) [[unlikely]] {
@@ -222,17 +192,17 @@ class icon_directory final { // represents an .ico file
             }
         }
 
-        icon_directory(_In_ const icon_directory& other) noexcept { }
+        icon_directory(const icon_directory& other) noexcept { }
 
-        icon_directory(_In_ icon_directory&& other) noexcept { }
+        icon_directory(icon_directory&& other) noexcept { }
 
-        icon_directory& operator=(_In_ const icon_directory& other) noexcept {
+        icon_directory& operator=(const icon_directory& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
             return *this;
         }
 
-        icon_directory& operator=(_In_ icon_directory&& other) noexcept {
+        icon_directory& operator=(icon_directory&& other) noexcept {
             if (std::addressof(other) == this) return *this;
 
             return *this;
@@ -245,9 +215,9 @@ class icon_directory final { // represents an .ico file
 
         size_type resource_count() const noexcept { return directory.idCount; }
 
-        bool to_file(_In_ const wchar_t* const filename) const noexcept { return internal::serialize(filename, buffer, buffer_size); }
+        bool to_file(const char* const filename) const noexcept { return internal::imwrite(filename, buffer, buffer_size); }
 
-        bitmap to_bitmap(_In_opt_ const unsigned long long& position = 0) const noexcept {
+        bitmap to_bitmap(const unsigned long long& position = 0) const noexcept {
             //
             if (position >= directory.idCount) {
                 //
@@ -268,7 +238,7 @@ class icon_directory final { // represents an .ico file
             return image;
         }
 
-        friend std::wostream& operator<<(_Inout_ std::wostream& wostr, _In_ const icon_directory& image) noexcept {
+        friend std::wostream& operator<<(std::wostream& wostr, const icon_directory& image) noexcept {
             wostr << L"---------------------------------------\n";
             wostr << L"| idReserved      " << std::setw(20) << image.directory.idReserved << L"|\n";
             wostr << L"| idType          " << std::setw(20) << image.directory.idType << L"|\n";

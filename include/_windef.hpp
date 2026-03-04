@@ -58,6 +58,35 @@ extern "C" {
         BI_CMYKRLE8  = 0xC,
         BI_CMYKRLE4  = 0xD,
     };
+
+    struct ICONDIRENTRY final {
+            unsigned char  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
+            unsigned char  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
+            unsigned char  bColorCount; // number of colours in the colur palette, must be 0 if the image doesn't use a colour palette
+            unsigned char  bReserved;   // reserved byte, must always be 0
+            unsigned short wPlanes;     // for .ico - specifies the colour planes (should be 0 or 1)
+            // for .cur - specifies the horizontal coordinate of the hotspot as offset from the left, in pixels
+            unsigned short wBitCount; // for .ico - specifies pixel depth
+            // for .cur - specifies the vertical coordinate of the hotspot as offset from the top, in pixels
+            // Windows cursors have a hotspot location that decides one exact point that is affected by mouse events https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors
+            unsigned       dwBytesInRes;  // size of the associated image in bytes
+            unsigned       dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
+    };
+
+    struct ICONDIR final {
+            unsigned short idReserved; // reserved, must always be 0
+            unsigned short idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
+            // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
+            unsigned short idCount;      // number of resources (images) stored in the given .ico file
+            ICONDIRENTRY   idEntries[1]; // NOLINT(modernize-avoid-c-arrays)
+    };
+
+    struct ICONIMAGE final {
+            BITMAPINFOHEADER icHeader;
+            RGBQUAD          icColors[1]; // NOLINT(modernize-avoid-c-arrays)
+            unsigned char    icXOR[1];    // NOLINT(modernize-avoid-c-arrays)
+            unsigned char    icAND[1];    // NOLINT(modernize-avoid-c-arrays)
+    };
 }
 
 #undef __INTERNAL

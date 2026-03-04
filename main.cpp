@@ -6,7 +6,7 @@
 int main(const int argc, const char* const argv[]) {
     if (argc != 2) return EXIT_FAILURE;
 
-    unsigned long     size {};
+    long              size {};
     const auto* const pngstream { internal::read(R"(./sweeney.png)", size) };
     std::wcout << size << L'\n';
 

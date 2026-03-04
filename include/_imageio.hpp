@@ -14,7 +14,7 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 
-//NOLINTBEGIN(readability-redundant-inline-specifier,cppcoreguidelines-pro-type-vararg,dybugprone-assignment-in-if-condition)
+//NOLINTBEGIN(readability-redundant-inline-specifier,cppcoreguidelines-pro-type-vararg,bugprone-assignment-in-if-condition)
 
 namespace internal {
     // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
@@ -96,6 +96,6 @@ CLOSE_AND_RETURN:
 
 } // namespace internal
 
-//NOLINTEND(readability-redundant-inline-specifier,cppcoreguidelines-pro-type-vararg,dybugprone-assignment-in-if-condition)
+//NOLINTEND(readability-redundant-inline-specifier,cppcoreguidelines-pro-type-vararg,bugprone-assignment-in-if-condition)
 
 #undef __INTERNAL
