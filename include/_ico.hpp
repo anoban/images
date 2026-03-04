@@ -238,25 +238,25 @@ class icon_directory final { // represents an .ico file
             return image;
         }
 
-        friend std::wostream& operator<<(std::wostream& wostr, const icon_directory& image) noexcept {
-            wostr << L"---------------------------------------\n";
-            wostr << L"| idReserved      " << std::setw(20) << image.directory.idReserved << L"|\n";
-            wostr << L"| idType          " << std::setw(20) << image.directory.idType << L"|\n";
-            wostr << L"| idCount         " << std::setw(20) << image.directory.idCount << L"|\n";
-            wostr << L"---------------------------------------\n";
+        friend std::ostream& operator<<(std::ostream& ostr, const icon_directory& image) noexcept {
+            ostr << "---------------------------------------\n";
+            ostr << "| idReserved      " << std::setw(20) << image.directory.idReserved << "|\n";
+            ostr << "| idType          " << std::setw(20) << image.directory.idType << "|\n";
+            ostr << "| idCount         " << std::setw(20) << image.directory.idCount << "|\n";
+            ostr << "---------------------------------------\n";
             for (const auto& entry : image.entries) {
-                wostr << L"| bWidth          " << std::setw(20) << entry.bWidth << L"|\n";
-                wostr << L"| bHeight         " << std::setw(20) << entry.bHeight << L"|\n";
-                wostr << L"| bColorCount     " << std::setw(20) << entry.bColorCount << L"|\n";
-                wostr << L"| bReserved       " << std::setw(20) << entry.bReserved << L"|\n";
-                wostr << L"| wPlanes         " << std::setw(20) << entry.wPlanes << L"|\n";
-                wostr << L"| wBitCount       " << std::setw(20) << entry.wBitCount << L"|\n";
-                wostr << L"| dwBytesInRes    " << std::setw(20) << entry.dwBytesInRes << L"|\n";
-                wostr << L"| dwImageOffset   " << std::setw(20) << entry.dwImageOffset << L"|\n";
-                wostr << L"=======================================\n";
+                ostr << "| bWidth          " << std::setw(20) << entry.bWidth << "|\n";
+                ostr << "| bHeight         " << std::setw(20) << entry.bHeight << "|\n";
+                ostr << "| bColorCount     " << std::setw(20) << entry.bColorCount << "|\n";
+                ostr << "| bReserved       " << std::setw(20) << entry.bReserved << "|\n";
+                ostr << "| wPlanes         " << std::setw(20) << entry.wPlanes << "|\n";
+                ostr << "| wBitCount       " << std::setw(20) << entry.wBitCount << "|\n";
+                ostr << "| dwBytesInRes    " << std::setw(20) << entry.dwBytesInRes << "|\n";
+                ostr << "| dwImageOffset   " << std::setw(20) << entry.dwImageOffset << "|\n";
+                ostr << "=======================================\n";
             }
-            wostr << L"---------------------------------------\n";
-            return wostr;
+            ostr << "---------------------------------------\n";
+            return ostr;
         }
 };
 

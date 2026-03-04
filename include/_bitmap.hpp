@@ -346,25 +346,25 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             ::memset(this, 0, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
         }
 
-        friend std::ostream& operator<<(std::ostream& wostr, const bitmap& image) noexcept {
-            wostr << "---------------------------------------\n";
-            wostr << "| bfType          " << std::setw(20) << image.file_header.bfType << "|\n";
-            wostr << "| bfSize          " << std::setw(20) << image.file_header.bfSize << "|\n";
-            wostr << "| bfOffBits       " << std::setw(20) << image.file_header.bfOffBits << "|\n";
-            wostr << "|-------------------------------------|\n";
-            wostr << "| biSize          " << std::setw(20) << image.info_header.biSize << "|\n";
-            wostr << "| biWidth         " << std::setw(20) << image.info_header.biWidth << "|\n";
-            wostr << "| biHeight        " << std::setw(20) << image.info_header.biHeight << "|\n";
-            wostr << "| biPlanes        " << std::setw(20) << image.info_header.biPlanes << "|\n";
-            wostr << "| biBitCount      " << std::setw(20) << image.info_header.biBitCount << "|\n";
-            wostr << "| biCompression   " << std::setw(20) << image.info_header.biCompression << "|\n";
-            wostr << "| biSizeImage     " << std::setw(20) << image.info_header.biSizeImage << "|\n";
-            wostr << "| biXPelsPerMeter " << std::setw(20) << image.info_header.biXPelsPerMeter << "|\n";
-            wostr << "| biYPelsPerMeter " << std::setw(20) << image.info_header.biYPelsPerMeter << "|\n";
-            wostr << "| biClrUsed       " << std::setw(20) << image.info_header.biClrUsed << "|\n";
-            wostr << "| biClrImportant  " << std::setw(20) << image.info_header.biClrImportant << "|\n";
-            wostr << "---------------------------------------\n";
-            return wostr;
+        friend std::ostream& operator<<(std::ostream& ostr, const bitmap& image) noexcept {
+            ostr << "---------------------------------------\n";
+            ostr << "| bfType          " << std::setw(20) << image.file_header.bfType << "|\n";
+            ostr << "| bfSize          " << std::setw(20) << image.file_header.bfSize << "|\n";
+            ostr << "| bfOffBits       " << std::setw(20) << image.file_header.bfOffBits << "|\n";
+            ostr << "|-------------------------------------|\n";
+            ostr << "| biSize          " << std::setw(20) << image.info_header.biSize << "|\n";
+            ostr << "| biWidth         " << std::setw(20) << image.info_header.biWidth << "|\n";
+            ostr << "| biHeight        " << std::setw(20) << image.info_header.biHeight << "|\n";
+            ostr << "| biPlanes        " << std::setw(20) << image.info_header.biPlanes << "|\n";
+            ostr << "| biBitCount      " << std::setw(20) << image.info_header.biBitCount << "|\n";
+            ostr << "| biCompression   " << std::setw(20) << image.info_header.biCompression << "|\n";
+            ostr << "| biSizeImage     " << std::setw(20) << image.info_header.biSizeImage << "|\n";
+            ostr << "| biXPelsPerMeter " << std::setw(20) << image.info_header.biXPelsPerMeter << "|\n";
+            ostr << "| biYPelsPerMeter " << std::setw(20) << image.info_header.biYPelsPerMeter << "|\n";
+            ostr << "| biClrUsed       " << std::setw(20) << image.info_header.biClrUsed << "|\n";
+            ostr << "| biClrImportant  " << std::setw(20) << image.info_header.biClrImportant << "|\n";
+            ostr << "---------------------------------------\n";
+            return ostr;
         }
 
         bool to_file(const char* const filename) const noexcept { return internal::imwrite(filename, buffer, file_size); }
