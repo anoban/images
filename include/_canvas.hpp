@@ -140,10 +140,17 @@ class canvas final : public bitmap {
             // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height(); ++row) {
                 for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += XMM_STORABLE_RGBQUADS) {
+#if defined(__llvm__) && defined(__GNUG__)
                     left  = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * row + col), MASK);
-                    // !!! WE NEED sizeof(__m128i) BYTES BEFORE THE OFFSET width() * (row +
-                    // 1) - col, NOT AFTER IT
+                    // !!! WE NEED sizeof(__m128i) BYTES BEFORE THE OFFSET width() * (row + 1) - col, NOT AFTER IT
                     right = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS), MASK);
+#elif defined(__GNUG__) && !defined(__llvm__) // LLVM defined both __llvm__ and __GNUG__
+                    // clang wouldn't allow reinterpret_cast inside a constexpr, hence placing it inside the #elif
+                    static constexpr __m128i MASK_GCC = reinterpret_cast<__m128i>(MASK);
+                    // gcc doesn't accept __v16qu inplace of a __m128i whereas clang does, hence all this hoop jumping
+                    left                              = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * row + col), MASK_GCC);
+                    right = ::_mm_shuffle_epi8(::_mm_loadu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS), MASK_GCC);
+#endif
 
                     ::_mm_storeu_epi8(pixels + width() * (row + 1) - col - XMM_STORABLE_RGBQUADS, left);
                     ::_mm_storeu_epi8(pixels + width() * row + col, right);
@@ -377,8 +384,6 @@ class canvas final : public bitmap {
         }
 
         template<ANGLES> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate() noexcept;
-
-        template<> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate<ANGLES::NINETY>() noexcept { }
 
         template<typename _TyChar> [[deprecated("IMPLEMENTATION INCOMPLETE")]] std::basic_string<_TyChar> to_text() noexcept { }
 

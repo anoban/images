@@ -45,7 +45,7 @@ namespace internal {
             nreadbytes = nbytes;
             assert(nbytes == filestat.st_size); // double checking
         } else {
-            ::fprintf(stderr, "Call to read() failed inside %s at line %lu!; errno %d\n", __FUNCTION__, __LINE__, errno);
+            ::fprintf(stderr, "Call to read() failed inside %s at line %d!; errno %d\n", __FUNCTION__, __LINE__, errno);
             delete buffer;
             buffer = nullptr;
         }
