@@ -61,8 +61,8 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER file_header;
         BITMAPINFOHEADER info_header;
-        unsigned long    file_size;   // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
-        unsigned long    buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+        long             file_size;   // REDUNDANT BECAUSE BITMAPFILEHEADER::bfSize STORES THE SAME INFO BUT NECESSARY
+        long             buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
 
         friend class icon_directory; // to serialize ico objects as bitmaps, we need access to this class's internals
 
@@ -191,7 +191,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // construct a bitmap from a stream of bytes
         bitmap(
             const unsigned char* const imstream, // this buffer is expected to contain the metadata preceding bitmap pixel buffer too
-            const unsigned long        size
+            const long&                size
         ) noexcept :
             buffer { new (std::nothrow) unsigned char[size] }, // cannot take ownership of the incoming buffer, so let's copy it
                                                                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
@@ -216,7 +216,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             unsigned char* const    imstream, // this buffer is assumed to have the metadata structs serialized in it
             const BITMAPFILEHEADER& file,
             const BITMAPINFOHEADER& info,
-            const unsigned          size
+            const long&             size
         ) noexcept :
             buffer { imstream },
             pixels { reinterpret_cast<RGBQUAD*>(imstream) },

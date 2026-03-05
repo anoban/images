@@ -1,13 +1,15 @@
 COMPILER = /usr/bin/clang++
 
-DBG_FLAGS = -DDEBUG -D_DEBUG -g3
+DEBUG = -DDEBUG -D_DEBUG -g3 -O0
 
-CFLAGS = -Wall -Wextra -O3 -D_NDEBUG -DNDEBUG -I./include -std=c++20 -march=native -mavx512f
+NODEBUG = -D_NDEBUG -DNDEBUG -O3
+
+CFLAGS = -Wall -Wextra  -I./include -std=c++20 -march=tigerlake -mavx512f -ffast-math -mprefer-vector-width=512
 
 TARGET = main
 
 build:
-	$(COMPILER) $(CFLAGS) -o main.out
+	$(COMPILER) $(TARGET).cpp $(CFLAGS) $(NODEBUG) -o $(TARGET).out
 
 clean:
 	rm -f ./*.out

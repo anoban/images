@@ -19,7 +19,7 @@
 namespace internal {
     // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
     // returned memory needs to be freed (`delete[]` ed) by the caller
-    [[nodiscard]] static inline unsigned char* imopen(const char* const fpath, unsigned long& nreadbytes) {
+    [[nodiscard]] static inline unsigned char* imopen(const char* const fpath, long& nreadbytes) {
         nreadbytes = 0;
         unsigned char* buffer {};
         struct stat    filestat {};
@@ -69,9 +69,11 @@ CLOSE_AND_RETURN:
             return false; // fail if the buffer is a nullptr
         }
 
-        bool      is_success {};                                // has every step succeeded???
-        long      nbytes {};                                    // number of bytes serialized to the disk
-        const int fdesc { ::open(filename, O_CREAT | O_RDWR) }; // open the file descriptor with create and write privileges
+        bool      is_success {}; // has every step succeeded???
+        long      nbytes {};     // number of bytes serialized to the disk
+        const int fdesc {
+            ::open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IROTH | S_IWUSR | S_IWOTH)
+        }; // open the file descriptor with create and write privileges
 
         if (fdesc == -1) {
             ::fprintf(stderr, "Call to open() failed inside %s at line %d!; errno %d\n", __FUNCTION__, __LINE__, errno);
@@ -85,8 +87,7 @@ CLOSE_AND_RETURN:
         }
 
         // if the write was successful,
-        assert(size == nbytes);
-        is_success = true;
+        is_success = size == nbytes;
         // then, fall through the CLOSE_AND_RETURN label
 
 CLOSE_AND_RETURN:
