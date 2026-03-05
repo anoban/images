@@ -4,8 +4,8 @@
 #include <internal.hpp>
 // clang-format on
 
-#ifndef  __DUMMY_WINGDI_HPP
-    #define  __DUMMY_WINGDI_HPP 1
+#ifndef __DUMMY_WINGDI_HPP
+    #define __DUMMY_WINGDI_HPP 1
 #endif
 
 extern "C" {

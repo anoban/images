@@ -213,14 +213,14 @@ namespace internal {
 
     namespace endian {
 
-        [[nodiscard]] static constexpr unsigned short ushort_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static constexpr unsigned short ushort_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
         }
 
         // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-        [[nodiscard, maybe_unused]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
             // LLVM defines __m64 as a vector of 1 long long
             static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
@@ -229,7 +229,7 @@ namespace internal {
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
         }
 
-        [[nodiscard, maybe_unused]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
             assert(bytestream);
 
             static constexpr __m64 mask_pi8 { 0x01020304050607 };
