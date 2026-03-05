@@ -60,7 +60,7 @@ class canvas final : public bitmap {
         canvas& resize_for_overwrite(const int& height, const int& width) noexcept {
             // the members the need to be updated after a resize operation are [buffer],
             // [pixels], [buffer_size], file_header, info_header, file_size
-            const auto newsize { sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width };
+            const long newsize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * height * width;
             if (buffer_size < newsize) { // handle the reallocation
                 unsigned char* const temp_buffer { new (std::nothrow) unsigned char[newsize] };
                 if (!temp_buffer) {
@@ -97,14 +97,12 @@ class canvas final : public bitmap {
         }
 
         // transform the image to black and white using the selected mechanism
-        template<::BW_TRANSFORMATION method> canvas& to_blacknwhite() noexcept {
-            switch (method) {
-                case ::BW_TRANSFORMATION::AVERAGE : std::for_each(begin(), end(), internal::rgb::transformers::average); break;
-                case ::BW_TRANSFORMATION::WEIGHTED_AVERAGE :
-                    std::for_each(begin(), end(), internal::rgb::transformers::weighted_average);
-                    break;
-                case ::BW_TRANSFORMATION::LUMINOSITY : std::for_each(begin(), end(), internal::rgb::transformers::luminosity); break;
-                case ::BW_TRANSFORMATION::BINARY     : std::for_each(begin(), end(), internal::rgb::transformers::binary); break;
+        template<::BW _to_bw_meth> canvas& to_blacknwhite() noexcept {
+            switch (_to_bw_meth) {
+                case ::BW::AVERAGE          : std::for_each(begin(), end(), internal::rgb::transformers::average); break;
+                case ::BW::WEIGHTED_AVERAGE : std::for_each(begin(), end(), internal::rgb::transformers::weighted_average); break;
+                case ::BW::LUMINOSITY       : std::for_each(begin(), end(), internal::rgb::transformers::luminosity); break;
+                case ::BW::BINARY           : std::for_each(begin(), end(), internal::rgb::transformers::binary); break;
             }
             return *this;
         }
@@ -115,8 +113,8 @@ class canvas final : public bitmap {
         }
 
         // remove the selected colours from the pixels of the image
-        template<::RGB_TAG colour_combination> canvas& remove_colour() noexcept {
-            std::for_each(begin(), end(), internal::rgb::removers::zero<colour_combination> {});
+        template<::RGB _rgb_comb> canvas& remove_colour() noexcept {
+            std::for_each(begin(), end(), internal::rgb::removers::zero<_rgb_comb> {});
             return *this;
         }
 

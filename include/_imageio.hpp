@@ -72,7 +72,9 @@ CLOSE_AND_RETURN:
         bool      is_success {}; // has every step succeeded???
         long      nbytes {};     // number of bytes serialized to the disk
         const int fdesc {
-            ::open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IROTH | S_IWUSR | S_IWOTH)
+            ::open(
+                filename, O_CREAT | O_WRONLY, S_IRUSR | S_IROTH | S_IWUSR | S_IWOTH
+            ) // without these mode_ts, we had to use sudo to open the written images
         }; // open the file descriptor with create and write privileges
 
         if (fdesc == -1) {

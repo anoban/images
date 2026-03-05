@@ -1,6 +1,6 @@
 // clang-format off
 #include <internal.hpp>
-#include <_windef.hpp>
+#include <_wingdi.hpp>
 #include <_bitmap.hpp>
 // clang-format on
 
@@ -10,26 +10,27 @@
 #include <cstdio>
 #include <limits>
 
-// NOLINTBEGIN(readability-redundant-inline-specifier,modernize-avoid-c-arrays)
-
 namespace _to_text_impl {
 
     constexpr long   CONSOLE_WIDTH { 140 };
     constexpr double CONSOLE_WIDTHR { 140.0 };
     constexpr double ONE { 1.000000000 };
 
-    // characters in ascending order of luminance
-    static constexpr char palette_minimal[]  = { '_', '.', ',', '-', '=', '+', ':', ';', 'c', 'b', 'a', '!', '?', '1',
-                                                 '2', '3', '4', '5', '6', '7', '8', '9', '$', 'W', '#', '@', 'N' };
+    namespace palettes {
 
-    static constexpr char palette[]          = { ' ', '.', '-', ',', ':', '+', '~', ';', '(', '%', 'x', '1', '*', 'n', 'u',
-                                                 'T', '3', 'J', '5', '$', 'S', '4', 'F', 'P', 'G', 'O', 'V', 'X', 'E', 'Z',
-                                                 '8', 'A', 'U', 'D', 'H', 'K', 'W', '@', 'B', 'Q', '#', '0', 'M', 'N' };
+        // characters in ascending order of luminance
+        static constexpr char minimal[]  = { '_', '.', ',', '-', '=', '+', ':', ';', 'c', 'b', 'a', '!', '?', '1',
+                                             '2', '3', '4', '5', '6', '7', '8', '9', '$', 'W', '#', '@', 'N' };
 
-    static constexpr char palette_extended[] = { ' ', '.', '\'', '`', '^', '"', ',', ':', ';', 'I', 'l',  '!', 'i', '>', '<', '~', '+', '_',
-                                                 '-', '?', ']',  '[', '}', '{', '1', ')', '(', '|', '\\', '/', 't', 'f', 'j', 'r', 'x', 'n',
-                                                 'u', 'v', 'c',  'z', 'X', 'Y', 'U', 'J', 'C', 'L', 'Q',  '0', 'O', 'Z', 'm', 'w', 'q', 'p',
-                                                 'd', 'b', 'k',  'h', 'a', 'o', '*', '#', 'M', 'W', '&',  '8', '%', 'B', '@', '$' };
+        static constexpr char base[]     = { ' ', '.', '-', ',', ':', '+', '~', ';', '(', '%', 'x', '1', '*', 'n', 'u',
+                                             'T', '3', 'J', '5', '$', 'S', '4', 'F', 'P', 'G', 'O', 'V', 'X', 'E', 'Z',
+                                             '8', 'A', 'U', 'D', 'H', 'K', 'W', '@', 'B', 'Q', '#', '0', 'M', 'N' };
+
+        static constexpr char extended[] = { ' ', '.', '\'', '`', '^', '"', ',', ':', ';', 'I', 'l',  '!', 'i', '>', '<', '~', '+', '_',
+                                             '-', '?', ']',  '[', '}', '{', '1', ')', '(', '|', '\\', '/', 't', 'f', 'j', 'r', 'x', 'n',
+                                             'u', 'v', 'c',  'z', 'X', 'Y', 'U', 'J', 'C', 'L', 'Q',  '0', 'O', 'Z', 'm', 'w', 'q', 'p',
+                                             'd', 'b', 'k',  'h', 'a', 'o', '*', '#', 'M', 'W', '&',  '8', '%', 'B', '@', '$' };
+    }
 
     namespace _rgbops {
 
@@ -82,14 +83,12 @@ namespace _to_text_impl {
         const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
     ) noexcept {
         if (image.height() < 0) {
-            ::fputs("Error in to_raw_string, this tool does not support bitmaps with top-down pixel ordering!\n", stderr);
+            ::fprintf(stderr, "Error in %s, this function does not support bitmaps with top-down pixel ordering!\n", __PRETTY_FUNCTION__);
             return nullptr;
         }
 
         const long npixels = image.height() * image.width(); // total pixels in the image
-        // 1 char for each pixel + 2 additional wchar_ts for CRLF at the end of each scanline
-        // space for two extra characters ('\r', '\n') to be appended to the end of each line
-        const long nchars  = npixels + 2 * image.height();
+        const long nchars  = npixels + image.height();       // space for an LF character '\n' to be appended to the end of each line
 
         char* const buffer = new (std::nothrow) char[nchars + 1]; // +1 is for the nullptr terminator
         if (!buffer) {
@@ -112,9 +111,8 @@ namespace _to_text_impl {
             // traverse left to right inside "scan lines"
             for (long ncols = 0; ncols < image.width(); ++ncols) // for each pixel in the row,
                 buffer[caret++] = _pixeltochar::maptochar(fnptr, &image.data()[nrows * image.width() + ncols], palette);
-            // at the end of each scanline, append a CRLF!
+            // at the end of each scanline, append an LF
             buffer[caret++] = '\n';
-            buffer[caret++] = '\r';
         }
 
         buffer[caret] = 0; // null termination of the string
@@ -127,12 +125,12 @@ namespace _to_text_impl {
         const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
     ) noexcept {
         if (image.height() < 0) {
-            ::fprintf(stderr, "Error in %s, bitmaps with top-down pixel ordering are not supported!\n", __PRETTY_FUNCTION__);
+            ::fprintf(stderr, "Error in %s, this function does not support bitmaps with top-down pixel ordering!\n", __PRETTY_FUNCTION__);
             return nullptr;
         }
 
-        const long  block_d /* dimension of an individual square block */ = ::ceill(image.width() / CONSOLE_WIDTHR);
-        const float blocksize /* number of pixels in a block */           = block_d * block_d; // since our blocks are square
+        const long  block_d   = ::ceill(image.width() / CONSOLE_WIDTHR); // dimension of an individual square block
+        const float blocksize = block_d * block_d;                       // number of pixels in a block - since our blocks are square
 
         long pblocksize_right = // number of pixels in each block in the rightmost column of incomplete blocks.
             // width of the image - (number of complete blocks * block dimension) will give the residual pixels along the horizontal axis
@@ -275,5 +273,3 @@ namespace _to_text_impl {
         return to_downscaled_string(image, palette, fnptr);
     }
 } // namespace _to_text_impl
-
-// NOLINTEND(readability-redundant-inline-specifier,modernize-avoid-c-arrays)

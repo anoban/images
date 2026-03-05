@@ -22,14 +22,14 @@
 #endif
 
 #if !defined(__llvm__) && !defined(__GNUG__) // will only work with LLVM and GCC
-    #error LLVM and GCC complier SIMD intrinstics are liberally used in this header, other compilers are not supported!
+    #error LLVM and GCC SIMD intrinstics are liberally used in this header, other compilers are not supported!
 #endif
 
 // RGB combinations of colours
-enum class RGB_TAG : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
+enum class RGB : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
 
 // mechanism to be used in converting the pixels to black and white
-enum class BW_TRANSFORMATION : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
+enum class BW : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
 
 enum class ANGLES : unsigned short { NINETY = 0x5A, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
 
@@ -131,29 +131,29 @@ namespace internal {
 
         namespace removers { // this is really verbose but makes mutating the pixel buffers possible with a single std::for_each call
 
-            template<RGB_TAG colour> struct zero;
+            template<RGB colour> struct zero;
 
-            template<> struct zero<RGB_TAG::RED> final {
+            template<> struct zero<RGB::RED> final {
                     constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
             };
 
-            template<> struct zero<RGB_TAG::GREEN> final {
+            template<> struct zero<RGB::GREEN> final {
                     constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
             };
 
-            template<> struct zero<RGB_TAG::BLUE> final {
+            template<> struct zero<RGB::BLUE> final {
                     constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
             };
 
-            template<> struct zero<RGB_TAG::REDGREEN> final {
+            template<> struct zero<RGB::REDGREEN> final {
                     constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
             };
 
-            template<> struct zero<RGB_TAG::GREENBLUE> final {
+            template<> struct zero<RGB::GREENBLUE> final {
                     constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
             };
 
-            template<> struct zero<RGB_TAG::REDBLUE> final {
+            template<> struct zero<RGB::REDBLUE> final {
                     constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
             };
 

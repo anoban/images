@@ -1,17 +1,18 @@
 #include <bitmap>
 #include <canvas>
-#include <format>
 
-static inline const char* add_suffix(const char* const fpath, const char* const rstrip, const char* const replacement) noexcept {
-    static constexpr long long MAX_PATH { 0X2FF };
-    static char                buffer[MAX_PATH] {};
-    ::memset(buffer, 0, MAX_PATH);
-    ::strcpy(buffer, fpath);
-    char* const delim = const_cast<char*>(::strstr(buffer, rstrip)); // the length of the string we actually need
-    // if we pass delim to ::strcat as is, it'll append after the null terminator at the end, not at delim
-    // first zero the delim and pass it to ::strcat
-    *delim            = 0;
-    ::strcat(delim, replacement);
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic,readability-redundant-inline-specifier)
+
+static inline const char* gsub(const char* const fpath, const char* const rstrip, const char* const replacement) noexcept {
+    static constexpr unsigned long long MAXPATH { 0X200 };
+    static char                         buffer[MAXPATH] {};
+
+    ::memset(buffer, 0, MAXPATH);                                   // at every call, cleanup the buffer before any writes
+    ::strcpy(buffer, fpath);                                        // copy the path over to the buffer
+    char* const mark = const_cast<char*>(::strstr(buffer, rstrip)); // pointer to the char where our substring begins in the path
+    // if we pass this to ::strcat() as is, it'll append the replacement after the null terminator, at the end of the path, not at this mark
+    *mark            = 0; // first zero the delim and then pass it to ::strcat(), so the write starts at the specified mark
+    ::strcat(mark, replacement);
     return buffer;
 }
 
@@ -19,12 +20,13 @@ int main(const int argc, const char* const argv[]) {
     if (argc == 1) return EXIT_FAILURE; // expect the file name to be passed in argv
 
     for (int i = 1; i < argc; ++i) {
-        ::canvas cv { ::bitmap { argv[i] } };
-        if (!cv.to_blacknwhite<BW_TRANSFORMATION::AVERAGE>().to_file(::add_suffix(argv[i], ".bmp", "_bw.bmp")))
-            ::fputs("serialization filed!\n", stderr);
+        ::canvas palette { ::bitmap { argv[i] } };
+        if (!palette.to_blacknwhite<BW::AVERAGE>().to_file(::gsub(argv[i], ".bmp", "_bw.bmp"))) ::fputs("serialization filed!\n", stderr);
     }
 
-    ::puts("Done!");
+    ::puts("done!");
 
     return EXIT_SUCCESS;
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic,readability-redundant-inline-specifier)

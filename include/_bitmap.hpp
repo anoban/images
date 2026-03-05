@@ -97,7 +97,10 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return COMPRESSION_KIND::UNKNOWN;
         }
 
-        [[nodiscard]] static BITMAPFILEHEADER parse_file_header(const unsigned char* const imstream, const size_t& length) noexcept {
+        [[nodiscard]] static BITMAPFILEHEADER parse_file_header(
+            const unsigned char* const     imstream,
+            [[maybe_unused]] const size_t& length // in release mode, this gives an unused param warning :(
+        ) noexcept {
             static_assert(sizeof(BITMAPFILEHEADER) == 14LLU);
             assert(length >= sizeof(BITMAPFILEHEADER));
 
@@ -122,7 +125,9 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return header;
         }
 
-        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(const unsigned char* const imstream, const size_t& length) noexcept {
+        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(
+            const unsigned char* const imstream, [[maybe_unused]] const size_t& length
+        ) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
             static_assert(sizeof(BITMAPINFOHEADER) == 40LLU);
             assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
@@ -182,7 +187,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             info_header { bitmap::parse_info_header(buffer, file_size) },
             // file_size {}, we want to preserve size's previous state materialized by internal::open()
             buffer_size { file_size } {
-            if (!buffer) [[unlikely]] {             // if open failed
+            if (!buffer) [[unlikely]] {             // if imopen failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
                 ::fprintf(stderr, "Error inside %s, object is default initialized as a fallback\n", __PRETTY_FUNCTION__);
             }
