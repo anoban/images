@@ -253,15 +253,18 @@ namespace internal {
 
     namespace endian {
 
-        [[maybe_unused]] static constexpr unsigned short ushort_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static constexpr unsigned short u16_from_be_bytes(const unsigned char* const bytestream) noexcept {
+            static_assert(sizeof(unsigned short) == 2);
             assert(bytestream);
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
         }
 
         // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-        [[maybe_unused]] static unsigned long ulong_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static unsigned u32_from_be_bytes(const unsigned char* const bytestream) noexcept {
+            static_assert(sizeof(unsigned) == 4);
             assert(bytestream);
+
             // LLVM defines __m64 as a vector of 1 long long
             static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
             // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
@@ -269,7 +272,8 @@ namespace internal {
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
         }
 
-        [[maybe_unused]] static unsigned long long ullong_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static unsigned long long u64_from_be_bytes(const unsigned char* const bytestream) noexcept {
+            static_assert(sizeof(unsigned long long) == 8);
             assert(bytestream);
 
             static constexpr __m64 mask_pi8 { 0x01020304050607 };
