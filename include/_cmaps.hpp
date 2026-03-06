@@ -1,7 +1,7 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <_internal.hpp>
 #include <_wingdi.hpp>
 // clang-format on
 

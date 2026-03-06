@@ -1,7 +1,8 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <_internal.hpp>
+#include <_compiler.hpp>
 #include <_wingdi.hpp>
 // clang-format on
 
@@ -108,7 +109,7 @@ class canvas final : public bitmap {
         }
 
         canvas& to_negative() noexcept {
-            std::for_each(begin(), end(), internal::rgb::negative);
+            std::for_each(begin(), end(), internal::rgb::transformers::negative);
             return *this;
         }
 

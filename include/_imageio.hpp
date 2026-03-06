@@ -1,7 +1,7 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <_internal.hpp>
 // clang-format on
 
 #include <cassert>
@@ -74,7 +74,7 @@ CLOSE_AND_RETURN:
         const int fdesc {
             ::open(
                 filename, O_CREAT | O_WRONLY, S_IRUSR | S_IROTH | S_IWUSR | S_IWOTH
-            ) // without these mode_ts, we had to use sudo to open the written images
+            ) // without explicitly specifying the mode_t, we had to use sudo to open the written images
         }; // open the file descriptor with create and write privileges
 
         if (fdesc == -1) {

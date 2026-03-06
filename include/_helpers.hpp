@@ -1,13 +1,16 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <_internal.hpp>
+#include <_compiler.hpp>
 #include <_wingdi.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <iostream>
+#include <limits>
 #include <type_traits>
 
 #include <immintrin.h> // AVX
@@ -21,17 +24,13 @@
     #define dbgprintf(...)
 #endif
 
-#if !defined(__llvm__) && !defined(__GNUG__) // will only work with LLVM and GCC
-    #error LLVM and GCC SIMD intrinstics are liberally used in this header, other compilers are not supported!
-#endif
-
 // RGB combinations of colours
 enum class RGB : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
 
 // mechanism to be used in converting the pixels to black and white
 enum class BW : unsigned char { AVERAGE, WEIGHTED_AVERAGE, LUMINOSITY, BINARY };
 
-enum class ANGLES : unsigned short { NINETY = 0x5A, ONEEIGHTY = 180, TWOSEVENTY = 270, THREESIXTY = 360 };
+enum class ANGLES : unsigned short { NINETY = 90, ONEEIGHTY = 180, TWOSEVENTY = 270 };
 
 // for the sake of convenience
 static constexpr bool operator==(const RGBQUAD& left, const RGBQUAD& right) noexcept {
@@ -99,35 +98,76 @@ namespace internal {
         namespace transformers {
 
             // each colour value in the pixel is updated to their arithmetic average
-            static constexpr void average(RGBQUAD& pixel) noexcept {
+            static constexpr void __attribute__((__always_inline__)) average(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L);
             }
 
-            static constexpr void weighted_average(RGBQUAD& pixel) noexcept {
+            static constexpr void __attribute__((__always_inline__)) weighted_average(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L);
             }
 
-            static constexpr void luminosity(RGBQUAD& pixel) noexcept {
+            static constexpr void __attribute__((__always_inline__)) luminosity(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L);
             }
 
             // every colour value gets scaled down to 0 or scaled up to 255 depending on the average value of colours in a pixel
-            static constexpr void binary(RGBQUAD& pixel) noexcept {
+            static constexpr void __attribute__((__always_inline__)) binary(RGBQUAD& pixel) noexcept {
                 pixel.rgbBlue = pixel.rgbGreen = pixel.rgbRed =
                     (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255 : 0;
             }
 
+            // each colour value gets scaled down to 0 or scaled up to 255 depending on the corresponding value
+            static constexpr void __attribute__((__always_inline__)) negative(RGBQUAD& pixel) noexcept {
+                pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255 : 0;
+                pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255 : 0;
+                pixel.rgbRed   = pixel.rgbRed >= 128 ? 255 : 0;
+            }
+
         } // namespace transformers
 
-        // each colour value gets scaled down to 0 or scaled up to 255 depending on the corresponding value
-        static constexpr void negative(RGBQUAD& pixel) noexcept {
-            pixel.rgbBlue  = pixel.rgbBlue >= 128 ? 255 : 0;
-            pixel.rgbGreen = pixel.rgbGreen >= 128 ? 255 : 0;
-            pixel.rgbRed   = pixel.rgbRed >= 128 ? 255 : 0;
-        }
+        namespace totext {
+
+            // arithmetic average of an RGB pixel values
+            static constexpr inline unsigned __attribute__((__always_inline__)) arithmetic_average(const RGBQUAD& pixel) noexcept {
+                // we don't want overflows or truncations here
+                return (static_cast<unsigned>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.000;
+            }
+
+            // weighted average of an RGB pixel values
+            static constexpr inline unsigned __attribute__((__always_inline__)) weighted_average(const RGBQUAD& pixel) noexcept {
+                return pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
+            }
+
+            // average of minimum and maximum RGB values in a pixel
+            static constexpr inline unsigned __attribute__((__always_inline__)) minmax_average(const RGBQUAD& pixel) noexcept {
+                // we don't want overflows or truncations here
+                return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) +
+                        std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
+                       2.0000;
+            }
+
+            // luminosity of an RGB pixel
+            static constexpr inline unsigned __attribute__((__always_inline__)) luminosity(const RGBQUAD& pixel) noexcept {
+                return pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
+            }
+
+            // taking it for granted that the input will never be a negative value,
+            static constexpr inline unsigned __attribute__((__always_inline__)) __nudge(const float& _value) noexcept {
+                assert(_value > 0.00000);
+                return _value < 1.000000 ? 1 : static_cast<unsigned>(_value);
+            }
+
+            template<typename _TyPixOpFunc, unsigned long _length> static constexpr inline __attribute__((__always_inline__))
+            typename std::enable_if<std::is_same<_TyPixOpFunc, unsigned (*)(const RGBQUAD&) noexcept>::value, char>::type
+            maptochar(const _TyPixOpFunc _function, const RGBQUAD& _pixel, const char (&_palette)[_length]) noexcept {
+                const unsigned offset = _function(_pixel);
+                return _palette[offset ? __nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * _length) - 1 : 0];
+            }
+
+        } // namespace totext
 
         namespace removers { // this is really verbose but makes mutating the pixel buffers possible with a single std::for_each call
 

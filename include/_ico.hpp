@@ -1,7 +1,7 @@
 #pragma once
 
 // clang-format off
-#include <internal.hpp>
+#include <_internal.hpp>
 // clang-format on
 
 #include <vector>
