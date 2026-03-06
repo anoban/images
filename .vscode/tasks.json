@@ -2,51 +2,31 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: cl.exe build active file",
-            "command": "cl.exe",
+            "label": "C/C++: g++ build active file",
+            "command": "/usr/bin/g++",
             "args": [
+                "-I./",
+                "-I./include/",
+                "-Wall",
+                "-Wextra",
+                "-O0",
+                "-DDEBUG",
+                "-D_DEBUG",
+                "-std=c++20",
+                "-march=tigerlake",
+                "-mavx512f",
+                "-mprefer-vector-width=512",
+                "-fdiagnostics-color=always",
+                "-g3",
                 "${file}",
-                "/arch:AVX512",
-                "/diagnostics:caret",
-                "/DDEBUG",
-                "/D_DEBUG",
-                "/D__TEST__",
-                "/EHa",
-                "/F0x10485100",
-                "/favor:INTEL64",
-                "/fp:strict",
-                "/fpcvt:IA",
-                "/I./include/",
-                "/I./include/googletest/",
-                "/I./include/googletest/include/",
-                "/jumptablerdata",
-                "/MP",
-                "/MTd", // statically link the multithreaded debug version of Windows libs
-                "/Od",
-                "/Qpar",
-                "/std:c++20",
-                "/TP",
-                "/Wall",
-                "/wd4505", // removed unreferenced inline function
-                "/wd4623", // gtest
-                "/wd4625", // gtest
-                "/wd4626", // gtest
-                "/wd4668", // gtest
-                "/wd4710", // not inlined
-                "/wd4711", // selected for inline expansion
-                "/wd4820", // padding
-                "/wd5026", // gtest
-                "/wd5027", // gtest
-                "/wd5045", // gtest
-                "/Zc:__cplusplus",
-                "/Zc:preprocessor",
-                "/link /DEBUG:FULL"
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.out"
             ],
             "options": {
                 "cwd": "${fileDirname}"
             },
             "problemMatcher": [
-                "$msCompile"
+                "$gcc"
             ],
             "group": {
                 "kind": "build",
