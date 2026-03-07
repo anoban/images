@@ -4,7 +4,7 @@ GCC = /usr/bin/g++
 
 CLANG = /usr/bin/clang++
 
-DEBUG = -DDEBUG -D_DEBUG -g3 -O0
+DEBUG = -DDEBUG -D_DEBUG -O0 -g3
 
 NODEBUG = -D_NDEBUG -DNDEBUG -O3 -g0
 
