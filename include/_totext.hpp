@@ -12,6 +12,8 @@
 #include <limits>
 #include <optional>
 
+// NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
+
 constexpr long   CONSOLE_WIDTH { 140 };
 constexpr double CONSOLE_WIDTHR { 140.0 };
 constexpr double ONE { 1.000000000 };
@@ -75,12 +77,12 @@ template<unsigned long _length> static inline std::optional<std::string> to_raw_
     return buffer;
 }
 
-template<unsigned long _length> static inline std::string to_downscaled_string(
+template<unsigned long _length> static inline std::optional<std::string> to_downscaled_string(
     const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
 ) noexcept {
     if (image.height() < 0) {
         ::fprintf(stderr, "Error in %s, this function does not support bitmaps with top-down pixel ordering!\n", __PRETTY_FUNCTION__);
-        return nullptr;
+        return std::nullopt;
     }
 
     const long  block_d   = ::ceill(image.width() / CONSOLE_WIDTHR); // dimension of an individual square block
@@ -108,7 +110,7 @@ template<unsigned long _length> static inline std::string to_downscaled_string(
     buffer.resize(nchars);
     if (buffer.empty()) {
         ::fprintf(stderr, "Error in %s at line %d: std::string::resize failed!\n", __PRETTY_FUNCTION__, __LINE__);
-        return nullptr;
+        return std::nullopt;
     }
 
     // NOLINTBEGIN(readability-isolate-declaration)
@@ -228,3 +230,5 @@ template<unsigned long _length> static inline char* to_string(
 }
 
 #undef __INTERNAL
+
+// NOLINTEND(cppcoreguidelines-narrowing-conversions)

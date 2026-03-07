@@ -4,14 +4,13 @@
 #include <_internal.hpp>
 #include <_compiler.hpp>
 #include <_wingdi.hpp>
+#include <_bitmap.hpp>
+#include <_cmaps.hpp>
 // clang-format on
 
 #include <cmath>
 
 #include <immintrin.h>
-
-#include <_bitmap.hpp>
-#include <_cmaps.hpp>
 
 class canvas final : public bitmap {
         // BELOW IS ABSOLUTELY CRITICAL NOT TO RUN INTO BUFFER OVERRUNS
@@ -343,7 +342,7 @@ class canvas final : public bitmap {
                                             // UPDATE OF IMAGINARY PART (y)
                     }
 
-                    pixels[row * width() + col] = cmap.at(niterations); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    pixels[row * width() + col] = cmap.at(niterations);
                     niterations                 = 0;
                     coords.x() = coords.y() = 0.0000;
                 }
@@ -376,7 +375,7 @@ class canvas final : public bitmap {
                         coords.x() = xtemp;
                     }
 
-                    pixels[row * width() + col] = cmap.at(niterations); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    pixels[row * width() + col] = cmap.at(niterations);
                     niterations                 = 0;
                     squares.x() = squares.y() = 0.0000;
                 }
@@ -386,7 +385,9 @@ class canvas final : public bitmap {
 
         template<ANGLES> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate() noexcept;
 
-        template<typename _TyChar> [[deprecated("IMPLEMENTATION INCOMPLETE")]] std::basic_string<_TyChar> to_text() noexcept { }
+        std::string to_text() const noexcept {
+            //
+        }
 
         // returns a deep copy of self
         [[nodiscard]] canvas copy() const noexcept { return *this; }

@@ -91,7 +91,7 @@ namespace internal {
             }
 
             [[nodiscard]] constexpr bool __stdcall is_name(_In_reads_(PNG_CHUNK_NAME_LENGTH) const char* const str) const noexcept {
-                return std::equal(str, str + PNG_CHUNK_NAME_LENGTH, name); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                return std::equal(str, str + PNG_CHUNK_NAME_LENGTH, name);
             }
 
             ~basic_chunk() noexcept = default;

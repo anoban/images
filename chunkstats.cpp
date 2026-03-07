@@ -22,7 +22,7 @@ int wmain(_In_opt_ const int argc, _In_opt_ const wchar_t* const argv[]) { // NO
     unsigned long long   ihdr_count {}, idat_count {}, plte_count {}, iend_count {}; // NOLINT(readability-isolate-declaration)
 
     for (long long i = 1; i < argc; ++i) {
-        filebuffer = internal::open(argv[i], filesize); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        filebuffer = internal::open(argv[i], filesize);
         if (!filebuffer) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic, cppcoreguidelines-pro-type-vararg)
             ::fwprintf_s(stderr, L"File buffer is empty, skipping image %s\n", argv[i]);
@@ -42,7 +42,7 @@ int wmain(_In_opt_ const int argc, _In_opt_ const wchar_t* const argv[]) { // NO
 
         ::wprintf_s( // NOLINT(cppcoreguidelines-pro-type-vararg)
             L"%20s has %2llu IHDR, %2llu PLTE, %5llu IDAT and %2llu IEND chunks in it\n",
-            argv[i], // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            argv[i],
             ihdr_count,
             plte_count,
             idat_count,

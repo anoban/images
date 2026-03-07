@@ -110,7 +110,6 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return header;
             }
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (imstream[0] != 'B' && imstream[1] != 'M') [[unlikely]] { // validate that the passed buffer is of a bitmap file
                 ::fprintf(stderr, "Error in %s, file isn't recognized as a Windows bitmap file\n", __PRETTY_FUNCTION__);
                 return header;
@@ -121,7 +120,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             header.bfReserved1 = header.bfReserved2 = 0;                           // 4 reserved bytes
             // offset from the beginning of BITMAPFILEHEADER struct to the start of pixel data
             header.bfOffBits                        = *reinterpret_cast<const unsigned*>(imstream + 10);
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             return header;
         }
 
@@ -138,7 +137,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return header;
             }
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+            // NOLINTBEGIN(bugprone-assignment-in-if-condition)
             if ((header.biSize = *reinterpret_cast<const long*>(imstream + 14)) != 40) [[unlikely]] {
                 // size of the BITMAPINFOHEADER struct must be == 40 bytes
                 ::fprintf(stderr, "Error in %s: unparseable BITMAPINFOHEADER\n", __PRETTY_FUNCTION__);
@@ -159,7 +158,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
             header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
             header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+            // NOLINTEND(bugprone-assignment-in-if-condition)
 
             return header;
         }
@@ -171,7 +170,6 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // copy the contents of the BITMAPFILEHEADER and BITMAPINFOHEADER to the file buffer
         void metadata_to_buffer() noexcept {
             ::memcpy(buffer, &file_header, sizeof(BITMAPFILEHEADER));
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             ::memcpy(buffer + sizeof(BITMAPFILEHEADER), &info_header, sizeof(BITMAPINFOHEADER));
         }
 
@@ -181,7 +179,6 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         explicit bitmap(const char* const filename) noexcept : // construct a bitmap from a file on disk
             buffer { internal::imopen(filename, file_size) },  // a little unorthodox but okay lol
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { bitmap::parse_file_header(buffer, file_size) },
             info_header { bitmap::parse_info_header(buffer, file_size) },
@@ -199,7 +196,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             const long&                size
         ) noexcept :
             buffer { new (std::nothrow) unsigned char[size] }, // cannot take ownership of the incoming buffer, so let's copy it
-                                                               // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)}
+
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             // if _buffer is nullptr, the __parse_xxx family of helpers will default initialize the cognate header structs
             file_header { bitmap::parse_file_header(imstream, size) },
@@ -236,7 +233,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             buffer {
                 new (std::nothrow) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)]
             },
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { .bfType = 0x4D42,
                           .bfSize =
@@ -273,9 +270,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 new (std::nothrow) unsigned char[other.file_size]
             }, // don't copy the trailing unused bytes from the bitmap, if present
 
-            pixels { // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                     reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER))
-            },
+            pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { other.file_header },
             info_header { other.info_header },
             file_size { other.file_size },
@@ -309,7 +304,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 file_size = other.file_size;               // keep the existing buffer_size as we are reusing the existing buffer
 
             ::memcpy(buffer, other.buffer, other.file_size);
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             pixels      = reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
             file_header = other.file_header;
             info_header = other.info_header;
@@ -406,12 +401,12 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         reference operator[](const size_type offset) noexcept { // NOLINT(readability-make-member-function-const)
             assert(offset < info_header.biHeight * info_header.biWidth);
-            return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            return pixels[offset]; 
         }
 
         const_reference operator[](const size_type offset) const noexcept {
             assert(offset < info_header.biHeight * info_header.biWidth);
-            return pixels[offset]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            return pixels[offset];
         }
 
         pointer data() noexcept { return pixels; } // NOLINT(readability-make-member-function-const)

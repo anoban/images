@@ -76,8 +76,7 @@ namespace internal {
 
         [[nodiscard]] static constexpr bool is_alphabet_array(const char* const array, const unsigned long long length) noexcept {
             bool result { true };
-            for (unsigned i = 0; i < length; ++i)
-                result &= ascii::is_alphabet(array[i]); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
             return result;
         }
 
