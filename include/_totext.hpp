@@ -34,6 +34,47 @@ namespace palettes {
                                          'd', 'b', 'k',  'h', 'a', 'o', '*', '#', 'M', 'W', '&',  '8', '%', 'B', '@', '$' };
 }
 
+namespace totext {
+
+    // arithmetic average of an RGB pixel values
+    static constexpr inline unsigned __attribute__((__always_inline__)) arithmetic_average(const RGBQUAD& pixel) noexcept {
+        // we don't want overflows or truncations here
+        return (static_cast<unsigned>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.000;
+    }
+
+    // weighted average of an RGB pixel values
+    static constexpr inline unsigned __attribute__((__always_inline__)) weighted_average(const RGBQUAD& pixel) noexcept {
+        return pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
+    }
+
+    // average of minimum and maximum RGB values in a pixel
+    static constexpr inline unsigned __attribute__((__always_inline__)) minmax_average(const RGBQUAD& pixel) noexcept {
+        // we don't want overflows or truncations here
+        return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) +
+                std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
+               2.0000;
+    }
+
+    // luminosity of an RGB pixel
+    static constexpr inline unsigned __attribute__((__always_inline__)) luminosity(const RGBQUAD& pixel) noexcept {
+        return pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
+    }
+
+    // taking it for granted that the input will never be a negative value,
+    static constexpr inline unsigned __attribute__((__always_inline__)) __nudge(const float& _value) noexcept {
+        assert(_value > 0.00000);
+        return _value < 1.000000 ? 1 : static_cast<unsigned>(_value);
+    }
+
+    template<typename _TyPixOpFunc, unsigned long _length> static constexpr inline __attribute__((__always_inline__))
+    typename std::enable_if<std::is_same<_TyPixOpFunc, unsigned (*)(const RGBQUAD&) noexcept>::value, char>::type
+    maptochar(const _TyPixOpFunc _function, const RGBQUAD& _pixel, const char (&_palette)[_length]) noexcept {
+        const unsigned offset = _function(_pixel);
+        return _palette[offset ? __nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * _length) - 1 : 0];
+    }
+
+} // namespace totext
+
 template<unsigned long _length> static inline std::optional<std::string> to_raw_string(
     const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
 ) noexcept {
@@ -66,7 +107,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_raw_
     for (long nrows = image.height() - 1LL; nrows >= 0; --nrows) {
         // traverse left to right inside "scan lines"
         for (long ncols = 0; ncols < image.width(); ++ncols) // for each pixel in the row,
-            buffer[caret++] = internal::rgb::totext::maptochar(fnptr, &image.data()[nrows * image.width() + ncols], palette);
+            buffer[caret++] = ::totext::maptochar(fnptr, image.data()[nrows * image.width() + ncols], palette);
         // at the end of each scanline, append an LF
         buffer[caret++] = '\n';
     }
@@ -104,7 +145,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
 
     // we have to compute the average R, G & B values for all pixels inside each pixel blocks and use the average to represent
     // that block as a char. one char in our buffer will have to represent (block_w x block_h) number of RGBQUADs
-    const long nchars    = nblocks_h * (nblocks_w + 2) + 1; // saving two wide chars for CRLF!, the +1 is for the nullptr terminator
+    const long nchars    = nblocks_h * (nblocks_w + 1) + 1; // saving one char for LF!, the +1 is for the nullptr terminator
 
     std::string buffer {};
     buffer.resize(nchars);
@@ -149,7 +190,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
 
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
 
-            buffer[caret++] = internal::rgb::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red }, palette);
+            buffer[caret++] = ::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red, 0 }, palette);
             blockavg_blue = blockavg_green = blockavg_red = 0.000;
         }
 
@@ -173,12 +214,11 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
 
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
 
-            buffer[caret++] = internal::rgb::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red }, palette);
+            buffer[caret++] = ::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red, 0 }, palette);
             blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
         }
 
         buffer[caret++] = '\n';
-        buffer[caret++] = '\r';
     }
 
     assert(row < block_d);
@@ -204,12 +244,11 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
             //     wprintf_s(L"Average (BGR) = (%.4f, %.4f, %.4f)\n", blockavg_blue, blockavg_green, blockavg_red);
 
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
-            buffer[caret++] = internal::rgb::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red }, palette);
+            buffer[caret++] = ::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red, 0 }, palette);
             blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
         }
 
         buffer[caret++] = '\n';
-        buffer[caret++] = '\r';
     }
 
     buffer[caret++] = 0; // using the last byte as null terminator
@@ -222,11 +261,10 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
 }
 
 // an image width predicated dispatcher for to_raw_string and to_downscaled_string
-template<unsigned long _length> static inline char* to_string(
+template<unsigned long _length> static inline std::optional<std::string> to_string(
     const bitmap& image, const char (&palette)[_length], unsigned (*const fnptr)(const RGBQUAD&) noexcept
 ) noexcept {
-    if (image.width() <= CONSOLE_WIDTH) return to_raw_string(image, palette, fnptr);
-    return to_downscaled_string(image, palette, fnptr);
+    return image.width() <= CONSOLE_WIDTH ? to_raw_string(image, palette, fnptr) : to_downscaled_string(image, palette, fnptr);
 }
 
 #undef __INTERNAL

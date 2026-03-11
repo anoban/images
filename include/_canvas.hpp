@@ -6,6 +6,7 @@
 #include <_wingdi.hpp>
 #include <_bitmap.hpp>
 #include <_cmaps.hpp>
+#include <_totext.hpp>
 // clang-format on
 
 #include <cmath>
@@ -385,8 +386,9 @@ class canvas final : public bitmap {
 
         template<ANGLES> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate() noexcept;
 
-        std::string to_text() const noexcept {
-            //
+        template<unsigned long _length>
+        std::string to_text(const char (&_palette)[_length], unsigned (*mapper)(const RGBQUAD&) noexcept) const noexcept {
+            return ::to_string(*this, _palette, mapper).value_or(std::string {});
         }
 
         // returns a deep copy of self

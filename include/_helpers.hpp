@@ -127,47 +127,6 @@ namespace internal {
 
         } // namespace transformers
 
-        namespace totext {
-
-            // arithmetic average of an RGB pixel values
-            static constexpr inline unsigned __attribute__((__always_inline__)) arithmetic_average(const RGBQUAD& pixel) noexcept {
-                // we don't want overflows or truncations here
-                return (static_cast<unsigned>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.000;
-            }
-
-            // weighted average of an RGB pixel values
-            static constexpr inline unsigned __attribute__((__always_inline__)) weighted_average(const RGBQUAD& pixel) noexcept {
-                return pixel.rgbBlue * 0.299 + pixel.rgbGreen * 0.587 + pixel.rgbRed * 0.114;
-            }
-
-            // average of minimum and maximum RGB values in a pixel
-            static constexpr inline unsigned __attribute__((__always_inline__)) minmax_average(const RGBQUAD& pixel) noexcept {
-                // we don't want overflows or truncations here
-                return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) +
-                        std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
-                       2.0000;
-            }
-
-            // luminosity of an RGB pixel
-            static constexpr inline unsigned __attribute__((__always_inline__)) luminosity(const RGBQUAD& pixel) noexcept {
-                return pixel.rgbBlue * 0.2126 + pixel.rgbGreen * 0.7152 + pixel.rgbRed * 0.0722;
-            }
-
-            // taking it for granted that the input will never be a negative value,
-            static constexpr inline unsigned __attribute__((__always_inline__)) __nudge(const float& _value) noexcept {
-                assert(_value > 0.00000);
-                return _value < 1.000000 ? 1 : static_cast<unsigned>(_value);
-            }
-
-            template<typename _TyPixOpFunc, unsigned long _length> static constexpr inline __attribute__((__always_inline__))
-            typename std::enable_if<std::is_same<_TyPixOpFunc, unsigned (*)(const RGBQUAD&) noexcept>::value, char>::type
-            maptochar(const _TyPixOpFunc _function, const RGBQUAD& _pixel, const char (&_palette)[_length]) noexcept {
-                const unsigned offset = _function(_pixel);
-                return _palette[offset ? __nudge(offset / (float) (std::numeric_limits<unsigned char>::max()) * _length) - 1 : 0];
-            }
-
-        } // namespace totext
-
         namespace removers { // this is really verbose but makes mutating the pixel buffers possible with a single std::for_each call
 
             template<RGB colour> struct zero;

@@ -46,7 +46,7 @@ namespace internal {
             assert(nbytes == filestat.st_size); // double checking
         } else {
             ::fprintf(stderr, "Call to read() failed inside %s at line %d!; errno %d\n", __FUNCTION__, __LINE__, errno);
-            delete buffer;
+            delete[] buffer;
             buffer = nullptr;
         }
         // then, fall through the CLOSE_AND_RETURN label

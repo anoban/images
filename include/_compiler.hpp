@@ -3,7 +3,9 @@
 #include <_internal.hpp>
 
 #if !defined(__GNUG__) // will only work with LLVM, GCC and Intel oneAPI compiler, all of which define __GNUG__ on Linux systems
-    #error LLVM and GCC SIMD intrinstics are liberally used in this project, except for the LLVM based Intel oneAPI compiler, other compilers probably won't work!
+                       // appears that g++ gets confused about solitary quotes in #error messages
+    #error \
+        "LLVM and GCC SIMD intrinstics are liberally used in this project, except for the LLVM based Intel oneAPI compiler, other compilers probably won't work!"
 #endif
 
 #ifdef __INTEL_LLVM_COMPILER
