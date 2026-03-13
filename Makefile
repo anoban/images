@@ -8,12 +8,12 @@ DEBUG = -DDEBUG -D_DEBUG -O0 -g3
 
 NODEBUG = -D_NDEBUG -DNDEBUG -O3 -g0
 
-CFLAGS = -Wall -Wextra  -I./include -std=c++20 -march=tigerlake -mavx512f -ffast-math -mprefer-vector-width=512 -Wno-class-memaccess -Wno-narrowing
+CFLAGS = -Wall -Wextra  -I./include -std=c++20 -march=tigerlake -mavx512f -ffast-math -mprefer-vector-width=512 -Wno-class-memaccess
 
-TARGET = main
+SOURCES = main.cpp
 
 build:
-	$(GCC) $(TARGET).cpp $(CFLAGS) $(NODEBUG) -o $(TARGET).out
+	$(GCC) $(SOURCES) $(CFLAGS) $(NODEBUG) -o images.out
 
 clean:
 	rm -f ./*.out

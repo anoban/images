@@ -12,8 +12,6 @@
 #include <limits>
 #include <optional>
 
-// NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
-
 constexpr long   CONSOLE_WIDTH { 140 };
 constexpr double CONSOLE_WIDTHR { 140.0 };
 constexpr double ONE { 1.000000000 };
@@ -155,8 +153,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
     }
 
     // NOLINTBEGIN(readability-isolate-declaration)
-    // per block averages of the rgbBlue, rgbGreen and rgbRed values
-    float      blockavg_blue {}, blockavg_green {}, blockavg_red {};
+    float      blockavg_blue {}, blockavg_green {}, blockavg_red {}; // per block averages of the rgbBlue, rgbGreen and rgbRed values
     long       caret {}, offset {}, col {}, row {};
     // true if the image width is not divisible by 140 without remainders
     const bool block_rows_end_with_incomplete_blocks    = image.width() % CONSOLE_WIDTH;
@@ -164,16 +161,11 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
     const bool block_columns_end_with_incomplete_blocks = image.height() % block_d;
     // NOLINTEND(readability-isolate-declaration)
 
-    unsigned long count {}; // NOLINT(readability-isolate-declaration)
-
     // row = image.height() will get us to the last pixel of the first (last in the buffer) scanline with (r * image.width())
     // hence, row = image.height() - 1 so we can traverse pixels in the first scanline with (r * image.width()) + c
     for (row = image.height() - 1; row >= (block_d - 1); row -= block_d) { // start the traversal at the bottom most scan line
-                                                                           // wprintf_s(L"row = %lld\n", row);
         for (col = 0; col <= image.width() - block_d; col += block_d) {    // traverse left to right in scan lines
-            // wprintf_s(L"row = %lld, col = %lld\n", row, col);
-
-            for (long r = row; r > row - block_d; --r) { // deal with blocks
+            for (long r = row; r > row - block_d; --r) {                   // deal with blocks
                 for (long c = col; c < col + block_d; ++c) {
                     offset          = (r * image.width()) + c;
                     blockavg_blue  += image.data()[offset].rgbBlue;
@@ -182,15 +174,20 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
                 }
             }
 
-            assert(count == block_d * block_d);
-
             blockavg_blue  /= blocksize;
             blockavg_green /= blocksize;
             blockavg_red   /= blocksize;
 
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
 
-            buffer[caret++] = ::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red, 0 }, palette);
+            buffer[caret++] = ::totext::maptochar(
+                fnptr, // explicit casts to make the compilers happy
+                { static_cast<unsigned char>(blockavg_blue),
+                  static_cast<unsigned char>(blockavg_green),
+                  static_cast<unsigned char>(blockavg_red),
+                  0 },
+                palette
+            );
             blockavg_blue = blockavg_green = blockavg_red = 0.000;
         }
 
@@ -206,15 +203,20 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
                 }
             }
 
-            assert(count == pblocksize_right); // fails
-
             blockavg_blue  /= pblocksize_right;
             blockavg_green /= pblocksize_right;
             blockavg_red   /= pblocksize_right;
 
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
 
-            buffer[caret++] = ::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red, 0 }, palette);
+            buffer[caret++] = ::totext::maptochar(
+                fnptr,
+                { static_cast<unsigned char>(blockavg_blue),
+                  static_cast<unsigned char>(blockavg_green),
+                  static_cast<unsigned char>(blockavg_red),
+                  0 },
+                palette
+            );
             blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
         }
 
@@ -244,7 +246,14 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
             //     wprintf_s(L"Average (BGR) = (%.4f, %.4f, %.4f)\n", blockavg_blue, blockavg_green, blockavg_red);
 
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
-            buffer[caret++] = ::totext::maptochar(fnptr, { blockavg_blue, blockavg_green, blockavg_red, 0 }, palette);
+            buffer[caret++] = ::totext::maptochar(
+                fnptr,
+                { static_cast<unsigned char>(blockavg_blue),
+                  static_cast<unsigned char>(blockavg_green),
+                  static_cast<unsigned char>(blockavg_red),
+                  0 },
+                palette
+            );
             blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
         }
 
@@ -268,5 +277,3 @@ template<unsigned long _length> static inline std::optional<std::string> to_stri
 }
 
 #undef __INTERNAL
-
-// NOLINTEND(cppcoreguidelines-narrowing-conversions)

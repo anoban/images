@@ -202,7 +202,7 @@ namespace internal {
 
         // works great, tested and produces the same results as Python's binascii.crc32()
         [[nodiscard]] static constexpr unsigned get(const unsigned char* const bytestream, const unsigned long long length) noexcept {
-            unsigned crc { 0xFFFFFFFF }; // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            unsigned crc { 0xFFFFFFFF };
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
             return ~crc;
         }
@@ -223,8 +223,17 @@ namespace internal {
             static_assert(sizeof(unsigned) == 4);
             assert(bytestream);
 
-            // LLVM defines __m64 as a vector of 1 long long
-            static constexpr __m64 mask_pi8 { 0x0405060700010203 }; // move the first four bytes to the last four byte slot
+#ifdef __llvm__ // LLVM defines __m64 as typedef __attribute__((__vector_size__(1 * sizeof(long long)))) long long __m64
+            static constexpr __m64 mask_pi8 { 0x0405060700010203LL };
+#elif defined(__GNUG__) // in GCC __m64 is typedef __attribute((vector_size(8))) int __m64
+            // g++ bitches about a narrowing conversion here, "from long long int to int" but __m64 is in fact an 8 byte aligned vector BUT also an int???
+            static const __m64 mask_pi8 {
+                ::_mm_set_pi64x(0x0405060700010203LL) // ::_mm_set_pi64x() just does a simple type cast to __m64
+            };
+            // cannot constexpr this because ::_mm_set_pi64x() is not constexpr
+#endif
+
+            // move the first four bytes to the last four byte slot
             // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
 
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
@@ -233,8 +242,11 @@ namespace internal {
         [[maybe_unused]] static unsigned long long u64_from_be_bytes(const unsigned char* const bytestream) noexcept {
             static_assert(sizeof(unsigned long long) == 8);
             assert(bytestream);
-
-            static constexpr __m64 mask_pi8 { 0x01020304050607 };
+#ifdef __llvm__
+            static constexpr __m64 mask_pi8 { 0x01020304050607LL };
+#elif defined(__GNUG__)
+            static const __m64 mask_pi8 { ::_mm_set_pi64x(0x01020304050607LL) };
+#endif
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
         }
 

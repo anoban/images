@@ -87,6 +87,7 @@ extern "C" {
             unsigned char    icXOR[1];    // NOLINT(modernize-avoid-c-arrays)
             unsigned char    icAND[1];    // NOLINT(modernize-avoid-c-arrays)
     };
-}
+
+} // end extern "C"
 
 #undef __INTERNAL
