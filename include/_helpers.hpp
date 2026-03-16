@@ -53,14 +53,14 @@ namespace internal {
         return static_cast<_TyTo>(enumeration);
     }
 
-    template<typename _TyCandidate, typename _Ty> // NOLINTNEXTLINE(modernize-use-constraints)
+    template<typename _TyCandidate, typename _Ty>
     static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_Ty>::value, bool>::type is_in(
         const _TyCandidate& candidate, const _Ty& last
     ) noexcept {
         return candidate == last;
     }
 
-    template<typename _TyCandidate, typename _TyFirst, typename... _TyList> // NOLINTNEXTLINE(modernize-use-constraints)
+    template<typename _TyCandidate, typename _TyFirst, typename... _TyList>
     static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_TyFirst>::value, bool>::type is_in(
         const _TyCandidate& candidate, const _TyFirst& first, const _TyList&... list
     ) noexcept {
@@ -201,7 +201,7 @@ namespace internal {
         };
 
         // works great, tested and produces the same results as Python's binascii.crc32()
-        [[nodiscard]] static constexpr unsigned get(const unsigned char* const bytestream, const unsigned long long length) noexcept {
+        [[nodiscard]] static constexpr unsigned get(const unsigned char* const bytestream, const unsigned long& length) noexcept {
             unsigned crc { 0xFFFFFFFF };
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
             return ~crc;
@@ -214,7 +214,6 @@ namespace internal {
         [[maybe_unused]] static constexpr unsigned short u16_from_be_bytes(const unsigned char* const bytestream) noexcept {
             static_assert(sizeof(unsigned short) == 2);
             assert(bytestream);
-
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
         }
 
@@ -232,7 +231,6 @@ namespace internal {
             };
             // cannot constexpr this because ::_mm_set_pi64x() is not constexpr
 #endif
-
             // move the first four bytes to the last four byte slot
             // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
 

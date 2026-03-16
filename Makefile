@@ -13,7 +13,7 @@ CFLAGS = -Wall -Wextra  -I./include -std=c++20 -march=tigerlake -mavx512f -ffast
 SOURCES = main.cpp
 
 build:
-	$(GCC) $(SOURCES) $(CFLAGS) $(NODEBUG) -o images.out
+	$(CLANG) $(SOURCES) $(CFLAGS) $(NODEBUG) -o images.out
 
 clean:
 	rm -f ./*.out
