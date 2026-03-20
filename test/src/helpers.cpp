@@ -1,10 +1,9 @@
-// clang-format off
-#include <_helpers.hpp>
-#include <WinSock2.h> // for ntohxx() family of functions
 #include <algorithm>
+
+#include <endian.h>
+
+#include <_helpers.hpp>
 #include <gtest/gtest.h>
-#pragma comment(lib, "Ws2_32.lib")
-// clang-format on
 
 static constexpr std::array<unsigned char, 1000> bytes {
     { 167, 94,  14,  194, 22,  111, 153, 190, 246, 199, 160, 99,  51,  232, 51,  77,  162, 67,  82,  207, 137, 194, 103, 148, 176, 163, 240,
@@ -67,20 +66,18 @@ static constexpr char ASCII_PRINTABLE[] { '0',  '1', '2', '3', '4', '5', '6', '7
 struct RgbQuadFixture : public testing::Test {
         RGBQUAD pixel;
 
-        static unsigned char __stdcall fill() noexcept {
+        static unsigned char fill() noexcept {
             // main() will seed the PRN generator by calling ::srand()
             return ::rand() % std::numeric_limits<unsigned char>::max();
         }
 
-        void __stdcall SetUp() noexcept override {
-            pixel = { .rgbBlue = fill(), .rgbGreen = fill(), .rgbRed = fill(), .rgbReserved = 0xFF };
-        }
+        void SetUp() noexcept override { pixel = { .rgbBlue = fill(), .rgbGreen = fill(), .rgbRed = fill(), .rgbReserved = 0xFF }; }
 
-        void __stdcall TearDown() noexcept override { pixel = { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0x00 }; }
+        void TearDown() noexcept override { pixel = { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0x00 }; }
 };
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
-//                                                 TEST FOR MISCELLANEOUS HELER FUNCTIONS                                               //
+//                                                 TEST FOR MISCELLANEOUS HELPER FUNCTIONS                                               //
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
 TEST(MISC, TO_UNDERLYING) {
@@ -126,10 +123,10 @@ TEST(ASCII, IS_ALPHABET) {
 }
 
 TEST(ASCII, IS_ALPHABETARRAY) {
-    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_UPPERCASE, __crt_countof(ASCII_UPPERCASE)));
-    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LOWERCASE, __crt_countof(ASCII_LOWERCASE)));
-    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LETTERS, __crt_countof(ASCII_LETTERS)));
-    EXPECT_FALSE(internal::ascii::is_alphabet_array(ASCII_PRINTABLE, __crt_countof(ASCII_PRINTABLE)));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_UPPERCASE, sizeof(ASCII_UPPERCASE)));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LOWERCASE, sizeof(ASCII_LOWERCASE)));
+    EXPECT_TRUE(internal::ascii::is_alphabet_array(ASCII_LETTERS, sizeof(ASCII_LETTERS)));
+    EXPECT_FALSE(internal::ascii::is_alphabet_array(ASCII_PRINTABLE, sizeof(ASCII_PRINTABLE)));
 }
 
 TEST(ASCII, IS_UPPERCASE) {
@@ -159,11 +156,13 @@ TEST(ASCII, IS_LOWERCASE) {
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
 TEST(RGB, RGBQUAD_EQUALITY_OPERATORS) {
-    EXPECT_EQ(RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
-    EXPECT_EQ(RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA });
-    EXPECT_NE(RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
-    EXPECT_NE(RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
-    EXPECT_NE(RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }, RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 });
+    // clang-format off
+    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA }));
+    EXPECT_NE((RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_NE((RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    EXPECT_NE((RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
+    // clang-format on
 }
 
 static constexpr long TEST_MAX_ITERATIONS { 0x32 };
@@ -207,7 +206,7 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_LUMINOSITY) {
 TEST_F(RgbQuadFixture, TRANSFORMERS_BINARY) {
     for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
         SetUp();
-        auto mean { (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255Ui8 : 0Ui8 };
+        auto mean { (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255 : 0 };
         internal::rgb::transformers::binary(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
         EXPECT_EQ(pixel.rgbGreen, mean);
@@ -219,10 +218,10 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_BINARY) {
 TEST_F(RgbQuadFixture, NEGATIVE) {
     for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
         SetUp();
-        auto r = pixel.rgbRed >= 128 ? 255Ui8 : 0Ui8;
-        auto g = pixel.rgbGreen >= 128 ? 255Ui8 : 0Ui8;
-        auto b = pixel.rgbBlue >= 128 ? 255Ui8 : 0Ui8;
-        internal::rgb::negative(pixel);
+        auto r = pixel.rgbRed >= 128 ? 255 : 0;
+        auto g = pixel.rgbGreen >= 128 ? 255 : 0;
+        auto b = pixel.rgbBlue >= 128 ? 255 : 0;
+        internal::rgb::transformers::negative(pixel);
         EXPECT_EQ(pixel.rgbRed, r);
         EXPECT_EQ(pixel.rgbGreen, g);
         EXPECT_EQ(pixel.rgbBlue, b);
@@ -232,34 +231,33 @@ TEST_F(RgbQuadFixture, NEGATIVE) {
 TEST_F(RgbQuadFixture, REMOVERS) { }
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
-//                                          TESTS FOR CYCLIC REDUNDANCY CHECK HELER FUNCTIONS                                           //
+//                                          TESTS FOR CYCLIC REDUNDANCY CHECK HELPER FUNCTIONS                                          //
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
-//                                            TESTS FOR BYTE ORDER REVERSAL HELER FUNCTIONS                                             //
+//                                            TESTS FOR BYTE ORDER REVERSAL HELPER FUNCTIONS                                            //
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
 TEST(ENDIAN, USHORT_FROM_BE_BYTES) {
     for (unsigned long long i = 0; i <= bytes.size() - sizeof(unsigned short); ++i)
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
         EXPECT_EQ(
-            internal::endian::ushort_from_be_bytes(bytes.data() + i), ::ntohs(*reinterpret_cast<const unsigned short*>(bytes.data() + i))
+            internal::endian::u16_from_be_bytes(bytes.data() + i), ::__bswap_16(*reinterpret_cast<const unsigned short*>(bytes.data() + i))
         );
 }
 
 TEST(ENDIAN, ULONG_FROM_BE_BYTES) {
     for (unsigned long long i = 0; i <= bytes.size() - sizeof(unsigned long); ++i)
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
         EXPECT_EQ(
-            internal::endian::ulong_from_be_bytes(bytes.data() + i), ::ntohl(*reinterpret_cast<const unsigned long*>(bytes.data() + i))
+            internal::endian::u32_from_be_bytes(bytes.data() + i), ::__bswap_32(*reinterpret_cast<const unsigned long*>(bytes.data() + i))
         );
 }
 
 TEST(ENDIAN, ULLONG_FROM_BE_BYTES) {
     for (unsigned long long i = 0; i <= bytes.size() - sizeof(unsigned long long); ++i)
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         EXPECT_EQ(
-            internal::endian::ullong_from_be_bytes(bytes.data() + i),
-            ::ntohll(*reinterpret_cast<const unsigned long long*>(bytes.data() + i))
+            internal::endian::u64_from_be_bytes(bytes.data() + i),
+            ::__bswap_64(*reinterpret_cast<const unsigned long long*>(bytes.data() + i))
         );
 }
