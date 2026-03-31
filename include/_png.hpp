@@ -2,15 +2,13 @@
 
 // clang-format off
 #include <_internal.hpp>
-// clang-format on
-
-#include <iomanip>
-
-#include <endian.h>
-
 #include <_helpers.hpp>
 #include <_imageio.hpp>
 #include <_iterators.hpp>
+// clang-format on
+
+#include <cstring>
+#include <iomanip>
 
 // look up https://www.w3.org/TR/png-3/ for the official PNG specification document
 
@@ -20,263 +18,252 @@ struct rgb final {
         unsigned char blue;
 };
 
-namespace _png {
+static constexpr unsigned char PNG_SIGNATURE[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+static constexpr unsigned long CHUNKNAME_LENGTH { 4 };
 
-    static constexpr unsigned char PNG_SIGNATURE[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
-    static constexpr unsigned long CHUNKNAME_LENGTH { 4 };
+class basic_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
 
-    class basic_png_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
-
-        protected:
-            // clang-format off
+    protected:
+        // clang-format off
 #ifdef __TEST__
         public:
 #endif
-            // clang-format on
-            unsigned             length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
-            // length accounts only for the bytes in the data segment and excludes itself, chunk name and the checksum
-            // imagine the data member is written as if `unsigned char data[length];`
-            const unsigned char  name[CHUNKNAME_LENGTH + 1]; // PNG chunk name made of 4 ASCII characters
-            const unsigned char* data;                       // the actual chunk data (length bytes long)
-            unsigned             checksum;                   // CRC32 checksum of chunk name + chunk data i.e (length + 4) bytes
+        // clang-format on
 
-            // this operator<< isn't meant to be called directly in places other than derived class member functions
-            friend std::ostream& operator<<(std::ostream& wostr, const basic_png_chunk& chunk) noexcept {
-                wostr << "-------------------------------------------\n";
-                wostr << "| Length              " << std::setw(20) << chunk.length << "|\n";
-                wostr << "| Name                " << std::setw(17) << chunk.name << "|\n";
-                wostr << "| Data                " << std::setw(20) << std::hex << std::uppercase << chunk.data << "|\n";
-                wostr << std::dec;
-                wostr << "| Checksum            " << std::setw(20) << chunk.checksum << "|\n";
+        unsigned             length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
+        // length accounts only for the bytes in the data segment and excludes itself, chunk name and the checksum
+        unsigned             checksum;                   // CRC32 checksum of chunk name + chunk data i.e (length + 4) bytes
+        const unsigned char* checksum_buffer_beginning;  // pointer to the stream of bytes after the first 4 bytes
+        const unsigned char* data;                       // the actual chunk data (length bytes long)
+        char                 name[CHUNKNAME_LENGTH + 1]; // PNG chunk name made of 4 ASCII characters and a null terminator
 
-                return wostr;
-            }
+        // this operator<< isn't meant to be called directly in places other than derived class member functions
+        friend std::ostream& operator<<(std::ostream& ostr, const basic_chunk& chunk) noexcept {
+            ostr << "-------------------------------------------\n";
+            ostr << "| Length              " << std::setw(20) << chunk.length << "|\n";
+            ostr << "| Name                " << std::setw(17) << chunk.name << "|\n";
+            ostr << "| Data                " << std::setw(20) << std::hex << std::uppercase << chunk.data << "|\n";
+            ostr << std::dec;
+            ostr << "| Checksum            " << std::setw(20) << chunk.checksum << "|\n";
+            return ostr;
+        }
 
-        public:
-            explicit basic_png_chunk( // this constructor doubles as a parser too
-                const unsigned char* const
-                    pngstream /* this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place */
-            ) noexcept : // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                length { ::__bswap_32(*reinterpret_cast<const unsigned*>(pngstream)) }, // internal::endian::u32_from_be_bytes(pngstream)
-                name { pngstream + sizeof(unsigned) },
-                data { length /* if the length is non-zero */ ? pngstream + sizeof(unsigned) + CHUNKNAME_LENGTH /* name */ : nullptr },
-                checksum { ::__bswap_32(*reinterpret_cast<const unsigned*>(pngstream + sizeof(unsigned) + CHUNKNAME_LENGTH + length)) }
-            // internal::endian::u32_from_be_bytes(pngstream + sizeof(unsigned) + CHUNK_NAME_LENGTH + length)
-            {
-                //
-            }
+    public:
+        // this constructor doubles as a parser too
+        explicit inline basic_chunk(const unsigned char* const bytestream) noexcept :
+            // this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place
+            length { ::__bswap_32(*reinterpret_cast<const unsigned*>(bytestream)) },
+            checksum { ::__bswap_32(*reinterpret_cast<const unsigned*>(bytestream + sizeof(unsigned) + CHUNKNAME_LENGTH + length)) },
+            checksum_buffer_beginning { bytestream + sizeof(unsigned) },
+            data { length /* if the length is non-zero */ ?
+                       bytestream + sizeof(unsigned) + CHUNKNAME_LENGTH /* starts with the byte after the chunk name */ :
+                       nullptr },
+            name {} {
+            // copy the chunk name into the local buffer
+            ::strncpy(name, reinterpret_cast<const char*>(bytestream) + sizeof(unsigned), CHUNKNAME_LENGTH);
+        }
 
-            // SINCE PNG CHUNKS STORE A POINTER TO THE PNG FILE BUFFER INDICATING THE BEGINNING OF THE DATA SEGMENT, WE DO NOT WANT IMPLICITLY ENABLED COPY OR MOVE SEMANTICS
-            basic_png_chunk() noexcept                                  = delete;
-            basic_png_chunk(const basic_png_chunk&) noexcept            = delete;
-            basic_png_chunk& operator=(const basic_png_chunk&) noexcept = delete;
-            basic_png_chunk(basic_png_chunk&&) noexcept                 = delete;
-            basic_png_chunk& operator=(basic_png_chunk&&) noexcept      = delete;
-            // BECAUSE OF THIS, ALL THE DERIVED CHUNK TYPES WILL HAVE THESE MEMBER FUNCTIONS IMPLICITLY DELETED, COOL :)
+        // since basic_chunk stores pointers TO THE PNG FILE BUFFER INDICATING THE BEGINNING OF THE DATA SEGMENT, WE DO NOT WANT IMPLICITLY ENABLED COPY OR MOVE SEMANTICS
+        basic_chunk() noexcept                              = delete;
+        basic_chunk(const basic_chunk&) noexcept            = delete;
+        basic_chunk& operator=(const basic_chunk&) noexcept = delete;
+        basic_chunk(basic_chunk&&) noexcept                 = delete;
+        basic_chunk& operator=(basic_chunk&&) noexcept      = delete;
+        // BECAUSE OF THIS, ALL THE DERIVED CHUNK TYPES WILL HAVE THESE MEMBER FUNCTIONS IMPLICITLY DELETED, COOL :)
 
-            ~basic_png_chunk() noexcept                                 = default;
+        ~basic_chunk() noexcept                             = default;
 
-            // compute the chunk's CRC32 checksum and check whether it is same as the one stored in the chunk
-            [[nodiscard]] constexpr bool validate_checksum() const noexcept {
-                // for the CRC32 checksum computation, we use the chunk's name and the bytes in the data segment
-                return checksum == internal::crc::get(name, CHUNKNAME_LENGTH + length);
-            }
+        // compute the chunk's CRC32 checksum and check whether it is same as the one stored in the chunk
+        inline constexpr bool __attribute((__always_inline__)) is_checksum_valid() const noexcept {
+            // for the CRC32 checksum computation, we use the chunk's name and the bytes in the data segment
+            return checksum == internal::crc::calculate(checksum_buffer_beginning, CHUNKNAME_LENGTH + length);
+        }
 
-            [[nodiscard]] constexpr bool is_name(const char* const str) const noexcept {
-                return std::equal(str, str + CHUNKNAME_LENGTH, name);
-            }
-    };
+        inline constexpr bool __attribute((__always_inline__)) is_name(const char* const str) const noexcept {
+            return std::equal(str, str + CHUNKNAME_LENGTH, name);
+        }
+};
 
-    //--------------------------------------------------------------------------------------------------------------------------------------//
-    //                                                          CRITICAL CHUNKS                                                             //
-    //--------------------------------------------------------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------------------------//
+//                                                          CRITICAL CHUNKS                                                             //
+//--------------------------------------------------------------------------------------------------------------------------------------//
 
-    // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
-    // IHDR stands for Image HeaDeR, which is the first chunk in a PNG data stream
-    class ihdr final : public basic_png_chunk {
-        public:
-            // LOOKUP TABLE 12 IN THE PNG SPECIFICATION
-            enum class PNG_COLOUR_TYPE : unsigned char {
-                GREYSCALE             = 0, // each pixel is a greyscale sample, allowed bit depths - 1, 2, 4, 8, 16
-                TRUECOLOUR            = 2, // each pixel is an RGB triple, allowed bit depths - 8, 16
-                INDEXED_COLOUR        = 3, // each pixel is a palette index; a PLTE chunk shall appear, allowed bit depths - 1, 2, 4, 8
-                GREYSCALE_WITH_ALPHA  = 4, // each pixel is a greyscale sample followed by an alpha sample, alowed bit depths - 8, 16
-                TRUECOLOUR_WITH_ALPHA = 6  // each pixel is an R,G,B triple followed by an alpha sample, alowed bit depths - 8, 16
-            };
+// IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
 
-            enum class PNG_INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
+class ihdr final : public basic_chunk { // stands for Image HeaDeR, which is the first chunk in a PNG data stream
+    public:
+        // lookup table 12 in the PNG spec
+        enum COLOUR_TYPE : unsigned char {
+            GREYSCALE             = 0, // each pixel is a greyscale sample, allowed bit depths - 1, 2, 4, 8, 16
+            TRUECOLOUR            = 2, // each pixel is an RGB triple, allowed bit depths - 8, 16
+            INDEXED_COLOUR        = 3, // each pixel is a palette index; image must contain a PLTE chunk, allowed bit depths - 1, 2, 4, 8
+            GREYSCALE_WITH_ALPHA  = 4, // each pixel is a greyscale sample followed by an alpha sample, alowed bit depths - 8, 16
+            TRUECOLOUR_WITH_ALPHA = 6  // each pixel is an RGB triple followed by an alpha sample (RGBA), alowed bit depths - 8, 16
+        };
 
-            // clang-format off
+        enum INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
+
+        // clang-format off
 #ifndef __TEST__
         private:
 #endif
-            // clang-format on
-            // IHDR specific data
-            unsigned long          width;  // width of a PNG image in pixels, 0 is an invalid value
-            unsigned long          height; // height of a PNG image in pixels, 0 is an invalid value
-            unsigned char          bit_depth;
-            PNG_COLOUR_TYPE        colour_type;
-            // only compression method 0 (deflate compression with a sliding window of at most 32768 bytes) is valid
-            unsigned char          compression_method;
-            // only filter method 0 (adaptive filtering with five basic filter types) is defined in the PNG specification
-            unsigned char          filter_method;
-            PNG_INTERLACING_METHOD interlace_method;
+        // clang-format on
 
-            [[nodiscard]] constexpr bool is_colourtype_bitdepth_invariants_valid() const noexcept {
-                switch (colour_type) {
-                    case PNG_COLOUR_TYPE::GREYSCALE             : return internal::is_in(bit_depth, 1, 2, 4, 8, 16);
-                    case PNG_COLOUR_TYPE::INDEXED_COLOUR        : return internal::is_in(bit_depth, 1, 2, 4, 8);
-                    case PNG_COLOUR_TYPE::TRUECOLOUR            : [[fallthrough]]; // the following three require the same criterion for validity
-                    case PNG_COLOUR_TYPE::GREYSCALE_WITH_ALPHA  : [[fallthrough]];
-                    case PNG_COLOUR_TYPE::TRUECOLOUR_WITH_ALPHA : return internal::is_in(bit_depth, 8, 16);
-                    default                                     : [[unlikely]] return false;
-                }
+        unsigned           imwidth;  // width of a PNG image in pixels, 0 is an invalid value
+        unsigned           imheight; // height of a PNG image in pixels, 0 is an invalid value
+        unsigned char      bitdepth; // bit size of each colour channel value in the pixel
+        COLOUR_TYPE        ctype;
+        // only compression method 0 (deflate compression with a sliding window of at most 32768 bytes) is acceptable
+        unsigned char      compression_method;
+        // only filter method 0 (adaptive filtering with five basic filter types) is defined in the PNG specification
+        unsigned char      filter_method;
+        INTERLACING_METHOD interlace_method;
+
+        [[nodiscard]] constexpr bool __attribute((__always_inline__)) is_colourtype_bitdepth_invariants_valid() const noexcept {
+            switch (ctype) {
+                case COLOUR_TYPE::GREYSCALE             : return internal::is_in(bitdepth, 1, 2, 4, 8, 16);
+                case COLOUR_TYPE::INDEXED_COLOUR        : return internal::is_in(bitdepth, 1, 2, 4, 8);
+                case COLOUR_TYPE::TRUECOLOUR            : [[fallthrough]]; // the following three require the same criterion for validity
+                case COLOUR_TYPE::GREYSCALE_WITH_ALPHA  : [[fallthrough]];
+                case COLOUR_TYPE::TRUECOLOUR_WITH_ALPHA : return internal::is_in(bitdepth, 8, 16);
+                default                                 : [[unlikely]] return false;
             }
+        }
 
-        public:
-            explicit ihdr(const unsigned char* const chunkstream) noexcept :
-                basic_png_chunk(chunkstream),
-                width { internal::endian::ulong_from_be_bytes(data) },
-                // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                height { internal::endian::ulong_from_be_bytes(data + 4) },
-                bit_depth { *(data + 8) },
-                colour_type { *(data + 9) },
-                compression_method { *(data + 10) },
-                filter_method { *(data + 11) },
-                interlace_method { *(data + 12) } {
-                // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            }
+    public:
+        explicit inline ihdr(const unsigned char* const bytestream) noexcept :
+            basic_chunk { bytestream },
+            imwidth { ::__bswap_32(*reinterpret_cast<const unsigned*>(data)) },      // first 4 bytes
+            imheight { ::__bswap_32(*reinterpret_cast<const unsigned*>(data + 4)) }, // second 4 bytes
+            bitdepth { *(data + 8) },
+            ctype { *(data + 9) },
+            compression_method { *(data + 10) },
+            filter_method { *(data + 11) },
+            interlace_method { *(data + 12) } {
+            //
+        }
 
-            [[nodiscard]] constexpr bool is_valid() const noexcept {
-                // for an IHDR chunk
-                return basic_png_chunk::validate_checksum() &&
-                       basic_png_chunk::is_name("IHDR")
-                       // 1) the data segment cannot be empty
-                       && data
-                       // 2) length must be 13
-                       && (length == 13U)
-                       // 3) height and width cannot be 0
-                       && height &&
-                       width
-                       // 4) combinations of colour type and bit depth must be valid
-                       && is_colourtype_bitdepth_invariants_valid()
-                       // 5) compression method must be 0
-                       && !compression_method
-                       // 6) filtering method must be 0
-                       && !filter_method
-                       // 7) interlacing method must be 0 or 1
-                       && (interlace_method == PNG_INTERLACING_METHOD::NONE || interlace_method == PNG_INTERLACING_METHOD::ADAM7);
-            }
+        inline constexpr bool __attribute((__always_inline__)) is_valid() const noexcept {
+            return basic_chunk::is_checksum_valid() &&
+                   basic_chunk::is_name("IHDR")
+                   // 1) the data segment cannot be empty
+                   && data
+                   // 2) length must be 13
+                   && (length == 13U)
+                   // 3) height and width cannot be 0
+                   && imheight &&
+                   imwidth
+                   // 4) combinations of colour type and bit depth must be valid
+                   && is_colourtype_bitdepth_invariants_valid()
+                   // 5) compression method must be 0
+                   && !compression_method
+                   // 6) filtering method must be 0
+                   && !filter_method
+                   // 7) interlacing method must be 0 or 1
+                   && (interlace_method == INTERLACING_METHOD::NONE || interlace_method == INTERLACING_METHOD::ADAM7);
+        }
 
-            friend std::wostream& operator<<(std::wostream& wostr, const ihdr& header) noexcept {
-                wostr << static_cast<const basic_png_chunk&>(header);
-                wostr << L"| Width               " << std::setw(20) << header.width << L"|\n";
-                wostr << L"| Height              " << std::setw(20) << header.height << L"|\n";
-                wostr << L"| Bit depth           " << std::setw(20) << header.bit_depth << L"|\n";
-                wostr << L"| Colour type         " << std::setw(20) << internal::to_underlying(header.colour_type) << L"|\n";
-                wostr << L"| Compression method  " << std::setw(20) << header.compression_method << L"|\n";
-                wostr << L"| Filter method       " << std::setw(20) << header.filter_method << L"|\n";
-                wostr << L"| Interlace method    " << std::setw(20) << internal::to_underlying(header.interlace_method) << L"|\n";
-                wostr << L"-------------------------------------------\n";
-                return wostr;
-            }
+        friend std::ostream& operator<<(std::ostream& ostr, const ihdr& header) noexcept {
+            ostr << static_cast<const basic_chunk&>(header);
+            ostr << "| Width               " << std::setw(20) << header.imwidth << "|\n";
+            ostr << "| Height              " << std::setw(20) << header.imheight << "|\n";
+            ostr << "| Bit depth           " << std::setw(20) << header.bitdepth << "|\n";
+            ostr << "| Colour type         " << std::setw(20) << internal::to_underlying(header.ctype) << "|\n";
+            ostr << "| Compression method  " << std::setw(20) << header.compression_method << "|\n";
+            ostr << "| Filter method       " << std::setw(20) << header.filter_method << "|\n";
+            ostr << "| Interlace method    " << std::setw(20) << internal::to_underlying(header.interlace_method) << "|\n";
+            ostr << "-------------------------------------------\n";
+            return ostr;
+        }
+};
 
-            ~ihdr() noexcept = default;
-    };
+class plte final : public basic_chunk { // stands for PaLeTtE, contains an array of colour entries (RGB)
+        // any given PNG stream can only contain one PLTE chunk and the number of palette entries can range from 0 to 256
+        // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
 
-    // any given PNG stream can only contain one PLTE chunk
-    // a PNG PLTE (stands for palette) contains an array of palette entries (RGB pixels, i.e rgbtriple)
-    // the number of palette entries can range from 0 to 256
-    // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
-    class plte final : public basic_png_chunk {
-        public:
-            [[nodiscard]] constexpr bool is_valid() const noexcept {
-                //
-            }
-    };
+    public:
+        inline constexpr bool __attribute((__always_inline__)) is_valid() const noexcept {
+            //
+        }
+};
 
-    // IDAT stands for Image DATa
-    class idat final : public basic_png_chunk { };
+class idat final : public basic_chunk { // stands for Image DATa
+};
 
-    // image trailer, the last chunk in a PNG data stream
-    class iend final : public basic_png_chunk {
-        public:
-            explicit iend(const unsigned char* const chunkstream) noexcept : basic_png_chunk(chunkstream) { }
+class iend final : public basic_chunk { // image trailer, the last chunk in a PNG data stream
+    public:
+        explicit iend(const unsigned char* const chunkstream) noexcept : basic_chunk(chunkstream) { }
 
-            [[nodiscard]] constexpr bool is_valid() const noexcept {
-                // IEND chunk's data field must be empty and the length must be 0
-                return basic_png_chunk::validate_checksum() && basic_png_chunk::is_name("IEND") && !data && !length;
-            }
+        inline constexpr bool __attribute((__always_inline__)) is_valid() const noexcept {
+            // IEND chunk's data field must be empty and the length must be 0
+            return basic_chunk::is_checksum_valid() && basic_chunk::is_name("IEND") && !data && !length;
+        }
 
-            friend std::wostream& operator<<(std::wostream& wostr, const iend& chunk) noexcept {
-                wostr << static_cast<const basic_png_chunk&>(chunk); // IEND doesn't have any special data members, so this is adequate
-                wostr << L"-------------------------------------------\n";
-                return wostr;
-            }
+        friend std::ostream& operator<<(std::ostream& ostr, const iend& chunk) noexcept {
+            ostr << static_cast<const basic_chunk&>(chunk); // IEND doesn't have any special data members, so this is adequate
+            ostr << "-------------------------------------------\n";
+            return ostr;
+        }
+};
 
-            ~iend() noexcept = default;
-    };
+//--------------------------------------------------------------------------------------------------------------------------------------//
+//                                                          ANCILLARY CHUNKS                                                            //
+//--------------------------------------------------------------------------------------------------------------------------------------//
 
-    //--------------------------------------------------------------------------------------------------------------------------------------//
-    //                                                          ANCILLARY CHUNKS                                                            //
-    //--------------------------------------------------------------------------------------------------------------------------------------//
+// TRANSPARENCY INFORMATION
 
-    // TRANSPARENCY INFORMATION
+class tRNS final : public basic_chunk { };
 
-    class tRNS final : public basic_png_chunk { };
+// COLOURSPACE INFORMATION
 
-    // COLOURSPACE INFORMATION
+class cHRM final : public basic_chunk { };
 
-    class cHRM final : public basic_png_chunk { };
+class gAMA final : public basic_chunk { };
 
-    class gAMA final : public basic_png_chunk { };
+class sRGB final : public basic_chunk { };
 
-    class sRGB final : public basic_png_chunk { };
+// TEXTUAL INFORMATION
 
-    // TEXTUAL INFORMATION
+class tEXt final : public basic_chunk { };
 
-    class tEXt final : public basic_png_chunk { };
+class zTXt final : public basic_chunk { };
 
-    class zTXt final : public basic_png_chunk { };
+class iTXt final : public basic_chunk { };
 
-    class iTXt final : public basic_png_chunk { };
+// MISCELLANEOUS INFORMATION
 
-    // MISCELLANEOUS INFORMATION
+class bKGD final : public basic_chunk { };
 
-    class bKGD final : public basic_png_chunk { };
+class hIST final : public basic_chunk { };
 
-    class hIST final : public basic_png_chunk { };
+class pHYs final : public basic_chunk { };
 
-    class pHYs final : public basic_png_chunk { };
+// TIME STAMP
 
-    // TIME STAMP
-
-    class tIME final : public basic_png_chunk {
-            // clang-format off
+class tIME final : public basic_chunk {
+        // clang-format off
 #ifdef __TEST__
         public:
 #endif
-            // clang-format on
+        // clang-format on
 
-            unsigned short year;   // in YYYY format; for example, 1995, not 95
-            unsigned char  month;  // 1-12
-            unsigned char  day;    // 1-31
-            unsigned char  hour;   // 0-23
-            unsigned char  minute; // 0-59
-            unsigned char  second; // 0-60, to allow for leap seconds
+        unsigned short year;   // in YYYY format; for example, 1995, not 95
+        unsigned char  month;  // 1-12
+        unsigned char  day;    // 1-31
+        unsigned char  hour;   // 0-23
+        unsigned char  minute; // 0-59
+        unsigned char  second; // 0-60, to allow for leap seconds
 
-        public:
-            tIME(const unsigned char* const chunkstream) noexcept :
-                basic_png_chunk(chunkstream),
-                year { internal::endian::ushort_from_be_bytes(data) },
-                month { *(data + 1) },
-                day { *(data + 2) },
-                hour { *(data + 3) },
-                minute { *(data + 4) },
-                second { *(data + 5) } { };
-    };
-
-} // namespace _png
+    public:
+        tIME(const unsigned char* const chunkstream) noexcept :
+            basic_chunk(chunkstream),
+            year { internal::endian::ushort_from_be_bytes(data) },
+            month { *(data + 1) },
+            day { *(data + 2) },
+            hour { *(data + 3) },
+            minute { *(data + 4) },
+            second { *(data + 5) } { };
+};
 
 class png final {
     public:
@@ -287,13 +274,13 @@ class png final {
         // clang-format on
 
         // critical chunks
-        _png::ihdr image_header;
-        _png::iend image_trailer;
+        ::ihdr image_header;
+        ::iend image_trailer;
 
         [[nodiscard]] bool scan_and_parse() noexcept { }
 
     public:
-        friend std::wostream& operator<<(std::wostream& wostr, const png& image) noexcept {
+        friend std::ostream& operator<<(std::ostream& wostr, const png& image) noexcept {
             //
             return wostr;
         }

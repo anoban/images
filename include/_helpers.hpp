@@ -13,6 +13,11 @@
 #include <limits>
 #include <type_traits>
 
+#include <endian.h>
+#if __BYTE_ORDER != __LITTLE_ENDIAN
+    #error This codebase assumes little endian hardware and will not run on big endian hardware!
+#endif
+
 #include <immintrin.h> // AVX
 #include <xmmintrin.h> // SSE
 
@@ -201,7 +206,7 @@ namespace internal {
         };
 
         // works great, tested and produces the same results as Python's binascii.crc32()
-        [[nodiscard]] static constexpr unsigned get(const unsigned char* const bytestream, const unsigned long& length) noexcept {
+        [[nodiscard]] static constexpr unsigned calculate(const unsigned char* const bytestream, const unsigned long& length) noexcept {
             unsigned crc { 0xFFFFFFFF };
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
             return ~crc;
