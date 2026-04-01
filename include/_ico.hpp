@@ -70,28 +70,28 @@ class icon_directory final { // represents an .ico file
             ICONDIR temp {};
 
             if (!imstream) [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTIONW__ ", received buffer is empty!\n", stderr);
+                ::fprintf(stderr, "Error in %s, received buffer is empty!\n", __PRETTY_FUNCTION__);
                 return temp;
             }
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             if ((temp.idReserved = *reinterpret_cast<const unsigned short*>(imstream))) [[unlikely]] { // must be 0
-                ::fputws(L"Error in " __FUNCTIONW__ ", a non-zero value encountered as idReserved!\n", stderr);
+                ::fprintf(stderr, "Error in %s, a non-zero value encountered as idReserved!\n", __PRETTY_FUNCTION__);
                 return {};
             }
 
             temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2);
             if (temp.idType != internal::to_underlying(ICO_FILE_TYPE::ICON) &&
                 temp.idType != internal::to_underlying(ICO_FILE_TYPE::CURSOR)) [[unlikely]] { // cannot be anything else
-                ::fputws(L"Error in " __FUNCTIONW__ ", file is found not to be of type ICON or CURSOR!\n", stderr);
+                ::fprintf(stderr, "Error in %s, file is found not to be of type ICON or CURSOR!\n", __PRETTY_FUNCTION__);
                 return {};
             }
 
             // we're 4 bytes past the beginning of the buffer now
             // issue a warning if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
             if ((temp.idCount = *reinterpret_cast<const unsigned short*>(imstream + 4)) > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) [[unlikely]]
-                ::fputws(L"Warning from " __FUNCTIONW__ ", file contains more ICONDIRENTRYs than this class can accommodate!\n", stderr);
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
+                ::fprintf(
+                    stderr, "Warning from %s, file contains more ICONDIRENTRYs than this class can accommodate!\n", __PRETTY_FUNCTION__
+                );
             return temp;
         }
 
@@ -106,13 +106,12 @@ class icon_directory final { // represents an .ico file
             ICONDIRENTRY temp {};
 
             if (!imstream) [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTIONW__ ", received buffer is empty!\n", stderr);
+                ::fprintf(stderr, "Error in %s, received buffer is empty!\n", __PRETTY_FUNCTION__);
                 return temp;
             }
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             if ((temp.bReserved = *(imstream + 3))) { // must always be 0
-                ::fputws(L"Error in " __FUNCTIONW__ ", a non-zero value encountered as bReserved!\n", stderr);
+                ::fprintf(stderr, "Error in %s, a non-zero value encountered as bReserved!\n", __PRETTY_FUNCTION__);
                 return {};
             }
 
@@ -124,7 +123,6 @@ class icon_directory final { // represents an .ico file
             temp.wBitCount     = *reinterpret_cast<const unsigned short*>(imstream + 6);
             temp.dwBytesInRes  = *reinterpret_cast<const unsigned long*>(imstream + 8);
             temp.dwImageOffset = *reinterpret_cast<const unsigned long*>(imstream + 12);
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
 
             return temp;
         }
@@ -136,11 +134,10 @@ class icon_directory final { // represents an .ico file
 
             BITMAPINFOHEADER header {};
             if (!imstream) [[unlikely]] {
-                ::fputws(L"Error in " __FUNCTIONW__ ", received an empty buffer\n", stderr);
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
                 return header;
             }
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
             // if ((header.biSize = *reinterpret_cast<const unsigned*>(imstream + 14) != 40)) [[unlikely]] {
             //     // size of the BITMAPINFOHEADER struct must be == 40 bytes
             //     ::fputws(L"Error in " __FUNCTIONW__ ": unparseable BITMAPINFOHEADER\n", stderr);
@@ -161,7 +158,6 @@ class icon_directory final { // represents an .ico file
             header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
             header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
             header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, bugprone-assignment-in-if-condition)
 
             return header;
         }
@@ -176,7 +172,7 @@ class icon_directory final { // represents an .ico file
             directory { icon_directory::parse_icondirectory(buffer, buffer_size) } {
             if (!buffer) [[unlikely]] {
                 file_size = 0;
-                ::fputws(L"Error inside " __FUNCTIONW__ ", object is default initialized as a fallback\n", stderr);
+                ::fprintf(stderr, "Error inside %s, object is default initialized as a fallback\n", __PRETTY_FUNCTION__);
                 return;
             }
 
