@@ -18,8 +18,16 @@ struct rgb final {
         unsigned char blue;
 };
 
+struct rgba final {
+        unsigned char red;
+        unsigned char green;
+        unsigned char blue;
+        unsigned char alpha;
+};
+
 static constexpr unsigned char SIGNATURE[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 static constexpr unsigned long NAMELENGTH { 4 };
+static constexpr unsigned long MAX_PLTE_ENTRIES { 256 };
 
 enum COLOUR_TYPE : unsigned char { // lookup table 12 in the PNG spec
     GREYSCALE             = 0,     // each pixel is a greyscale sample, allowed bit depths - 1, 2, 4, 8, 16
@@ -32,16 +40,22 @@ enum COLOUR_TYPE : unsigned char { // lookup table 12 in the PNG spec
 enum INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
 
 class basic_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
+        // https://www.w3.org/TR/2025/REC-png-3-20250624/#table51
+        // in the PNG standard, a chunk must have 3 or 4 essential fields
+        // 1) length
+        // 2) chunk type (name)
+        // 3) chunk data (optional, certain chunks may not have this field)
+        // 4) crc32 checksum
 
     protected:
         _TEST_ACCESS(public:)
 
         unsigned             length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
-        // length accounts only for the bytes in the data segment and excludes itself, chunk name and the checksum
-        unsigned             checksum;                  // CRC32 checksum of chunk name + chunk data i.e (length + 4) bytes
+        // length accounts only for the bytes in the data segment and excludes itself, chunk name and the crc checksum
+        unsigned             checksum;                  // crc32 checksum of chunk name + chunk data i.e (length + 4) bytes
         const unsigned char* checksum_buffer_beginning; // pointer to the stream of bytes after the first 4 bytes
         const unsigned char* data;                      // the actual chunk data (length bytes long)
-        char                 name[NAMELENGTH + 1];      // PNG chunk name made of 4 ASCII characters and a null terminator
+        char                 name[NAMELENGTH + 1];      // PNG chunk name made of 4 ascii characters and a null terminator
 
         // this operator<< isn't meant to be called directly in places other than derived class member functions
         friend std::ostream& operator<<(std::ostream& ostr, const basic_chunk& chunk) noexcept {
@@ -65,7 +79,7 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
                        bytestream + sizeof(unsigned) + NAMELENGTH /* starts with the byte after the chunk name */ :
                        nullptr },
             name {} {
-            // copy the chunk name into the local buffer
+            // copy the chunk name (second 4 bytes) into the local buffer
             ::strncpy(name, reinterpret_cast<const char*>(bytestream) + sizeof(unsigned), NAMELENGTH);
         }
 
@@ -86,13 +100,10 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         }
 
         inline constexpr bool __attribute((__always_inline__)) is_name(const char* const str) const noexcept {
-            return std::equal(str, str + NAMELENGTH, name);
+            // return std::equal(str, str + NAMELENGTH, name);
+            return !::strncmp(name, str, NAMELENGTH); // ::strncmp returns 0 when the two null terminated strings are identical
         }
 };
-
-//--------------------------------------------------------------------------------------------------------------------------------------//
-//                                                          CRITICAL CHUNKS                                                             //
-//--------------------------------------------------------------------------------------------------------------------------------------//
 
 namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
 
@@ -169,12 +180,26 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
     };
 
     class plte final : public basic_chunk { // stands for PaLeTtE, contains an array of colour entries (RGB)
-            // any given PNG stream can only contain one PLTE chunk and the number of palette entries can range from 0 to 256
+
+            _TEST_ACCESS(public:)
+            // a PNG stream can only contain 1 PLTE chunk & the number of palette entries can range from 0 to 256
+            // https://www.w3.org/TR/2025/REC-png-3-20250624/#11PLTE
+            rgb      palette[MAX_PLTE_ENTRIES]; // each palette entry must be a 3 byte object (RGB)
             // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
+            unsigned size_in_bytes;
 
         public:
+            explicit inline plte(const unsigned char* const bytestream) noexcept : basic_chunk { bytestream } { }
+
             inline constexpr bool __attribute((__always_inline__)) is_valid() const noexcept {
                 //
+                return basic_chunk::is_checksum_valid() && basic_chunk::is_name("PLTE") && !(size_in_bytes % 3);
+            }
+
+            [[deprecated]] friend std::ostream& operator<<(std::ostream& ostr, const plte& chunk) noexcept {
+                ostr << static_cast<const basic_chunk&>(chunk);
+                ostr << "-------------------------------------------\n";
+                return ostr;
             }
     };
 
@@ -198,10 +223,6 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
     };
 
 } // namespace critical
-
-//--------------------------------------------------------------------------------------------------------------------------------------//
-//                                                          ANCILLARY CHUNKS                                                            //
-//--------------------------------------------------------------------------------------------------------------------------------------//
 
 namespace ancillary {
 
@@ -233,14 +254,8 @@ namespace ancillary {
 
     class pHYs final : public basic_chunk { };
 
-    // TIME STAMP
-
-    class tIME final : public basic_chunk {
-            // clang-format off
-#ifdef __TEST__
-        public:
-#endif
-            // clang-format on
+    class time final : public basic_chunk { // time stamp of the PNG image
+            _TEST_ACCESS(public:)
 
             unsigned short year;   // in YYYY format; for example, 1995, not 95
             unsigned char  month;  // 1-12
@@ -250,36 +265,38 @@ namespace ancillary {
             unsigned char  second; // 0-60, to allow for leap seconds
 
         public:
-            tIME(const unsigned char* const chunkstream) noexcept :
+            explicit inline time(const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
-                year { internal::endian::ushort_from_be_bytes(data) },
+                year { ::__bswap_16(*reinterpret_cast<const unsigned short*>(data)) },
                 month { *(data + 1) },
                 day { *(data + 2) },
                 hour { *(data + 3) },
                 minute { *(data + 4) },
-                second { *(data + 5) } { };
+                second { *(data + 5) } {
+                    //
+                };
     };
 
 } // namespace ancillary
 
 class png final {
-    public:
-        // clang-format off
-#ifndef __TEST__
-    private:
-#endif
-        // clang-format on
-
+        _TEST_ACCESS(public:)
         // critical chunks
-        ::ihdr image_header;
-        ::iend image_trailer;
+        critical::ihdr image_header;
+        critical::plte colour_palette;
+        critical::iend image_trailer;
 
         [[nodiscard]] bool scan_and_parse() noexcept { }
 
+        inline bool is_invariants_valid() const noexcept {
+            // https://www.w3.org/TR/2025/REC-png-3-20250624/#11PLTE
+            // a PNG image can only have 1 PLTE chunk & it can only exists if the colour type is 2, 3 or 6
+        }
+
     public:
-        friend std::ostream& operator<<(std::ostream& wostr, const png& image) noexcept {
+        friend std::ostream& operator<<(std::ostream& ostr, const png& image) noexcept {
             //
-            return wostr;
+            return ostr;
         }
 };
 

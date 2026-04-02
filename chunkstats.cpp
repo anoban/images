@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <png>
 #include <vector>
 
 #include <_imageio.hpp>
@@ -27,10 +28,16 @@ int main(const int argc, const char* const argv[]) { // NOLINT(modernize-avoid-c
         }
 
         for (long long j = 0; j < filesize - 4 /* to prevent buffer overuns */; ++j) {
-            if (::is_same(filebuffer + j, "IHDR")) ihdr_count++;
+            if (::is_same(filebuffer + j, "IHDR")) {
+                std::cout << critical::ihdr(filebuffer + j - 8);
+                ihdr_count++;
+            }
             if (::is_same(filebuffer + j, "IDAT")) idat_count++;
             if (::is_same(filebuffer + j, "PLTE")) plte_count++;
-            if (::is_same(filebuffer + j, "IEND")) iend_count++;
+            if (::is_same(filebuffer + j, "IEND")) {
+                iend_count++;
+                std::cout << critical::iend(filebuffer + j - 8);
+            }
         }
 
         delete[] filebuffer;
