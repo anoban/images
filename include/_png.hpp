@@ -72,8 +72,8 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         // this constructor doubles as a parser too
         explicit inline basic_chunk(const unsigned char* const bytestream) noexcept :
             // this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place
-            length { ::__bswap_32(*reinterpret_cast<const unsigned*>(bytestream)) },
-            checksum { ::__bswap_32(*reinterpret_cast<const unsigned*>(bytestream + sizeof(unsigned) + NAMELENGTH + length)) },
+            length { internal::endian::u32_from_be_bytes(bytestream) },
+            checksum { internal::endian::u32_from_be_bytes(bytestream + sizeof(unsigned) + NAMELENGTH + length) },
             checksum_buffer_beginning { bytestream + sizeof(unsigned) },
             data { length /* if the length is non-zero */ ?
                        bytestream + sizeof(unsigned) + NAMELENGTH /* starts with the byte after the chunk name */ :
@@ -135,8 +135,8 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
         public:
             explicit inline ihdr(const unsigned char* const bytestream) noexcept :
                 basic_chunk { bytestream },
-                imwidth { ::__bswap_32(*reinterpret_cast<const unsigned*>(data)) },      // first 4 bytes
-                imheight { ::__bswap_32(*reinterpret_cast<const unsigned*>(data + 4)) }, // second 4 bytes
+                imwidth { internal::endian::u32_from_be_bytes(data) },      // first 4 bytes of the data segment
+                imheight { internal::endian::u32_from_be_bytes(data + 4) }, // second 4 bytes of data
                 bitdepth { *(data + 8) },
                 ctype { *(data + 9) },
                 compression_method { *(data + 10) },
