@@ -10,10 +10,10 @@ NODEBUG = -D_NDEBUG -DNDEBUG -O3 -g0
 
 CFLAGS = -Wall -Wextra  -I./include -std=c++20 -march=tigerlake -mavx512f -ffast-math -mprefer-vector-width=512 -Wno-class-memaccess
 
-SOURCES = main.cpp
+SOURCES = chunkstats.cpp
 
 build:
-	$(CLANG) $(SOURCES) $(CFLAGS) $(NODEBUG) -o images.out
+	$(GCC) $(SOURCES) $(CFLAGS) $(NODEBUG) -o images.out
 
 clean:
 	rm -f ./*.out

@@ -29,6 +29,12 @@
     #define dbgprintf(...)
 #endif
 
+#ifdef __TEST__
+    #define _TEST_ACCESS(_access_specifier) _access_specifier
+#else
+    #define _TEST_ACCESS(_access_specifier)
+#endif
+
 // RGB combinations of colours
 enum class RGB : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
 
