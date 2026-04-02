@@ -77,7 +77,7 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
             checksum_buffer_beginning { bytestream + sizeof(unsigned) },
             data { length /* if the length is non-zero */ ?
                        bytestream + sizeof(unsigned) + NAMELENGTH /* starts with the byte after the chunk name */ :
-                       nullptr },
+                       nullptr /* for zero length chunks */ },
             name {} {
             // copy the chunk name (second 4 bytes) into the local buffer
             ::strncpy(name, reinterpret_cast<const char*>(bytestream) + sizeof(unsigned), NAMELENGTH);

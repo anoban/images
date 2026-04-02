@@ -55,49 +55,51 @@ static constexpr bool operator!=(const RGBQUAD& left, const RGBQUAD& right) noex
 namespace internal {
 
     template<
-        typename _TyFrom, /* only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary */
-        typename _TyTo =  /* the underlying type */
+        typename _TyFrom, // only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary
+        typename _TyTo =  // the underlying type
         typename std::enable_if<
-            std::is_enum<_TyFrom>::value, /* std::is_scoped_enum type trait requires C++23 */
+            std::is_enum<_TyFrom>::value, // std::is_scoped_enum type trait requires C++23
             typename std::underlying_type<_TyFrom>::type>::type>
-    static constexpr _TyTo to_underlying(const _TyFrom& enumeration) noexcept {
+    static constexpr inline _TyTo __attribute__((__always_inline__)) to_underlying(const _TyFrom& enumeration) noexcept {
         return static_cast<_TyTo>(enumeration);
     }
 
-    template<typename _TyCandidate, typename _Ty>
-    static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_Ty>::value, bool>::type is_in(
-        const _TyCandidate& candidate, const _Ty& last
-    ) noexcept {
+    template<typename _TyCandidate, typename _Ty> static constexpr inline
+        typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_Ty>::value, bool>::type
+        __attribute__((__always_inline__))
+        is_in(const _TyCandidate& candidate, const _Ty& last) noexcept {
         return candidate == last;
     }
 
-    template<typename _TyCandidate, typename _TyFirst, typename... _TyList>
-    static constexpr typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_TyFirst>::value, bool>::type is_in(
-        const _TyCandidate& candidate, const _TyFirst& first, const _TyList&... list
-    ) noexcept {
+    template<typename _TyCandidate, typename _TyFirst, typename... _TyList> static constexpr inline
+        typename std::enable_if<std::is_integral<_TyCandidate>::value && std::is_integral<_TyFirst>::value, bool>::type
+        __attribute__((__always_inline__))
+        is_in(const _TyCandidate& candidate, const _TyFirst& first, const _TyList&... list) noexcept {
         return candidate == first || internal::is_in(candidate, list...);
     }
 
     namespace ascii {
 
         // isalpha() from <cctype> is not constexpr :(
-        [[nodiscard]] static constexpr bool is_alphabet(const char& character) noexcept {
+        [[nodiscard]] static constexpr bool __attribute__((__always_inline__)) is_alphabet(const char& character) noexcept {
             return (character >= 0x41 && character <= 0x5A) /* A - Z */ || (character >= 0x61 && character <= 0x7A); /* a - z */
         }
 
-        [[nodiscard]] static constexpr bool is_alphabet_array(const char* const array, const unsigned long long length) noexcept {
+        [[nodiscard]] static constexpr bool __attribute__((__always_inline__)) is_alphabet_array(
+            const char* const array, const unsigned long long length
+        ) noexcept {
             bool result { true };
             for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
             return result;
         }
 
         // isupper() from <cctype> is not constexpr
-        [[nodiscard]] static constexpr bool is_uppercase(const char& character) noexcept {
+        [[nodiscard]] static constexpr bool __attribute__((__always_inline__)) is_uppercase(const char& character) noexcept {
             return character >= 0x41 && character <= 0x5A; // A - 0x41 and Z - 0x5A
         }
 
         // islower() from <cctype> is not constexpr
-        [[nodiscard]] static constexpr bool is_lowercase(const char& character) noexcept {
+        [[nodiscard]] static constexpr bool __attribute__((__always_inline__)) is_lowercase(const char& character) noexcept {
             return character >= 0x61 && character <= 0x7A; // a - 0x61 and z - 0x7A
         }
 
@@ -143,27 +145,33 @@ namespace internal {
             template<RGB colour> struct zero;
 
             template<> struct zero<RGB::RED> final {
-                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = 0; }
+                    constexpr void __attribute__((__always_inline__)) operator()(RGBQUAD & pixel) const noexcept { pixel.rgbRed = 0; }
             };
 
             template<> struct zero<RGB::GREEN> final {
-                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbGreen = 0; }
+                    constexpr void __attribute__((__always_inline__)) operator()(RGBQUAD & pixel) const noexcept { pixel.rgbGreen = 0; }
             };
 
             template<> struct zero<RGB::BLUE> final {
-                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbBlue = 0; }
+                    constexpr void __attribute__((__always_inline__)) operator()(RGBQUAD & pixel) const noexcept { pixel.rgbBlue = 0; }
             };
 
             template<> struct zero<RGB::REDGREEN> final {
-                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbGreen = 0; }
+                    constexpr void __attribute__((__always_inline__)) operator()(RGBQUAD & pixel) const noexcept {
+                        pixel.rgbRed = pixel.rgbGreen = 0;
+                    }
             };
 
             template<> struct zero<RGB::GREENBLUE> final {
-                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbGreen = pixel.rgbBlue = 0; }
+                    constexpr void __attribute__((__always_inline__)) operator()(RGBQUAD & pixel) const noexcept {
+                        pixel.rgbGreen = pixel.rgbBlue = 0;
+                    }
             };
 
             template<> struct zero<RGB::REDBLUE> final {
-                    constexpr void operator()(RGBQUAD& pixel) const noexcept { pixel.rgbRed = pixel.rgbBlue = 0; }
+                    constexpr void __attribute__((__always_inline__)) operator()(RGBQUAD & pixel) const noexcept {
+                        pixel.rgbRed = pixel.rgbBlue = 0;
+                    }
             };
 
         } // namespace removers
@@ -212,7 +220,9 @@ namespace internal {
         };
 
         // works great, tested and produces the same results as Python's binascii.crc32()
-        [[nodiscard]] static constexpr unsigned calculate(const unsigned char* const bytestream, const unsigned long& length) noexcept {
+        [[nodiscard]] static constexpr inline unsigned __attribute__((__always_inline__)) calculate(
+            const unsigned char* const bytestream, const unsigned long& length
+        ) noexcept {
             unsigned crc { 0xFFFFFFFF };
             for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
             return ~crc;
@@ -222,14 +232,18 @@ namespace internal {
 
     namespace endian {
 
-        [[maybe_unused]] static constexpr unsigned short u16_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static constexpr unsigned short __attribute__((__always_inline__)) u16_from_be_bytes(
+            const unsigned char* const bytestream
+        ) noexcept {
             static_assert(sizeof(unsigned short) == 2);
             assert(bytestream);
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
         }
 
         // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-        [[maybe_unused]] static unsigned u32_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static unsigned __attribute__((__always_inline__)) u32_from_be_bytes(
+            const unsigned char* const bytestream
+        ) noexcept {
             static_assert(sizeof(unsigned) == 4);
             assert(bytestream);
 
@@ -248,7 +262,9 @@ namespace internal {
             return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
         }
 
-        [[maybe_unused]] static unsigned long long u64_from_be_bytes(const unsigned char* const bytestream) noexcept {
+        [[maybe_unused]] static unsigned long long __attribute__((__always_inline__)) u64_from_be_bytes(
+            const unsigned char* const bytestream
+        ) noexcept {
             static_assert(sizeof(unsigned long long) == 8);
             assert(bytestream);
 #ifdef __llvm__
@@ -273,9 +289,9 @@ namespace internal {
         public:
             constexpr complex() noexcept : __x {}, __y {} { }
 
-            constexpr explicit complex(const _Ty& v) noexcept : __x { v }, __y { v } { }
+            constexpr explicit __attribute__((__always_inline__)) complex(const _Ty& v) noexcept : __x { v }, __y { v } { }
 
-            constexpr complex(const _Ty& x, const _Ty& y) noexcept : __x { x }, __y { y } { }
+            constexpr __attribute__((__always_inline__)) complex(const _Ty& x, const _Ty& y) noexcept : __x { x }, __y { y } { }
 
             constexpr complex(const complex&) noexcept            = default;
             constexpr complex(complex&&) noexcept                 = default;
@@ -283,13 +299,13 @@ namespace internal {
             constexpr complex& operator=(complex&&) noexcept      = default;
             constexpr ~complex() noexcept                         = default;
 
-            constexpr _Ty& x() noexcept { return __x; }
+            constexpr _Ty& __attribute__((__always_inline__)) x() noexcept { return __x; }
 
-            constexpr _Ty x() const noexcept { return __x; }
+            constexpr _Ty __attribute__((__always_inline__)) x() const noexcept { return __x; }
 
-            constexpr _Ty& y() noexcept { return __y; }
+            constexpr _Ty& __attribute__((__always_inline__)) y() noexcept { return __y; }
 
-            constexpr _Ty y() const noexcept { return __y; }
+            constexpr _Ty __attribute__((__always_inline__)) y() const noexcept { return __y; }
     };
 
 } // namespace internal
