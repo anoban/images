@@ -61,8 +61,11 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         friend std::ostream& operator<<(std::ostream& ostr, const basic_chunk& chunk) noexcept {
             ostr << "-------------------------------------------\n";
             ostr << "| Length              " << std::setw(20) << chunk.length << "|\n";
-            ostr << "| Name                " << std::setw(17) << chunk.name << "|\n";
-            ostr << "| Data                " << std::setw(20) << std::hex << std::uppercase << chunk.data << "|\n";
+            ostr << "| Name                " << std::setw(20) << chunk.name << "|\n";
+            if (chunk.data)
+                ostr << "| Data                " << std::setw(20) << std::hex << std::uppercase << chunk.data << "|\n";
+            else
+                ostr << "| Data                " << std::setw(22) << "NULL|\n"; // for chunks that do not have a data segment
             ostr << std::dec;
             ostr << "| Checksum            " << std::setw(20) << chunk.checksum << "|\n";
             return ostr;
@@ -169,11 +172,11 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
                 ostr << static_cast<const basic_chunk&>(header);
                 ostr << "| Width               " << std::setw(20) << header.imwidth << "|\n";
                 ostr << "| Height              " << std::setw(20) << header.imheight << "|\n";
-                ostr << "| Bit depth           " << std::setw(20) << header.bitdepth << "|\n";
-                ostr << "| Colour type         " << std::setw(20) << internal::to_underlying(header.ctype) << "|\n";
-                ostr << "| Compression method  " << std::setw(20) << header.compression_method << "|\n";
-                ostr << "| Filter method       " << std::setw(20) << header.filter_method << "|\n";
-                ostr << "| Interlace method    " << std::setw(20) << internal::to_underlying(header.interlace_method) << "|\n";
+                ostr << "| Bit depth           " << std::setw(20) << static_cast<int>(header.bitdepth) << "|\n";
+                ostr << "| Colour type         " << std::setw(20) << static_cast<int>(header.ctype) << "|\n";
+                ostr << "| Compression method  " << std::setw(20) << static_cast<int>(header.compression_method) << "|\n";
+                ostr << "| Filter method       " << std::setw(20) << static_cast<int>(header.filter_method) << "|\n";
+                ostr << "| Interlace method    " << std::setw(20) << static_cast<int>(header.interlace_method) << "|\n";
                 ostr << "-------------------------------------------\n";
                 return ostr;
             }
