@@ -40,7 +40,8 @@
 // to express our intention clearly, isntead of (ptr + n) ing all the time, if the passed ptr is NULL, return NULL
 // the function receiving this ptr should null check it, as this macro itself cannot help with null derefs
 #define if_not_null_offsetby(ubyteptr, offset)           (ubyteptr ? (ubyteptr + offset) : nullptr)
-#define if_not_null_offsetby_and_deref(ubyteptr, offset) (ubyteptr ? *(ubyteptr + offset) : 0) // this will help avoid some segfaults
+// this will help avoid some segfaults, the cast is there just to make the compilers shut up
+#define if_not_null_offsetby_and_deref(ubyteptr, offset) (ubyteptr ? *(ubyteptr + offset) : static_cast<unsigned char>(0))
 
 // RGB combinations of colours
 enum class RGB : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };

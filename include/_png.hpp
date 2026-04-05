@@ -336,11 +336,11 @@ namespace ancillary {
             explicit inline time(const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
                 year { internal::endian::u16_from_be_bytes(data) /* first 2 bytes */ },
-                month { *(data + 2) },
-                day { *(data + 3) },
-                hour { *(data + 4) },
-                minute { *(data + 5) },
-                second { *(data + 6) } {
+                month { if_not_null_offsetby_and_deref(data, 2) },
+                day { if_not_null_offsetby_and_deref(data, 3) },
+                hour { if_not_null_offsetby_and_deref(data, 4) },
+                minute { if_not_null_offsetby_and_deref(data, 5) },
+                second { if_not_null_offsetby_and_deref(data, 6) } {
                     //
                 };
 
@@ -390,7 +390,7 @@ class png final {
         }
 
     public:
-        explicit inline png(const char* const fpath) noexcept { }
+        // explicit inline png(const char* const fpath) noexcept { }
 
         friend std::ostream& operator<<(std::ostream& ostr, const png& image) noexcept {
             //
