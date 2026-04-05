@@ -110,8 +110,8 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         explicit inline basic_chunk(const unsigned char* const bytestream) noexcept :
             // this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place
             length { internal::endian::u32_from_be_bytes(bytestream) },
-            checksum { internal::endian::u32_from_be_bytes(bytestream + sizeof(unsigned) + NAMELENGTH + length) },
-            checksum_buffer_beginning { bytestream + sizeof(unsigned) },
+            checksum { internal::endian::u32_from_be_bytes(if_not_null_offsetby(bytestream, sizeof(unsigned) + NAMELENGTH + length)) },
+            checksum_buffer_beginning { if_not_null_offsetby(bytestream, sizeof(unsigned)) },
             data { length /* if the length is non-zero */ ?
                        bytestream + sizeof(unsigned) + NAMELENGTH /* starts with the byte after the chunk name */ :
                        nullptr /* for zero length chunks */ },
@@ -186,13 +186,13 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
         public:
             explicit inline ihdr(const unsigned char* const bytestream) noexcept :
                 basic_chunk { bytestream },
-                imwidth { internal::endian::u32_from_be_bytes(data) },      // first 4 bytes of the data segment
-                imheight { internal::endian::u32_from_be_bytes(data + 4) }, // second 4 bytes of data
-                bitdepth { *(data + 8) },
-                ctype { *(data + 9) },
-                compression_method { *(data + 10) },
-                filter_method { *(data + 11) },
-                interlace_method { *(data + 12) } {
+                imwidth { internal::endian::u32_from_be_bytes(data) },                           // first 4 bytes of the data segment
+                imheight { internal::endian::u32_from_be_bytes(if_not_null_offsetby(data, 4)) }, // second 4 bytes of data
+                bitdepth { if_not_null_offsetby_and_deref(data, 8) },
+                ctype { if_not_null_offsetby_and_deref(data, 9) },
+                compression_method { if_not_null_offsetby_and_deref(data, 10) },
+                filter_method { if_not_null_offsetby_and_deref(data, 11) },
+                interlace_method { if_not_null_offsetby_and_deref(data, 12) } {
                 //
             }
 
@@ -390,6 +390,8 @@ class png final {
         }
 
     public:
+        explicit inline png(const char* const fpath) noexcept { }
+
         friend std::ostream& operator<<(std::ostream& ostr, const png& image) noexcept {
             //
             return ostr;

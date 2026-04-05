@@ -17,7 +17,7 @@
 #include <endian.h>
 
 #if __BYTE_ORDER != __LITTLE_ENDIAN
-    #error This codebase assumes little endian hardware and will not run on big endian hardware!
+    #error This codebase assumes little endian hardware and will not run correctly on big endian hardware!
 #endif
 
 #include <immintrin.h> // AVX
@@ -32,10 +32,15 @@
 #endif
 
 #ifdef __TEST__
-    #define _TEST_ACCESS(_access_specifier) _access_specifier
+    #define _TEST_ACCESS(access_specifier) access_specifier
 #else
-    #define _TEST_ACCESS(_access_specifier)
+    #define _TEST_ACCESS(access_specifier)
 #endif
+
+// to express our intention clearly, isntead of (ptr + n) ing all the time, if the passed ptr is NULL, return NULL
+// the function receiving this ptr should null check it, as this macro itself cannot help with null derefs
+#define if_not_null_offsetby(ubyteptr, offset)           (ubyteptr ? (ubyteptr + offset) : nullptr)
+#define if_not_null_offsetby_and_deref(ubyteptr, offset) (ubyteptr ? *(ubyteptr + offset) : 0) // this will help avoid some segfaults
 
 // RGB combinations of colours
 enum class RGB : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
@@ -231,6 +236,10 @@ namespace internal {
         [[nodiscard]] static constexpr inline unsigned __attribute__((__always_inline__)) calculate(
             const unsigned char* const bytestream, const unsigned long& length
         ) noexcept {
+            if (!bytestream) {
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
+                return 0;
+            }
             unsigned checksum { 0xFFFFFFFF };
             for (size_t i = 0; i < length; ++i) checksum = (checksum >> 8) ^ IEEE_LOOKUPTABLE.at((bytestream[i] ^ checksum) & 0xFF);
             return ~checksum;
@@ -244,7 +253,10 @@ namespace internal {
             const unsigned char* const bytestream
         ) noexcept {
             static_assert(sizeof(unsigned short) == 2);
-            assert(bytestream);
+            if (!bytestream) {
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
+                return 0;
+            }
             return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
         }
 
@@ -253,7 +265,10 @@ namespace internal {
             const unsigned char* const bytestream
         ) noexcept {
             static_assert(sizeof(unsigned) == 4);
-            assert(bytestream);
+            if (!bytestream) {
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
+                return 0;
+            }
 
 #ifdef __llvm__ // LLVM defines __m64 as typedef __attribute__((__vector_size__(1 * sizeof(long long)))) long long __m64
             static constexpr __m64 mask_pi8 { 0x0405060700010203LL };
@@ -274,7 +289,11 @@ namespace internal {
             const unsigned char* const bytestream
         ) noexcept {
             static_assert(sizeof(unsigned long long) == 8);
-            assert(bytestream);
+            if (!bytestream) {
+                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
+                return 0;
+            }
+
 #ifdef __llvm__
             static constexpr __m64 mask_pi8 { 0x01020304050607LL };
 #elif defined(__GNUG__)
