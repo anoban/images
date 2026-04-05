@@ -80,11 +80,10 @@ namespace internal {
         return candidate == first || internal::is_in(candidate, list...);
     }
 
-    template<typename _TyValue, typename _TyLow, typename _TyHigh>
-    requires(std::is_arithmetic_v<_TyValue> && std::is_arithmetic_v<_TyLow> && std::is_arithmetic_v<_TyHigh>)
-    static constexpr bool __attribute__((__always_inline__)) is_within_inclusive_range(
-        const _TyValue& value, const _TyLow& low, const _TyHigh& high
-    ) noexcept {
+    template<typename _TyValue, typename _TyLow, typename _TyHigh> static constexpr typename std::enable_if<
+        std::is_arithmetic<_TyValue>::value && std::is_arithmetic<_TyLow>::value && std::is_arithmetic<_TyHigh>::value,
+        bool>::type __attribute__((__always_inline__))
+    is_within_inclusive_range(const _TyValue& value, const _TyLow& low, const _TyHigh& high) noexcept {
         return (value >= low) && (value <= high);
     }
 
@@ -194,19 +193,12 @@ namespace internal {
 
     } // namespace rgb
 
-    namespace crc { // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
-
-        enum class POLYNOMIALS : unsigned {
-            // IEEE is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
-            IEEE       = 0xEDB88320,
-            // Castagnoli's polynomial, used in iSCSI, has better error detection characteristics than IEEE https://dx.doi.org/10.1109/26.231911
-            CASTAGNOLI = 0x82F63B78,
-            // Koopman's polynomial, also has better error detection characteristics than IEEE https://dx.doi.org/10.1109/DSN.2002.1028931
-            KOOPMAN    = 0xEB31D82E
-        };
+    namespace crc {
+        // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
+        // IEEE (0xEDB88320) is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
 
         // computed and stored using the IEEE variant of the polynomial
-        static constexpr std::array<unsigned, 256> CRC32_LOOKUPTABLE_IEEE {
+        static constexpr std::array<unsigned, 256> IEEE_LOOKUPTABLE {
             { 0,          1996959894, 3993919788, 2567524794, 124634137,  1886057615, 3915621685, 2657392035, 249268274,  2044508324,
              3772115230, 2547177864, 162941995,  2125561021, 3887607047, 2428444049, 498536548,  1789927666, 4089016648, 2227061214,
              450548861,  1843258603, 4107580753, 2211677639, 325883990,  1684777152, 4251122042, 2321926636, 335633487,  1661365465,
@@ -235,13 +227,13 @@ namespace internal {
              1567103746, 711928724,  3020668471, 3272380065, 1510334235, 755167117 }
         };
 
-        // works great, tested and produces the same results as Python's binascii.crc32()
+        // works great, tested and produces the same results as Python's binascii module's crc32() function
         [[nodiscard]] static constexpr inline unsigned __attribute__((__always_inline__)) calculate(
             const unsigned char* const bytestream, const unsigned long& length
         ) noexcept {
-            unsigned crc { 0xFFFFFFFF };
-            for (size_t i = 0; i < length; ++i) crc = (crc >> 8) ^ CRC32_LOOKUPTABLE_IEEE.at((bytestream[i] ^ crc) & 0xFF);
-            return ~crc;
+            unsigned checksum { 0xFFFFFFFF };
+            for (size_t i = 0; i < length; ++i) checksum = (checksum >> 8) ^ IEEE_LOOKUPTABLE.at((bytestream[i] ^ checksum) & 0xFF);
+            return ~checksum;
         }
 
     } // namespace crc

@@ -75,11 +75,11 @@ enum INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
 
 class basic_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
         // https://www.w3.org/TR/2025/REC-png-3-20250624/#table51
-        // in the PNG standard, a chunk must have 3 or 4 essential fields
-        // 1) length
-        // 2) chunk type (name)
-        // 3) chunk data (optional, certain chunks may not have this field)
-        // 4) crc32 checksum
+        // in the PNG standard, a chunk must have 3 or 4 essential fields, in this order
+        // length
+        // chunk type (name)
+        // chunk data (optional, certain chunks may not have this field)
+        // crc32 checksum
 
         // make sure every child class implements its own is_valid() member function which validates it's specific chunk requirements, so the ctor of png image class
         // can simply just call that method on all the chunk types to validate its construction
@@ -107,7 +107,6 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         }
 
     public:
-        // this constructor doubles as a parser too
         explicit inline basic_chunk(const unsigned char* const bytestream) noexcept :
             // this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place
             length { internal::endian::u32_from_be_bytes(bytestream) },
@@ -121,24 +120,23 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
             ::strncpy(name, reinterpret_cast<const char*>(bytestream) + sizeof(unsigned), NAMELENGTH);
         }
 
-        // since basic_chunk stores pointers TO THE PNG FILE BUFFER INDICATING THE BEGINNING OF THE DATA SEGMENT, WE DO NOT WANT IMPLICITLY ENABLED COPY OR MOVE SEMANTICS
+        // since basic_chunk stores pointers raw pointers to the PNG file buffer, we do not want implicitly generated copy or move semantics
         basic_chunk() noexcept                              = delete;
         basic_chunk(const basic_chunk&) noexcept            = delete;
         basic_chunk& operator=(const basic_chunk&) noexcept = delete;
         basic_chunk(basic_chunk&&) noexcept                 = delete;
         basic_chunk& operator=(basic_chunk&&) noexcept      = delete;
-        // BECAUSE OF THIS, ALL THE DERIVED CHUNK TYPES WILL HAVE THESE MEMBER FUNCTIONS IMPLICITLY DELETED, COOL :)
+        // because of this, all the derived classes will have these member functions implicitly deleted, which is great
 
         ~basic_chunk() noexcept                             = default;
 
-        // compute the chunk's CRC32 checksum and check whether it is same as the one stored in the chunk
+        // compute the chunk's crc32 checksum and check whether it is same as the one stored in the chunk
         inline constexpr bool __attribute((__always_inline__)) is_checksum_valid() const noexcept {
-            // for the CRC32 checksum computation, we use the chunk's name and the bytes in the data segment
+            // for the crc32 checksum computation, we use the chunk's name and the bytes in the data segment
             return checksum == internal::crc::calculate(checksum_buffer_beginning, NAMELENGTH + length);
         }
 
         inline bool __attribute((__always_inline__)) is_name(const char* const str) const noexcept {
-            // return std::equal(str, str + NAMELENGTH, name);
             return !::strncmp(name, str, NAMELENGTH); // ::strncmp returns 0 when the two null terminated strings are identical
         }
 };
@@ -146,6 +144,14 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
 namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that must be present in all PNG images
 
     class ihdr final : public basic_chunk { // stands for Image HeaDeR, which is the first chunk in a PNG data stream
+            // a PNG IHDR's data segment must contain the following, in the given order
+            // Width 	            4 bytes
+            // Height 	            4 bytes
+            // Bit depth 	        1 byte
+            // Color type 	        1 byte
+            // Compression method 	1 byte
+            // Filter method 	    1 byte
+            // Interlace method 	1 byte
 
             _TEST_ACCESS(public:)
 
@@ -159,7 +165,14 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
             unsigned char      filter_method;
             INTERLACING_METHOD interlace_method;
 
-            [[nodiscard]] constexpr bool __attribute((__always_inline__)) is_colourtype_bitdepth_invariants_valid() const noexcept {
+            constexpr bool __attribute((__always_inline__)) is_colourtype_bitdepth_invariants_valid() const noexcept {
+                // https://www.w3.org/TR/png-3/#table111
+                // PNG image type 	        Color type 	Allowed bit depths 	    Interpretation
+                // Greyscale 	            0 	        1, 2, 4, 8, 16 	        Each pixel is a greyscale sample
+                // Truecolor 	            2 	        8, 16 	                Each pixel is an R,G,B triple
+                // Indexed-color 	        3 	        1, 2, 4, 8 	            Each pixel is a palette index; a PLTE chunk shall appear.
+                // Greyscale with alpha 	4 	        8, 16 	                Each pixel is a greyscale sample followed by an alpha sample.
+                // Truecolor with alpha 	6 	        8, 16 	                Each pixel is an R,G,B triple followed by an alpha sample.
                 switch (ctype) {
                     case COLOUR_TYPE::GREYSCALE             : return internal::is_in(bitdepth, 1, 2, 4, 8, 16);
                     case COLOUR_TYPE::INDEXED_COLOUR        : return internal::is_in(bitdepth, 1, 2, 4, 8);
@@ -189,7 +202,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
                        // 1) the data segment cannot be empty
                        && data
                        // 2) length must be 13
-                       && (length == 13U)
+                       && (length == 13)
                        // 3) height and width cannot be 0
                        && imheight &&
                        imwidth
@@ -231,7 +244,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
             inline constexpr bool __attribute((__always_inline__)) is_valid(const COLOUR_TYPE& ctype) const noexcept {
                 // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
                 return basic_chunk::is_checksum_valid() && basic_chunk::is_name("PLTE") && !(size_in_bytes % 3) &&
-                       internal::is_in(static_cast<int>(ctype), 2, 3, 6);
+                       internal::is_in(internal::to_underlying(ctype), 2, 3, 6);
                 // PLTE chunk shall appear for color type 3, and may appear for color types 2 and 6;
                 // it shall not appear for color types 0 and 4.
                 // there shall not be more than one PLTE chunk.
@@ -295,20 +308,29 @@ namespace ancillary {
 
     class pHYs final : public basic_chunk { };
 
-    class time final : public basic_chunk { // time stamp of the PNG image
+    class time final : public basic_chunk {
+            // time stamp of the PNG image - gives the time of the last image modification (not the time of initial image creation)
             _TEST_ACCESS(public:)
 
             // tm tstamp; // using C's tm struct for convenience, but it's memory layout is not identical to PNG's tIME chunk's time encoding
             // the above turned out to be stupid idea as <stdio> functions operating on the tm struct expect it to be fully populated, PNG only encodes
             // certain members of that struct, with an incomplete struct passed, they spit out garbage
 
-            // this is how a PNG stores a tIME chunk
-            unsigned short year;   // in YYYY format; for example, 1995, not 95
-            unsigned char  month;  // 1-12
-            unsigned char  day;    // 1-31
-            unsigned char  hour;   // 0-23
-            unsigned char  minute; // 0-59
-            unsigned char  second; // 0-60, to allow for leap seconds
+            // this is how a PNG stores a tIME chunk - https://www.w3.org/TR/png-3/#tIME-structure
+            // Year 	2 bytes (complete; for example, 1995, not 95)
+            // Month 	1 byte (1-12)
+            // Day 	    1 byte (1-31)
+            // Hour 	1 byte (0-23)
+            // Minute 	1 byte (0-59)
+            // Second 	1 byte (0-60) (to allow for leap seconds)
+            // Universal Time (UTC) should be specified rather than local time
+
+            unsigned short year;
+            unsigned char  month;
+            unsigned char  day;
+            unsigned char  hour;
+            unsigned char  minute;
+            unsigned char  second;
 
         public:
             explicit inline time(const unsigned char* const chunkstream) noexcept :
@@ -323,17 +345,16 @@ namespace ancillary {
                 };
 
             inline bool is_valid() const noexcept {
-                //
-                return basic_chunk::is_name("tIME") && internal::is_within_inclusive_range(month, 1, 12) &&
+                return basic_chunk::is_name("tIME") && (length == 7) && internal::is_within_inclusive_range(month, 1, 12) &&
                        internal::is_within_inclusive_range(day, 1, 31) && internal::is_within_inclusive_range(hour, 0, 23) &&
                        internal::is_within_inclusive_range(minute, 0, 59) && internal::is_within_inclusive_range(second, 0, 60);
             }
 
             friend std::ostream& operator<<(std::ostream& ostr, const time& chunk) noexcept {
                 ostr << static_cast<const basic_chunk&>(chunk);
-                static char _buffer[126] {};
+                static char _buffer[128] {};
 
-                ::memset(_buffer, 0, sizeof(_buffer));
+                ::memset(_buffer, 0, sizeof(_buffer)); // since our buffer is static, this is critical
                 ::snprintf(
                     _buffer,
                     sizeof(_buffer),
@@ -357,9 +378,9 @@ namespace ancillary {
 class png final {
         _TEST_ACCESS(public:)
         // critical chunks
-        critical::ihdr image_header;
-        critical::plte colour_palette;
-        critical::iend image_trailer;
+        critical::ihdr header;
+        critical::plte palette;
+        critical::iend trailer;
 
         bool scan_and_parse() noexcept { }
 

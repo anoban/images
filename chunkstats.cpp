@@ -26,15 +26,23 @@ int main() {
 
     for (long long i = 0; i < filesize - 4 /* to prevent buffer overuns */; ++i) {
         if (::is_same(filebuffer + i, "IHDR")) {
-            std::cout << critical::ihdr(filebuffer + i - 4);
+            auto header = critical::ihdr(filebuffer + i - 4);
+            std::cout << header;
+            std::cout << std::boolalpha << header.is_valid() << '\n';
             ihdr_count++;
         }
         if (::is_same(filebuffer + i, "IDAT")) idat_count++;
         if (::is_same(filebuffer + i, "PLTE")) plte_count++;
-        if (::is_same(filebuffer + i, "tIME")) std::cout << ancillary::time(filebuffer + i - 4);
+        if (::is_same(filebuffer + i, "tIME")) {
+            auto _time = ancillary::time(filebuffer + i - 4);
+            std::cout << _time;
+            std::cout << _time.is_valid() << '\n';
+        }
         if (::is_same(filebuffer + i, "IEND")) {
             iend_count++;
-            std::cout << critical::iend(filebuffer + i - 4);
+            auto trailer = critical::iend(filebuffer + i - 4);
+            std::cout << trailer;
+            std::cout << trailer.is_valid() << '\n';
         }
     }
 
