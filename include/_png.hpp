@@ -313,7 +313,7 @@ namespace ancillary {
         public:
             explicit inline time(const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
-                year { ::__bswap_16(*reinterpret_cast<const unsigned short*>(data)) /* first 2 bytes */ },
+                year { internal::endian::u16_from_be_bytes(data) /* first 2 bytes */ },
                 month { *(data + 2) },
                 day { *(data + 3) },
                 hour { *(data + 4) },
