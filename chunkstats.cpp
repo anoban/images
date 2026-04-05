@@ -31,6 +31,7 @@ int main() {
         }
         if (::is_same(filebuffer + i, "IDAT")) idat_count++;
         if (::is_same(filebuffer + i, "PLTE")) plte_count++;
+        if (::is_same(filebuffer + i, "tIME")) std::cout << ancillary::time(filebuffer + i - 4);
         if (::is_same(filebuffer + i, "IEND")) {
             iend_count++;
             std::cout << critical::iend(filebuffer + i - 4);

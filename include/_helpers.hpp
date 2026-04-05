@@ -9,11 +9,13 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <concepts>
 #include <iostream>
 #include <limits>
 #include <type_traits>
 
 #include <endian.h>
+
 #if __BYTE_ORDER != __LITTLE_ENDIAN
     #error This codebase assumes little endian hardware and will not run on big endian hardware!
 #endif
@@ -76,6 +78,14 @@ namespace internal {
         __attribute__((__always_inline__))
         is_in(const _TyCandidate& candidate, const _TyFirst& first, const _TyList&... list) noexcept {
         return candidate == first || internal::is_in(candidate, list...);
+    }
+
+    template<typename _TyValue, typename _TyLow, typename _TyHigh>
+    requires(std::is_arithmetic_v<_TyValue> && std::is_arithmetic_v<_TyLow> && std::is_arithmetic_v<_TyHigh>)
+    static constexpr bool __attribute__((__always_inline__)) is_within_inclusive_range(
+        const _TyValue& value, const _TyLow& low, const _TyHigh& high
+    ) noexcept {
+        return (value >= low) && (value <= high);
     }
 
     namespace ascii {

@@ -8,6 +8,7 @@
 // clang-format on
 
 #include <cstring>
+#include <ctime>
 #include <iomanip>
 
 // look up https://www.w3.org/TR/png-3/ for the official PNG specification document
@@ -39,6 +40,39 @@ enum COLOUR_TYPE : unsigned char { // lookup table 12 in the PNG spec
 
 enum INTERLACING_METHOD : unsigned char { NONE = 0, ADAM7 = 1 };
 
+// from the PNG specs, Table 7 - https://www.w3.org/TR/png-3/#table53
+
+// critical chunks - (shall appear in this order, except for PLTE, which is optional)
+// Chunk name 	Multiple allowed 	Ordering constraints
+// IHDR 	    No 	                Shall be first
+// PLTE 	    No 	                Before first IDAT
+// IDAT 	    Yes                 Multiple IDAT chunks shall be consecutive
+// IEND 	    No 	                Shall be last
+
+// ancillary chunks - (need not to appear in this order)
+// Chunk name 	Multiple allowed 	Ordering constraints
+// acTL 	    No 	                Before IDAT
+// cHRM 	    No 	                Before PLTE and IDAT
+// cICP 	    No 	                Before PLTE and IDAT
+// gAMA 	    No 	                Before PLTE and IDAT
+// iCCP 	    No 	                Before PLTE and IDAT. If the iCCP chunk is present, the sRGB chunk should not be present.
+// mDCV 	    No 	                Before PLTE and IDAT.
+// cLLI 	    No 	                Before PLTE and IDAT.
+// sBIT 	    No 	                Before PLTE and IDAT
+// sRGB 	    No 	                Before PLTE and IDAT. If the sRGB chunk is present, the iCCP chunk should not be present.
+// bKGD 	    No 	                After PLTE; before IDAT
+// hIST 	    No 	                After PLTE; before IDAT
+// tRNS 	    No 	                After PLTE; before IDAT
+// eXIf 	    No 	                Before IDAT
+// fcTL 	    Yes                 One may occur before IDAT; all others shall be after IDAT
+// pHYs 	    No 	                Before IDAT
+// sPLT 	    Yes                 Before IDAT
+// fdAT 	    Yes                 After IDAT
+// tIME 	    No 	                None
+// iTXt 	    Yes                 None
+// tEXt 	    Yes                 None
+// zTXt 	    Yes                 None
+
 class basic_chunk { // an opaque base class for all the implementations of PNG standard defined concrete chunk types
         // https://www.w3.org/TR/2025/REC-png-3-20250624/#table51
         // in the PNG standard, a chunk must have 3 or 4 essential fields
@@ -46,6 +80,9 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         // 2) chunk type (name)
         // 3) chunk data (optional, certain chunks may not have this field)
         // 4) crc32 checksum
+
+        // make sure every child class implements its own is_valid() member function which validates it's specific chunk requirements, so the ctor of png image class
+        // can simply just call that method on all the chunk types to validate its construction
 
     protected:
         _TEST_ACCESS(public:)
@@ -62,10 +99,8 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
             ostr << "-------------------------------------------\n";
             ostr << "| Length              " << std::setw(20) << chunk.length << "|\n";
             ostr << "| Name                " << std::setw(20) << chunk.name << "|\n";
-            if (chunk.data)
-                ostr << "| Data                " << std::setw(20) << std::hex << std::uppercase << chunk.data << "|\n";
-            else
-                ostr << "| Data                " << std::setw(22) << "NULL|\n"; // for chunks that do not have a data segment
+            // for chunks that do not have a data segment, don't bother chunks with data
+            if (!chunk.data) ostr << "| Data                " << std::setw(22) << "NULL|\n";
             ostr << std::dec;
             ostr << "| Checksum            " << std::setw(20) << chunk.checksum << "|\n";
             return ostr;
@@ -102,7 +137,7 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
             return checksum == internal::crc::calculate(checksum_buffer_beginning, NAMELENGTH + length);
         }
 
-        inline constexpr bool __attribute((__always_inline__)) is_name(const char* const str) const noexcept {
+        inline bool __attribute((__always_inline__)) is_name(const char* const str) const noexcept {
             // return std::equal(str, str + NAMELENGTH, name);
             return !::strncmp(name, str, NAMELENGTH); // ::strncmp returns 0 when the two null terminated strings are identical
         }
@@ -187,16 +222,19 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
             _TEST_ACCESS(public:)
             // a PNG stream can only contain 1 PLTE chunk & the number of palette entries can range from 0 to 256
             // https://www.w3.org/TR/2025/REC-png-3-20250624/#11PLTE
-            rgb      palette[MAX_PLTE_ENTRIES]; // each palette entry must be a 3 byte object (RGB)
-            // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
+            rgba     palette[MAX_PLTE_ENTRIES]; // each palette entry must be a 3 byte object (RGB)
             unsigned size_in_bytes;
 
         public:
             explicit inline plte(const unsigned char* const bytestream) noexcept : basic_chunk { bytestream } { }
 
-            inline constexpr bool __attribute((__always_inline__)) is_valid() const noexcept {
-                //
-                return basic_chunk::is_checksum_valid() && basic_chunk::is_name("PLTE") && !(size_in_bytes % 3);
+            inline constexpr bool __attribute((__always_inline__)) is_valid(const COLOUR_TYPE& ctype) const noexcept {
+                // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
+                return basic_chunk::is_checksum_valid() && basic_chunk::is_name("PLTE") && !(size_in_bytes % 3) &&
+                       internal::is_in(static_cast<int>(ctype), 2, 3, 6);
+                // PLTE chunk shall appear for color type 3, and may appear for color types 2 and 6;
+                // it shall not appear for color types 0 and 4.
+                // there shall not be more than one PLTE chunk.
             }
 
             [[deprecated]] friend std::ostream& operator<<(std::ostream& ostr, const plte& chunk) noexcept {
@@ -260,6 +298,11 @@ namespace ancillary {
     class time final : public basic_chunk { // time stamp of the PNG image
             _TEST_ACCESS(public:)
 
+            // tm tstamp; // using C's tm struct for convenience, but it's memory layout is not identical to PNG's tIME chunk's time encoding
+            // the above turned out to be stupid idea as <stdio> functions operating on the tm struct expect it to be fully populated, PNG only encodes
+            // certain members of that struct, with an incomplete struct passed, they spit out garbage
+
+            // this is how a PNG stores a tIME chunk
             unsigned short year;   // in YYYY format; for example, 1995, not 95
             unsigned char  month;  // 1-12
             unsigned char  day;    // 1-31
@@ -270,14 +313,43 @@ namespace ancillary {
         public:
             explicit inline time(const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
-                year { ::__bswap_16(*reinterpret_cast<const unsigned short*>(data)) },
-                month { *(data + 1) },
-                day { *(data + 2) },
-                hour { *(data + 3) },
-                minute { *(data + 4) },
-                second { *(data + 5) } {
+                year { ::__bswap_16(*reinterpret_cast<const unsigned short*>(data)) /* first 2 bytes */ },
+                month { *(data + 2) },
+                day { *(data + 3) },
+                hour { *(data + 4) },
+                minute { *(data + 5) },
+                second { *(data + 6) } {
                     //
                 };
+
+            inline bool is_valid() const noexcept {
+                //
+                return basic_chunk::is_name("tIME") && internal::is_within_inclusive_range(month, 1, 12) &&
+                       internal::is_within_inclusive_range(day, 1, 31) && internal::is_within_inclusive_range(hour, 0, 23) &&
+                       internal::is_within_inclusive_range(minute, 0, 59) && internal::is_within_inclusive_range(second, 0, 60);
+            }
+
+            friend std::ostream& operator<<(std::ostream& ostr, const time& chunk) noexcept {
+                ostr << static_cast<const basic_chunk&>(chunk);
+                static char _buffer[126] {};
+
+                ::memset(_buffer, 0, sizeof(_buffer));
+                ::snprintf(
+                    _buffer,
+                    sizeof(_buffer),
+                    "| Date                 %02d:%02d:%02d %02d-%02d-%04d|\n",
+                    chunk.hour,
+                    chunk.minute,
+                    chunk.second,
+                    chunk.day,
+                    chunk.month,
+                    chunk.year
+                );
+                // ostr << "| Date                 " << std::setw(2) << std::put_time(&chunk.tstamp, "%H:%M:%S %d-%m-%Y") << "|\n";
+                ostr << _buffer;
+                ostr << "-------------------------------------------\n";
+                return ostr;
+            }
     };
 
 } // namespace ancillary
@@ -289,9 +361,9 @@ class png final {
         critical::plte colour_palette;
         critical::iend image_trailer;
 
-        [[nodiscard]] bool scan_and_parse() noexcept { }
+        bool scan_and_parse() noexcept { }
 
-        inline bool is_invariants_valid() const noexcept {
+        inline bool __is_valid() const noexcept {
             // https://www.w3.org/TR/2025/REC-png-3-20250624/#11PLTE
             // a PNG image can only have 1 PLTE chunk & it can only exists if the colour type is 2, 3 or 6
         }
