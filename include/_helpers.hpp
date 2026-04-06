@@ -39,12 +39,6 @@
 #endif
 // clang-format on
 
-// to express our intention clearly, isntead of (ptr + n) ing all the time, if the passed ptr is NULL, return NULL
-// the function receiving this ptr should null check it, as this macro itself cannot help with null derefs
-#define if_not_null_offsetby(ubyteptr, offset)           (ubyteptr ? (ubyteptr + offset) : nullptr)
-// this will help avoid some segfaults, the cast is there just to make the compilers shut up
-#define if_not_null_offsetby_and_deref(ubyteptr, offset) (ubyteptr ? *(ubyteptr + offset) : static_cast<unsigned char>(0))
-
 // RGB combinations of colours
 enum class RGB : unsigned char { RED, GREEN, BLUE, REDGREEN, REDBLUE, GREENBLUE };
 
@@ -97,12 +91,15 @@ namespace internal {
 
     template<typename _TyTo> static inline _TyTo
         __attribute__((__always_inline__)) constexpr safe_deref(const unsigned char* const ptr, const long long& offset = 0) noexcept {
+        // a wrapped dereferencing function, to potentially minimize null ptr dereferences and segfaults
         if (!ptr) return static_cast<_TyTo>(0);
         return *reinterpret_cast<typename std::add_pointer<typename std::add_const<_TyTo>::type>::type>(ptr + offset);
     }
 
     static inline const unsigned char* __attribute__((__always_inline__)) safe_offset(
-        const unsigned char* const ptr, const long long& offset
+        // a safe raw pointer offset function, use only with functions that null check the input, otherwise could lead to null dereferencing & segfaults
+        const unsigned char* const ptr,
+        const long long&           offset
     ) noexcept {
         if (!ptr) return nullptr;
         return ptr + offset;

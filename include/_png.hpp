@@ -112,9 +112,11 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
             length { internal::endian::u32_from_be_bytes(bytestream) },
             checksum { internal::endian::u32_from_be_bytes(internal::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH + length)) },
             checksum_buffer_beginning { internal::safe_offset(bytestream, sizeof(unsigned)) },
-            data { length /* if the length is non-zero */ ?
-                       bytestream + sizeof(unsigned) + NAMELENGTH /* starts with the byte after the chunk name */ :
-                       nullptr /* for zero length chunks */ },
+            data {
+                length ?                                                               // if the length is non-zero
+                    internal::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH) : // starts with the byte after the chunk name
+                    nullptr                                                            // for zero length chunks
+            },
             name {} {
             // copy the chunk name (second 4 bytes) into the local buffer
             ::strncpy(name, reinterpret_cast<const char*>(bytestream) + sizeof(unsigned), NAMELENGTH);
