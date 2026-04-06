@@ -98,7 +98,7 @@ namespace internal {
     template<typename _TyTo> static inline _TyTo
         __attribute__((__always_inline__)) constexpr safe_deref(const unsigned char* const ptr, const long long& offset = 0) noexcept {
         if (!ptr) return static_cast<_TyTo>(0);
-        return *reinterpret_cast<typename std::add_pointer<typename std::add_const<_TyTo>::value>::value>(ptr + offset);
+        return *reinterpret_cast<typename std::add_pointer<typename std::add_const<_TyTo>::type>::type>(ptr + offset);
     }
 
     static inline const unsigned char* __attribute__((__always_inline__)) safe_offset(
