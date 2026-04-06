@@ -51,12 +51,8 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // that's 'M' followed by a 'B' (LE), wingdi's BITMAPFILEHEADER uses a  unsigned short for SOI instead of two chars
         static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
-        // clang-format off
-#ifndef __TEST__
-   protected:
-#endif
-        // clang-format on
-
+    protected:
+        __TEST_ONLY(public)
         unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER file_header;
@@ -81,12 +77,12 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // inside the raw file buffer - no additional heap allocations and we could just sink the buffer to the disk when a serialization is needed
         // find the type of compression used in the BMP file, bitmap files, in general aren't compressed
 
-        [[nodiscard]] static constexpr SCANLINE_ORDERING get_scanline_order(const BITMAPINFOHEADER& header) noexcept {
+        static constexpr SCANLINE_ORDERING get_scanline_order(const BITMAPINFOHEADER& header) noexcept {
             // BITMAPINFOHEADER::biHeight is usually an unsigned value, a negative value indicates that the scanlines are ordered top down instead of the customary bottom up order
             return header.biHeight >= 0 ? SCANLINE_ORDERING::BOTTOMUP : SCANLINE_ORDERING::TOPDOWN;
         }
 
-        [[nodiscard]] static constexpr COMPRESSION_KIND get_compression_kind(const unsigned kind) noexcept {
+        static constexpr COMPRESSION_KIND get_compression_kind(const unsigned kind) noexcept {
             switch (kind) {
                 case 0  : return COMPRESSION_KIND::RGB; // uncompressed RGBQUAD pixels
                 case 1  : return COMPRESSION_KIND::RLE8;
@@ -115,11 +111,11 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return header;
             }
 
-            header.bfType      = SOI;                                              // 'B', 'M'
-            header.bfSize      = *reinterpret_cast<const unsigned*>(imstream + 2); // file size in bytes
-            header.bfReserved1 = header.bfReserved2 = 0;                           // 4 reserved bytes
+            header.bfType      = SOI;                                         // 'B', 'M'
+            header.bfSize      = internal::safe_deref<unsigned>(imstream, 2); // file size in bytes
+            header.bfReserved1 = header.bfReserved2 = 0;                      // 4 reserved bytes
             // offset from the beginning of BITMAPFILEHEADER struct to the start of pixel data
-            header.bfOffBits                        = *reinterpret_cast<const unsigned*>(imstream + 10);
+            header.bfOffBits                        = internal::safe_deref<unsigned>(imstream, 10);
 
             return header;
         }
@@ -137,28 +133,23 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return header;
             }
 
-            // NOLINTBEGIN(bugprone-assignment-in-if-condition)
-            if ((header.biSize = *reinterpret_cast<const long*>(imstream + 14)) != 40) [[unlikely]] {
+            if ((header.biSize = internal::safe_deref<long>(imstream, 14)) != 40) [[unlikely]] {
                 // size of the BITMAPINFOHEADER struct must be == 40 bytes
                 ::fprintf(stderr, "Error in %s: unparseable BITMAPINFOHEADER\n", __PRETTY_FUNCTION__);
                 return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             }
 
-            // header.biSize          = *reinterpret_cast<const unsigned*>(imstream + 14);
-            header.biWidth         = *reinterpret_cast<const int*>(imstream + 18); // width of the bitmap image in pixels
-            header.biHeight        = *reinterpret_cast<const int*>(imstream + 22); // height of the bitmap image in pixels
+            header.biWidth         = internal::safe_deref<int>(imstream, 18); // width of the bitmap image in pixels
+            header.biHeight        = internal::safe_deref<int>(imstream, 22); // height of the bitmap image in pixels
             // bitmaps with a negative height may not be compressed
-            header.biPlanes        = *reinterpret_cast<const unsigned short*>(imstream + 26); // must be 1
-            header.biBitCount      = *reinterpret_cast<const unsigned short*>(imstream + 28); // 1, 4, 8, 16, 24 or 32
-            header.biCompression   = static_cast<decltype(BITMAPINFOHEADER::biCompression)>(  // compression kind (if compressed)
-                bitmap::get_compression_kind(*reinterpret_cast<const unsigned*>(imstream + 30U))
-            );
-            header.biSizeImage     = *reinterpret_cast<const unsigned*>(imstream + 34); // 0 if not compressed
-            header.biXPelsPerMeter = *reinterpret_cast<const int*>(imstream + 38);      // resolution in pixels per meter along the x axis
-            header.biYPelsPerMeter = *reinterpret_cast<const int*>(imstream + 42);      // resolution in pixels per meter along the y axis
-            header.biClrUsed       = *reinterpret_cast<const unsigned*>(imstream + 46); // number of entries in the colourmap that are used
-            header.biClrImportant  = *reinterpret_cast<const unsigned*>(imstream + 50); // number of important colors
-            // NOLINTEND(bugprone-assignment-in-if-condition)
+            header.biPlanes        = internal::safe_deref<unsigned short>(imstream, 26); // must be 1
+            header.biBitCount      = internal::safe_deref<unsigned short>(imstream, 28); // 1, 4, 8, 16, 24 or 32
+            header.biCompression   = internal::safe_deref<unsigned>(imstream, 30);       // compression kind (if compressed)
+            header.biSizeImage     = internal::safe_deref<unsigned>(imstream, 34);       // 0 if not compressed
+            header.biXPelsPerMeter = internal::safe_deref<int>(imstream, 38);            // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = internal::safe_deref<int>(imstream, 42);            // resolution in pixels per meter along the y axis
+            header.biClrUsed       = internal::safe_deref<unsigned>(imstream, 46);       // number of entries in the colourmap that are used
+            header.biClrImportant  = internal::safe_deref<unsigned>(imstream, 50);       // number of important colors
 
             return header;
         }
@@ -401,7 +392,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         reference operator[](const size_type offset) noexcept { // NOLINT(readability-make-member-function-const)
             assert(offset < info_header.biHeight * info_header.biWidth);
-            return pixels[offset]; 
+            return pixels[offset];
         }
 
         const_reference operator[](const size_type offset) const noexcept {

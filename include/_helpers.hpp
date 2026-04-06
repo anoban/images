@@ -31,11 +31,13 @@
     #define dbgprintf(...)
 #endif
 
+// clang-format off
 #ifdef __TEST__
-    #define _TEST_ACCESS(access_specifier) access_specifier
+    #define __TEST_ONLY(access_specifier) access_specifier:
 #else
-    #define _TEST_ACCESS(access_specifier)
+    #define __TEST_ONLY(access_specifier)
 #endif
+// clang-format on
 
 // to express our intention clearly, isntead of (ptr + n) ing all the time, if the passed ptr is NULL, return NULL
 // the function receiving this ptr should null check it, as this macro itself cannot help with null derefs
@@ -86,11 +88,24 @@ namespace internal {
         return candidate == first || internal::is_in(candidate, list...);
     }
 
-    template<typename _TyValue, typename _TyLow, typename _TyHigh> static constexpr typename std::enable_if<
+    template<typename _TyValue, typename _TyLow, typename _TyHigh> static inline constexpr typename std::enable_if<
         std::is_arithmetic<_TyValue>::value && std::is_arithmetic<_TyLow>::value && std::is_arithmetic<_TyHigh>::value,
         bool>::type __attribute__((__always_inline__))
     is_within_inclusive_range(const _TyValue& value, const _TyLow& low, const _TyHigh& high) noexcept {
         return (value >= low) && (value <= high);
+    }
+
+    template<typename _TyTo> static inline _TyTo
+        __attribute__((__always_inline__)) constexpr safe_deref(const unsigned char* const ptr, const long long& offset = 0) noexcept {
+        if (!ptr) return static_cast<_TyTo>(0);
+        return *reinterpret_cast<typename std::add_pointer<typename std::add_const<_TyTo>::value>::value>(ptr + offset);
+    }
+
+    static inline const unsigned char* __attribute__((__always_inline__)) safe_offset(
+        const unsigned char* const ptr, const long long& offset
+    ) noexcept {
+        if (!ptr) return nullptr;
+        return ptr + offset;
     }
 
     namespace ascii {

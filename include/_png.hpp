@@ -85,7 +85,7 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         // can simply just call that method on all the chunk types to validate its construction
 
     protected:
-        _TEST_ACCESS(public:)
+        __TEST_ONLY(public)
 
         unsigned             length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
         // length accounts only for the bytes in the data segment and excludes itself, chunk name and the crc checksum
@@ -110,8 +110,8 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         explicit inline basic_chunk(const unsigned char* const bytestream) noexcept :
             // this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place
             length { internal::endian::u32_from_be_bytes(bytestream) },
-            checksum { internal::endian::u32_from_be_bytes(if_not_null_offsetby(bytestream, sizeof(unsigned) + NAMELENGTH + length)) },
-            checksum_buffer_beginning { if_not_null_offsetby(bytestream, sizeof(unsigned)) },
+            checksum { internal::endian::u32_from_be_bytes(internal::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH + length)) },
+            checksum_buffer_beginning { internal::safe_offset(bytestream, sizeof(unsigned)) },
             data { length /* if the length is non-zero */ ?
                        bytestream + sizeof(unsigned) + NAMELENGTH /* starts with the byte after the chunk name */ :
                        nullptr /* for zero length chunks */ },
@@ -153,7 +153,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
             // Filter method 	    1 byte
             // Interlace method 	1 byte
 
-            _TEST_ACCESS(public:)
+            __TEST_ONLY(public)
 
             unsigned           imwidth;  // width of a PNG image in pixels, 0 is an invalid value
             unsigned           imheight; // height of a PNG image in pixels, 0 is an invalid value
@@ -186,13 +186,13 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
         public:
             explicit inline ihdr(const unsigned char* const bytestream) noexcept :
                 basic_chunk { bytestream },
-                imwidth { internal::endian::u32_from_be_bytes(data) },                           // first 4 bytes of the data segment
-                imheight { internal::endian::u32_from_be_bytes(if_not_null_offsetby(data, 4)) }, // second 4 bytes of data
-                bitdepth { if_not_null_offsetby_and_deref(data, 8) },
-                ctype { if_not_null_offsetby_and_deref(data, 9) },
-                compression_method { if_not_null_offsetby_and_deref(data, 10) },
-                filter_method { if_not_null_offsetby_and_deref(data, 11) },
-                interlace_method { if_not_null_offsetby_and_deref(data, 12) } {
+                imwidth { internal::endian::u32_from_be_bytes(data) },                            // first 4 bytes of the data segment
+                imheight { internal::endian::u32_from_be_bytes(internal::safe_offset(data, 4)) }, // second 4 bytes of data
+                bitdepth { internal::safe_deref<unsigned char>(data, 8) },
+                ctype { internal::safe_deref<unsigned char>(data, 9) },
+                compression_method { internal::safe_deref<unsigned char>(data, 10) },
+                filter_method { internal::safe_deref<unsigned char>(data, 11) },
+                interlace_method { internal::safe_deref<unsigned char>(data, 12) } {
                 //
             }
 
@@ -232,7 +232,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
 
     class plte final : public basic_chunk { // stands for PaLeTtE, contains an array of colour entries (RGB)
 
-            _TEST_ACCESS(public:)
+            __TEST_ONLY(public)
             // a PNG stream can only contain 1 PLTE chunk & the number of palette entries can range from 0 to 256
             // https://www.w3.org/TR/2025/REC-png-3-20250624/#11PLTE
             rgba     palette[MAX_PLTE_ENTRIES]; // each palette entry must be a 3 byte object (RGB)
@@ -310,7 +310,7 @@ namespace ancillary {
 
     class time final : public basic_chunk {
             // time stamp of the PNG image - gives the time of the last image modification (not the time of initial image creation)
-            _TEST_ACCESS(public:)
+            __TEST_ONLY(public)
 
             // tm tstamp; // using C's tm struct for convenience, but it's memory layout is not identical to PNG's tIME chunk's time encoding
             // the above turned out to be stupid idea as <stdio> functions operating on the tm struct expect it to be fully populated, PNG only encodes
@@ -336,11 +336,11 @@ namespace ancillary {
             explicit inline time(const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
                 year { internal::endian::u16_from_be_bytes(data) /* first 2 bytes */ },
-                month { if_not_null_offsetby_and_deref(data, 2) },
-                day { if_not_null_offsetby_and_deref(data, 3) },
-                hour { if_not_null_offsetby_and_deref(data, 4) },
-                minute { if_not_null_offsetby_and_deref(data, 5) },
-                second { if_not_null_offsetby_and_deref(data, 6) } {
+                month { internal::safe_deref<unsigned char>(data, 2) },
+                day { internal::safe_deref<unsigned char>(data, 3) },
+                hour { internal::safe_deref<unsigned char>(data, 4) },
+                minute { internal::safe_deref<unsigned char>(data, 5) },
+                second { internal::safe_deref<unsigned char>(data, 6) } {
                     //
                 };
 
@@ -376,7 +376,7 @@ namespace ancillary {
 } // namespace ancillary
 
 class png final {
-        _TEST_ACCESS(public:)
+        __TEST_ONLY(public)
         // critical chunks
         critical::ihdr header;
         critical::plte palette;
