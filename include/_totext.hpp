@@ -2,7 +2,7 @@
 #include <_internal.hpp>
 #include <_wingdi.hpp>
 #include <_bitmap.hpp>
-#include <_helpers.hpp>
+#include <_utilities.hpp>
 // clang-format on
 
 #include <algorithm>
@@ -22,9 +22,8 @@ namespace palettes {
     static constexpr char minimal[]  = { '_', '.', ',', '-', '=', '+', ':', ';', 'c', 'b', 'a', '!', '?', '1',
                                          '2', '3', '4', '5', '6', '7', '8', '9', '$', 'W', '#', '@', 'N' };
 
-    static constexpr char base[]     = { ' ', '.', '-', ',', ':', '+', '~', ';', '(', '%', 'x', '1', '*', 'n', 'u',
-                                         'T', '3', 'J', '5', '$', 'S', '4', 'F', 'P', 'G', 'O', 'V', 'X', 'E', 'Z',
-                                         '8', 'A', 'U', 'D', 'H', 'K', 'W', '@', 'B', 'Q', '#', '0', 'M', 'N' };
+    static constexpr char base[]     = { ' ', '.', '-', ',', ':', '+', '~', ';', '(', '%', 'x', '1', '*', 'n', 'u', 'T', '3', 'J', '5', '$', 'S', '4',
+                                         'F', 'P', 'G', 'O', 'V', 'X', 'E', 'Z', '8', 'A', 'U', 'D', 'H', 'K', 'W', '@', 'B', 'Q', '#', '0', 'M', 'N' };
 
     static constexpr char extended[] = { ' ', '.', '\'', '`', '^', '"', ',', ':', ';', 'I', 'l',  '!', 'i', '>', '<', '~', '+', '_',
                                          '-', '?', ']',  '[', '}', '{', '1', ')', '(', '|', '\\', '/', 't', 'f', 'j', 'r', 'x', 'n',
@@ -48,8 +47,7 @@ namespace totext {
     // average of minimum and maximum RGB values in a pixel
     static constexpr inline unsigned __attribute__((__always_inline__)) minmax_average(const RGBQUAD& pixel) noexcept {
         // we don't want overflows or truncations here
-        return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) +
-                std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
+        return (static_cast<float>(std::min({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) + std::max({ pixel.rgbBlue, pixel.rgbGreen, pixel.rgbRed })) /
                2.0000;
     }
 
@@ -130,8 +128,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
     long pblocksize_right = // number of pixels in each block in the rightmost column of incomplete blocks.
         // width of the image - (number of complete blocks * block dimension) will give the residual pixels along the horizontal axis
         // multiply that by block domension again, and we'll get the number of pixels in the incomplete block
-        (image.width() - (image.width() / block_d) /* deliberate integer division to get only the count of complete blocks */ * block_d) *
-        block_d;
+        (image.width() - (image.width() / block_d) /* deliberate integer division to get only the count of complete blocks */ * block_d) * block_d;
     assert(pblocksize_right < blocksize);
 
     // the block size to represent the number of pixels held by the last row blocks
@@ -182,10 +179,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
 
             buffer[caret++] = ::totext::maptochar(
                 fnptr, // explicit casts to make the compilers happy
-                { static_cast<unsigned char>(blockavg_blue),
-                  static_cast<unsigned char>(blockavg_green),
-                  static_cast<unsigned char>(blockavg_red),
-                  0 },
+                { static_cast<unsigned char>(blockavg_blue), static_cast<unsigned char>(blockavg_green), static_cast<unsigned char>(blockavg_red), 0 },
                 palette
             );
             blockavg_blue = blockavg_green = blockavg_red = 0.000;
@@ -211,10 +205,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
 
             buffer[caret++] = ::totext::maptochar(
                 fnptr,
-                { static_cast<unsigned char>(blockavg_blue),
-                  static_cast<unsigned char>(blockavg_green),
-                  static_cast<unsigned char>(blockavg_red),
-                  0 },
+                { static_cast<unsigned char>(blockavg_blue), static_cast<unsigned char>(blockavg_green), static_cast<unsigned char>(blockavg_red), 0 },
                 palette
             );
             blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages
@@ -248,10 +239,7 @@ template<unsigned long _length> static inline std::optional<std::string> to_down
             assert(blockavg_blue <= 255.00 && blockavg_green <= 255.00 && blockavg_red <= 255.00);
             buffer[caret++] = ::totext::maptochar(
                 fnptr,
-                { static_cast<unsigned char>(blockavg_blue),
-                  static_cast<unsigned char>(blockavg_green),
-                  static_cast<unsigned char>(blockavg_red),
-                  0 },
+                { static_cast<unsigned char>(blockavg_blue), static_cast<unsigned char>(blockavg_green), static_cast<unsigned char>(blockavg_red), 0 },
                 palette
             );
             blockavg_blue = blockavg_green = blockavg_red = 0.000; // reset the block averages

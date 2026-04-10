@@ -1,6 +1,5 @@
 #pragma once
 
-#define __STDC_WANT_LIB_EXT1__ 1
 // clang-format off
 #include <_internal.hpp>
 // clang-format on
@@ -13,9 +12,9 @@
 #include <type_traits>
 
 // project headers
-#include <_helpers.hpp>
 #include <_imageio.hpp>
 #include <_iterators.hpp>
+#include <_utilities.hpp>
 #include <_wingdi.hpp>
 
 // Windows .bmp format supports 1, 4, 8, 16, 24 and 32 bits pixel depths
@@ -111,18 +110,16 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return header;
             }
 
-            header.bfType      = SOI;                                         // 'B', 'M'
-            header.bfSize      = internal::safe_deref<unsigned>(imstream, 2); // file size in bytes
-            header.bfReserved1 = header.bfReserved2 = 0;                      // 4 reserved bytes
+            header.bfType      = SOI;                                          // 'B', 'M'
+            header.bfSize      = utilities::safe_deref<unsigned>(imstream, 2); // file size in bytes
+            header.bfReserved1 = header.bfReserved2 = 0;                       // 4 reserved bytes
             // offset from the beginning of BITMAPFILEHEADER struct to the start of pixel data
-            header.bfOffBits                        = internal::safe_deref<unsigned>(imstream, 10);
+            header.bfOffBits                        = utilities::safe_deref<unsigned>(imstream, 10);
 
             return header;
         }
 
-        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(
-            const unsigned char* const imstream, [[maybe_unused]] const size_t& length
-        ) noexcept {
+        [[nodiscard]] static BITMAPINFOHEADER parse_info_header(const unsigned char* const imstream, [[maybe_unused]] const size_t& length) noexcept {
             // alignment of wingdi's BITMAPINFOHEADER members makes it inherently packed :)
             static_assert(sizeof(BITMAPINFOHEADER) == 40LLU);
             assert(length >= (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)));
@@ -133,23 +130,23 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                 return header;
             }
 
-            if ((header.biSize = internal::safe_deref<long>(imstream, 14)) != 40) [[unlikely]] {
+            if ((header.biSize = utilities::safe_deref<long>(imstream, 14)) != 40) [[unlikely]] {
                 // size of the BITMAPINFOHEADER struct must be == 40 bytes
                 ::fprintf(stderr, "Error in %s: unparseable BITMAPINFOHEADER\n", __PRETTY_FUNCTION__);
                 return {}; // DO NOT RETURN THE PLACEHOLDER BECAUSE IT WOULD HAVE POTENTIALLY BEEN INCORRECTLY UPDATED AT THIS POINT
             }
 
-            header.biWidth         = internal::safe_deref<int>(imstream, 18); // width of the bitmap image in pixels
-            header.biHeight        = internal::safe_deref<int>(imstream, 22); // height of the bitmap image in pixels
+            header.biWidth         = utilities::safe_deref<int>(imstream, 18); // width of the bitmap image in pixels
+            header.biHeight        = utilities::safe_deref<int>(imstream, 22); // height of the bitmap image in pixels
             // bitmaps with a negative height may not be compressed
-            header.biPlanes        = internal::safe_deref<unsigned short>(imstream, 26); // must be 1
-            header.biBitCount      = internal::safe_deref<unsigned short>(imstream, 28); // 1, 4, 8, 16, 24 or 32
-            header.biCompression   = internal::safe_deref<unsigned>(imstream, 30);       // compression kind (if compressed)
-            header.biSizeImage     = internal::safe_deref<unsigned>(imstream, 34);       // 0 if not compressed
-            header.biXPelsPerMeter = internal::safe_deref<int>(imstream, 38);            // resolution in pixels per meter along the x axis
-            header.biYPelsPerMeter = internal::safe_deref<int>(imstream, 42);            // resolution in pixels per meter along the y axis
-            header.biClrUsed       = internal::safe_deref<unsigned>(imstream, 46);       // number of entries in the colourmap that are used
-            header.biClrImportant  = internal::safe_deref<unsigned>(imstream, 50);       // number of important colors
+            header.biPlanes        = utilities::safe_deref<unsigned short>(imstream, 26); // must be 1
+            header.biBitCount      = utilities::safe_deref<unsigned short>(imstream, 28); // 1, 4, 8, 16, 24 or 32
+            header.biCompression   = utilities::safe_deref<unsigned>(imstream, 30);       // compression kind (if compressed)
+            header.biSizeImage     = utilities::safe_deref<unsigned>(imstream, 34);       // 0 if not compressed
+            header.biXPelsPerMeter = utilities::safe_deref<int>(imstream, 38);            // resolution in pixels per meter along the x axis
+            header.biYPelsPerMeter = utilities::safe_deref<int>(imstream, 42);            // resolution in pixels per meter along the y axis
+            header.biClrUsed       = utilities::safe_deref<unsigned>(imstream, 46);       // number of entries in the colourmap that are used
+            header.biClrImportant  = utilities::safe_deref<unsigned>(imstream, 50);       // number of important colors
 
             return header;
         }
@@ -169,11 +166,11 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - intentional
         explicit bitmap(const char* const filename) noexcept : // construct a bitmap from a file on disk
-            buffer { internal::imopen(filename, file_size) },  // a little unorthodox but okay lol
+            buffer { io::imopen(filename, file_size) },        // a little unorthodox but okay lol
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { bitmap::parse_file_header(buffer, file_size) },
             info_header { bitmap::parse_info_header(buffer, file_size) },
-            // file_size {}, we want to preserve size's previous state materialized by internal::open()
+            // file_size {}, we want to preserve size's previous state materialized by utilities::open()
             buffer_size { file_size } {
             if (!buffer) [[unlikely]] {             // if imopen failed
                 ::memset(this, 0U, sizeof(bitmap)); // NOLINT(bugprone-undefined-memory-manipulation)
@@ -221,14 +218,11 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         // this is likely to get more compilcated
         bitmap(const int& height, const int& width) noexcept :
             // allocate storage for the metadata structs and pixel buffer
-            buffer {
-                new (std::nothrow) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)]
-            },
+            buffer { new (std::nothrow) unsigned char[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)] },
 
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
-            file_header { .bfType = 0x4D42,
-                          .bfSize =
-                              static_cast<unsigned>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)),
+            file_header { .bfType      = 0x4D42,
+                          .bfSize      = static_cast<unsigned>(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * sizeof(RGBQUAD)),
                           .bfReserved1 = 0,
                           .bfReserved2 = 0,
                           .bfOffBits   = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) },
@@ -237,7 +231,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
                           .biHeight        = height,
                           .biPlanes        = 1,
                           .biBitCount      = 32,
-                          .biCompression   = internal::to_underlying(COMPRESSION::BI_RGB), // uncompressed RGB
+                          .biCompression   = utilities::to_underlying(COMPRESSION::BI_RGB), // uncompressed RGB
                           .biSizeImage     = 0,
                           .biXPelsPerMeter = 3780, // an arbitrary choice
                           .biYPelsPerMeter = 3780, // an arbitrary choice
@@ -257,9 +251,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
     public:
         // copy constructor
         bitmap(const bitmap& other) noexcept :
-            buffer {
-                new (std::nothrow) unsigned char[other.file_size]
-            }, // don't copy the trailing unused bytes from the bitmap, if present
+            buffer { new (std::nothrow) unsigned char[other.file_size] }, // don't copy the trailing unused bytes from the bitmap, if present
 
             pixels { reinterpret_cast<RGBQUAD*>(buffer + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)) },
             file_header { other.file_header },
@@ -358,19 +350,15 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
             return ostr;
         }
 
-        bool to_file(const char* const filename) const noexcept { return internal::imwrite(filename, buffer, file_size); }
+        bool to_file(const char* const filename) const noexcept { return io::imwrite(filename, buffer, file_size); }
 
         iterator begin() noexcept { // NOLINT(readability-make-member-function-const)
             return { pixels, static_cast<iterator::size_type>(info_header.biHeight * info_header.biWidth) };
         }
 
-        const_iterator begin() const noexcept {
-            return { pixels, static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) };
-        }
+        const_iterator begin() const noexcept { return { pixels, static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) }; }
 
-        const_iterator cbegin() const noexcept {
-            return { pixels, static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) };
-        }
+        const_iterator cbegin() const noexcept { return { pixels, static_cast<const_iterator::size_type>(info_header.biHeight * info_header.biWidth) }; }
 
         iterator end() noexcept { // NOLINT(readability-make-member-function-const)
             return { pixels,

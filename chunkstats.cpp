@@ -17,7 +17,7 @@ int main() {
     unsigned long long ihdr_count {}, idat_count {}, plte_count {}, iend_count {}; // NOLINT(readability-isolate-declaration)
 
     const unsigned char* filebuffer {
-        internal::imopen(R"(/home/anoban/Downloads/armenia_ani_khachikyan_hayk_photography-wallpaper-5120x3200.png)", filesize)
+        io::imopen(R"(/home/anoban/Downloads/armenia_ani_khachikyan_hayk_photography-wallpaper-5120x3200.png)", filesize)
     };
     if (!filebuffer) {
         ::fputs("File buffer is empty, skipping image %s\n", stderr);

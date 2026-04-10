@@ -2,15 +2,14 @@
 
 // clang-format off
 #include <_internal.hpp>
+#include <_bitmap.hpp>
+#include <_imageio.hpp>
+#include <_iterators.hpp>
+#include <_utilities.hpp>
+#include <_wingdi.hpp>
 // clang-format on
 
 #include <vector>
-
-#include <_bitmap.hpp>
-#include <_helpers.hpp>
-#include <_imageio.hpp>
-#include <_iterators.hpp>
-#include <_wingdi.hpp>
 
 // most .ico files will have only one bitmap in them, so this is generous enough
 static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 << 6 };
@@ -29,10 +28,10 @@ class icon_directory final { // represents an .ico file
 
     public:
         // type of the file
-        enum class ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
+        enum ICO_FILE_TYPE : unsigned short { ICON = 1, CURSOR = 2 }; // NOLINT(performance-enum-size) deliberate decision
 
         // type of the resources contained in the file
-        enum class ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
+        enum ICO_RESOURCE_TYPE : int { BMP, PNG }; // NOLINT(performance-enum-size) needs to be a signed integer
 
         // look up Raymond Chen's article https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083 for reference.
         // UNFORTUNATELY MICROSOFT DOES NOT INCLUDE A HEADER IN THE WINDOWS SDK THAT DEFINES STRUCTURES ASSOCIATED WITH THE ICO FILE FORMAT
@@ -54,15 +53,13 @@ class icon_directory final { // represents an .ico file
 #endif
         // clang-format on
 
-        unsigned char* buffer;      // the raw file buffer
-        unsigned long  file_size;   // file size
-        unsigned long  buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
-        ICONDIR        directory;
+        unsigned char*            buffer;      // the raw file buffer
+        unsigned long             file_size;   // file size
+        unsigned long             buffer_size; // length of the buffer, may include trailing unused bytes if construction involved a buffer reuse
+        ICONDIR                   directory;
         std::vector<ICONDIRENTRY> entries; // metadata of entries stored in the file
 
-        [[nodiscard]] static ICONDIR parse_icondirectory(
-            const unsigned char* const imstream, [[maybe_unused]] const unsigned long long& size
-        ) noexcept {
+        [[nodiscard]] static ICONDIR parse_icondirectory(const unsigned char* const imstream, [[maybe_unused]] const unsigned long long& size) noexcept {
             static_assert(sizeof(ICONDIR) == 24);
             static_assert(std::is_standard_layout_v<ICONDIR>);
             assert(size >= sizeof(ICONDIR));
@@ -80,8 +77,8 @@ class icon_directory final { // represents an .ico file
             }
 
             temp.idType = *reinterpret_cast<const unsigned short*>(imstream + 2);
-            if (temp.idType != internal::to_underlying(ICO_FILE_TYPE::ICON) &&
-                temp.idType != internal::to_underlying(ICO_FILE_TYPE::CURSOR)) [[unlikely]] { // cannot be anything else
+            if (temp.idType != utilities::to_underlying(ICO_FILE_TYPE::ICON) && temp.idType != utilities::to_underlying(ICO_FILE_TYPE::CURSOR))
+                [[unlikely]] { // cannot be anything else
                 ::fprintf(stderr, "Error in %s, file is found not to be of type ICON or CURSOR!\n", __PRETTY_FUNCTION__);
                 return {};
             }
@@ -89,9 +86,7 @@ class icon_directory final { // represents an .ico file
             // we're 4 bytes past the beginning of the buffer now
             // issue a warning if the file contains more resources than MAX_ALLOWED_ICONDIRENTRIES_PER_FILE
             if ((temp.idCount = *reinterpret_cast<const unsigned short*>(imstream + 4)) > MAX_ALLOWED_ICONDIRENTRIES_PER_FILE) [[unlikely]]
-                ::fprintf(
-                    stderr, "Warning from %s, file contains more ICONDIRENTRYs than this class can accommodate!\n", __PRETTY_FUNCTION__
-                );
+                ::fprintf(stderr, "Warning from %s, file contains more ICONDIRENTRYs than this class can accommodate!\n", __PRETTY_FUNCTION__);
             return temp;
         }
 
@@ -167,9 +162,7 @@ class icon_directory final { // represents an .ico file
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init), intentional
         explicit icon_directory(const char* const filename) noexcept :
-            buffer { internal::imopen(filename, file_size) },
-            buffer_size { file_size },
-            directory { icon_directory::parse_icondirectory(buffer, buffer_size) } {
+            buffer { io::imopen(filename, file_size) }, buffer_size { file_size }, directory { icon_directory::parse_icondirectory(buffer, buffer_size) } {
             if (!buffer) [[unlikely]] {
                 file_size = 0;
                 ::fprintf(stderr, "Error inside %s, object is default initialized as a fallback\n", __PRETTY_FUNCTION__);
@@ -211,7 +204,7 @@ class icon_directory final { // represents an .ico file
 
         size_type resource_count() const noexcept { return directory.idCount; }
 
-        bool to_file(const char* const filename) const noexcept { return internal::imwrite(filename, buffer, buffer_size); }
+        bool to_file(const char* const filename) const noexcept { return io::imwrite(filename, buffer, buffer_size); }
 
         bitmap to_bitmap(const unsigned long long& position = 0) const noexcept {
             //

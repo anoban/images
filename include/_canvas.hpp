@@ -2,7 +2,6 @@
 
 // clang-format off
 #include <_internal.hpp>
-#include <_compiler.hpp>
 #include <_wingdi.hpp>
 #include <_bitmap.hpp>
 #include <_cmaps.hpp>
@@ -100,22 +99,22 @@ class canvas final : public bitmap {
         // transform the image to black and white using the selected mechanism
         template<::BW _to_bw_meth> canvas& to_blacknwhite() noexcept {
             switch (_to_bw_meth) {
-                case ::BW::AVERAGE          : std::for_each(begin(), end(), internal::rgb::transformers::average); break;
-                case ::BW::WEIGHTED_AVERAGE : std::for_each(begin(), end(), internal::rgb::transformers::weighted_average); break;
-                case ::BW::LUMINOSITY       : std::for_each(begin(), end(), internal::rgb::transformers::luminosity); break;
-                case ::BW::BINARY           : std::for_each(begin(), end(), internal::rgb::transformers::binary); break;
+                case ::BW::AVERAGE          : std::for_each(begin(), end(), utilities::rgb::transformers::average); break;
+                case ::BW::WEIGHTED_AVERAGE : std::for_each(begin(), end(), utilities::rgb::transformers::weighted_average); break;
+                case ::BW::LUMINOSITY       : std::for_each(begin(), end(), utilities::rgb::transformers::luminosity); break;
+                case ::BW::BINARY           : std::for_each(begin(), end(), utilities::rgb::transformers::binary); break;
             }
             return *this;
         }
 
         canvas& to_negative() noexcept {
-            std::for_each(begin(), end(), internal::rgb::transformers::negative);
+            std::for_each(begin(), end(), utilities::rgb::transformers::negative);
             return *this;
         }
 
         // remove the selected colours from the pixels of the image
         template<::RGB _rgb_comb> canvas& remove_colour() noexcept {
-            std::for_each(begin(), end(), internal::rgb::removers::zero<_rgb_comb> {});
+            std::for_each(begin(), end(), utilities::rgb::removers::zero<_rgb_comb> {});
             return *this;
         }
 
@@ -237,7 +236,7 @@ class canvas final : public bitmap {
             const double&                escape_radius // choose escape_radius > 0 such that escape_radius**2
                                                        // - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
-            internal::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+            utilities::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
             const double escrsq { escape_radius * escape_radius };
 
@@ -259,7 +258,7 @@ class canvas final : public bitmap {
                     while (scaled_coordinates.x() * scaled_coordinates.x() + scaled_coordinates.y() * scaled_coordinates.y() < escrsq &&
                            ++iterations < FRACTAL_MAX_ITERATIONS) {
                         //
-                        xtemp = scaled_coordinates.x() * scaled_coordinates.x() - scaled_coordinates.y() * scaled_coordinates.y();
+                        xtemp              = scaled_coordinates.x() * scaled_coordinates.x() - scaled_coordinates.y() * scaled_coordinates.y();
                         scaled_coordinates = {};
                     }
                 }
@@ -272,7 +271,7 @@ class canvas final : public bitmap {
             const double&                escape_radius // choose escape_radius > 0 such that escape_radius**2
                                                        // - escape_radius >= sqrt(cx**2 + cy**2)
         ) noexcept {
-            internal::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
+            utilities::complex<double> scaled_coordinates {}; // scaled between (-escape_radius, escape_radius)
 
             const auto escaperadsq { escape_radius * escape_radius };
 
@@ -304,9 +303,9 @@ class canvas final : public bitmap {
 
         // look up https://en.wikipedia.org/wiki/Mandelbrot_set
         canvas& mandelbrot(const colourmaps::colourmap& cmap) noexcept {
-            internal ::complex<double> scaled_coords {}, coords {}, squares {}; // NOLINT(readability-isolate-declaration)
-            double                     xtemp {};
-            unsigned long long         niterations {};
+            utilities ::complex<double> scaled_coords {}, coords {}, squares {}; // NOLINT(readability-isolate-declaration)
+            double                      xtemp {};
+            unsigned long long          niterations {};
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
@@ -332,8 +331,7 @@ class canvas final : public bitmap {
                         // SUBEXPRESSIONS MAY LEAD TO UNWANTED RUNTIME BEHAVIOURS
                         ++niterations < FRACTAL_MAX_ITERATIONS &&
                         (squares.x() = coords.x() * coords.x()) + (squares.y() = coords.y() * coords.y()) /* magnitude of Z */
-                            < FRACTAL_EXPLODE_THRESHOLD
-                    ) {
+                            < FRACTAL_EXPLODE_THRESHOLD) {
                         xtemp      = squares.x() - squares.y() + scaled_coords.x();
                         // IT IS ABSOULUTELY CRITICAL THAT WHEN THE IMAGINARY PART (y) IS
                         // UPDATED, THE USED REAL PART (x) SHOULD BE IN THE ORIGINAL
@@ -354,9 +352,9 @@ class canvas final : public bitmap {
         // look up https://en.wikipedia.org/wiki/Tricorn_(mathematics)
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& tricorn(const colourmaps::colourmap& cmap) noexcept {
             // NOLINTNEXTLINE(readability-isolate-declaration)
-            internal ::complex<double> scaled_coords {}, coords {}, squares {}; // x (-2.5, 1) y (-1, 1)
-            double                     xtemp {};
-            unsigned long long         niterations {};
+            utilities ::complex<double> scaled_coords {}, coords {}, squares {}; // x (-2.5, 1) y (-1, 1)
+            double                      xtemp {};
+            unsigned long long          niterations {};
 
             // for each pixel in the image
             for (long row = 0; row < height(); ++row) {
@@ -386,8 +384,7 @@ class canvas final : public bitmap {
 
         template<ANGLES> [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& rotate() noexcept;
 
-        template<unsigned long _length>
-        std::string to_text(const char (&_palette)[_length], unsigned (*mapper)(const RGBQUAD&) noexcept) const noexcept {
+        template<unsigned long _length> std::string to_text(const char (&_palette)[_length], unsigned (*mapper)(const RGBQUAD&) noexcept) const noexcept {
             return ::to_string(*this, _palette, mapper).value_or(std::string {});
         }
 
