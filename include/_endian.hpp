@@ -9,9 +9,7 @@
 
 namespace endian {
 
-    [[maybe_unused]] static constexpr inline unsigned short __attribute__((__always_inline__)) u16_from_be_bytes(
-        const unsigned char* const bytestream
-    ) noexcept {
+    [[maybe_unused]] static inline unsigned short __attribute__((__always_inline__)) u16_from_be_bytes(const unsigned char* const bytestream) noexcept {
         static_assert(sizeof(unsigned short) == 2);
         if (!bytestream) {
             ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);

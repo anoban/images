@@ -25,6 +25,7 @@ static constexpr unsigned long long MAX_ALLOWED_ICONDIRENTRIES_PER_FILE { 0x01 <
 // in summary, the binary representation of an .ico file looks like { GRPICONDIRENTRY, pixels, <GRPICONDIRENTRY, pixels> ... }
 
 class icon_directory final { // represents an .ico file
+    // https://github.com/retorillo/icokit/tree/master
 
     public:
         // type of the file

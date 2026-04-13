@@ -32,14 +32,12 @@ class canvas final : public bitmap {
 
         canvas& operator=(const canvas& other) noexcept {
             if (this == std::addressof(other)) return *this;
-            // since class canvas does not have any data members of its own, take
-            // advantage of the base class's copy assignment operator
+            // since class canvas does not have any data members of its own, take advantage of the base class's copy assignment operator
             bitmap::operator=(other);
             return *this;
         }
 
-        // since class canvas does not have any data members of its own, take
-        // advantage of the base class's move constructor
+        // since class canvas does not have any data members of its own, take advantage of the base class's move constructor
         canvas(canvas&& other) noexcept : bitmap(std::move(other)) { }
 
         canvas& operator=(canvas&& other) noexcept {
@@ -51,12 +49,10 @@ class canvas final : public bitmap {
 
         ~canvas() noexcept = default;
 
-        // resizes the pixel buffer and updates the metadata and remaps the old pixels
-        // to the new buffer
+        // resizes the pixel buffer and updates the metadata and remaps the old pixels to the new buffer
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& resize(const int& height, const int& width) noexcept { }
 
-        // this is a crude resize operation that just resizes the existing pixel
-        // buffer and updates the metadata accordingly
+        // this is a crude resize operation that just resizes the existing pixel buffer and updates the metadata accordingly
         canvas& resize_for_overwrite(const int& height, const int& width) noexcept {
             // the members the need to be updated after a resize operation are [buffer],
             // [pixels], [buffer_size], file_header, info_header, file_size
@@ -85,12 +81,10 @@ class canvas final : public bitmap {
         }
 
         //----------------------------------------------------------------------------------------------------------------------------------//
-        //                                              IMAGE TRANSFORMATION ROUTINES
-        //                                              //
+        //                                              IMAGE TRANSFORMATION ROUTINES                                                       //
         //----------------------------------------------------------------------------------------------------------------------------------//
 
-        // most methods that involve transformations of some sort return a reference
-        // to self in order to facilitate method chaining
+        // most methods that involve transformations of some sort return a reference to self in order to facilitate method chaining
         canvas& fill_with(const RGBQUAD& pixel) noexcept {
             std::fill(begin(), end(), pixel);
             return *this;
@@ -123,10 +117,8 @@ class canvas final : public bitmap {
             static constexpr auto    XMM_STORABLE_RGBQUADS { sizeof(__m128i) / sizeof(RGBQUAD) };
             static constexpr __v16qu MASK { 12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3 };
 
-            // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS
-            // MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
-            // !!! WE DO NOT WANT BYTES WITHIN EACH PIXELS REORDERED AS THIS WILL
-            // CHANGE THE WAY COLOURS ARE INTERPRETED FROM PIXELS
+            // !!! WE WANT TO REVERSE THE PIXELS NOT THE BYTES, REVERSING PIXELS MEANS REVERSING CONSECUTIVE 4 BYTE BLOCKS
+            // !!! WE DO NOT WANT BYTES WITHIN EACH PIXELS REORDERED AS THIS WILL CHANGE THE WAY COLOURS ARE INTERPRETED FROM PIXELS
 
             __m128i    left {}, right {}; // NOLINT(readability-isolate-declaration)
             const long residues /* in RGBQUADs */ { static_cast<long>((width() / 2) % XMM_STORABLE_RGBQUADS) };
@@ -137,7 +129,6 @@ class canvas final : public bitmap {
             // the 64 byte zmm lane they only allow byte shuffling WITHIN 16 byte
             // boundaries WITHIN the zmm register, so going back to AVX1 :(
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height(); ++row) {
                 for (col = 0; col < width() / 2 /* deliberate integer division */ - residues; col += XMM_STORABLE_RGBQUADS) {
 #if defined(__llvm__) && defined(__GNUG__)
@@ -156,15 +147,14 @@ class canvas final : public bitmap {
                     ::_mm_storeu_epi8(pixels + width() * row + col, right);
                 }
 
-                // !!! HERE WE SWAP PIXELS NOT BYTES, SO NO NEED TO WORRY ABOUT THE PIXEL
-                // BOUNDARIES
+                // !!! HERE WE SWAP PIXELS NOT BYTES, SO NO NEED TO WORRY ABOUT THE PIXEL BOUNDARIES
                 for (; col < width() / 2; ++col) { // handle the residues
                     temp                              = pixels[width() * row + col];
                     pixels[width() * row + col]       = pixels[width() * (row + 1) - col];
                     pixels[width() * (row + 1) - col] = temp;
                 }
             }
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             return *this;
         }
 
@@ -176,7 +166,6 @@ class canvas final : public bitmap {
             RGBQUAD               temp {};
             long                  col {}, row {}; // NOLINT(readability-isolate-declaration)
 
-            // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             for (row = 0; row < height() / 2 /* deliberate integer division */; ++row) {
                 // we slice the height into half, if the height is an even number, cool,
                 // we process all the rows, if it is an odd number we leave the middle one
@@ -194,12 +183,12 @@ class canvas final : public bitmap {
                     pixels[width() * (height() - row - 1) + col] = temp;
                 }
             }
-            // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
             return *this;
         }
 
         //----------------------------------------------------------------------------------------------------------------------------------//
-        //                                              PATTERN GENERATION ROUTINES //
+        //                                              PATTERN GENERATION ROUTINES                                                         //
         //----------------------------------------------------------------------------------------------------------------------------------//
 
         canvas& waves() noexcept {
@@ -213,22 +202,18 @@ class canvas final : public bitmap {
                     red                                  = 128.0000 + 127.0000 * ::cos(0.02153 * row * col);
                     green                                = 128.0000 + 127.0000 * ::sin(0.01297 * row * col) - ::cos(0.1354 * col) / 2.0000;
                     blue                                 = 128.0000 + 127.0000 * ::cos(0.1248 * row) + ::sin(0.1573 * row * col) / 2.0000;
-                    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
                     pixels[row * width() + col].rgbBlue  = static_cast<unsigned char>(blue);
                     pixels[row * width() + col].rgbGreen = static_cast<unsigned char>(green);
                     pixels[row * width() + col].rgbRed   = static_cast<unsigned char>(red);
-                    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }
             return *this;
         }
 
-        // most of Wikipdia's fractal implementations have a lot of show stopping
-        // bugs, even though these are all inspired from Wikipedia's implementations,
-        // these contain numerous refactors to fix those bugs
-        // these fractal functions behave as if the scanlines in the pixel buffer are
-        // ordered top-down, since these are fractals, this is not much of an issue
-        // here
+        // most of Wikipdia's fractal implementations have a lot of show stopping bugs, even though these are all inspired from Wikipedia's implementations,
+        // these contain numerous refactors to fix those bugs these fractal functions behave as if the scanlines in the pixel buffer are
+        // ordered top-down, since these are fractals, this is not much of an issue here
 
         // look up https://en.wikipedia.org/wiki/Julia_set
         [[deprecated("IMPLEMENTATION INCOMPLETE")]] canvas& julia(
