@@ -17,7 +17,7 @@
 namespace io {
     // a generic file reading routine, that reads in an existing binary file and returns the buffer, (nullptr in case of a failure)
     // returned memory needs to be freed (`delete[]` ed) by the caller
-    [[nodiscard]] static inline unsigned char* imopen(const char* const fpath, long& nreadbytes) {
+    [[nodiscard]] static inline unsigned char* imopen(const char* const fpath, long& nreadbytes) noexcept {
         nreadbytes = 0;
         unsigned char* buffer {};
         struct stat    filestat {};

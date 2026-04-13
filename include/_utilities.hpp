@@ -1,4 +1,5 @@
 #pragma once
+#define __UTILITIES_HPP 1 // leveraged to selectively include expose headers through the utilities namespace
 
 // clang-format off
 #include <_internal.hpp>
@@ -51,6 +52,10 @@ static constexpr inline bool __attribute__((__always_inline__)) operator!=(const
 
 namespace utilities {
 
+    // we want these only exposed through this namespace
+#include <_complex.hpp>
+#include <_endian.hpp>
+
     template<
         typename _TyFrom, // only for scoped enum types, plain C style enums support implicit type conversions so this isn't necessary
         typename _TyTo =  // the underlying type
@@ -95,33 +100,6 @@ namespace utilities {
         if (!ptr) return nullptr;
         return ptr + offset;
     }
-
-    namespace ascii {
-
-        // isalpha() from <cctype> is not constexpr :(
-        [[maybe_unused]] static constexpr inline bool __attribute__((__always_inline__)) is_alphabet(const char& character) noexcept {
-            return (character >= 0x41 && character <= 0x5A) /* A - Z */ || (character >= 0x61 && character <= 0x7A); /* a - z */
-        }
-
-        [[maybe_unused]] static constexpr inline bool __attribute__((__always_inline__)) is_alphabet_array(
-            const char* const array, const unsigned long long length
-        ) noexcept {
-            bool result { true };
-            for (unsigned i = 0; i < length; ++i) result &= ascii::is_alphabet(array[i]);
-            return result;
-        }
-
-        // isupper() from <cctype> is not constexpr
-        [[maybe_unused]] static constexpr inline bool __attribute__((__always_inline__)) is_uppercase(const char& character) noexcept {
-            return character >= 0x41 && character <= 0x5A; // A - 0x41 and Z - 0x5A
-        }
-
-        // islower() from <cctype> is not constexpr
-        [[maybe_unused]] static constexpr inline bool __attribute__((__always_inline__)) is_lowercase(const char& character) noexcept {
-            return character >= 0x61 && character <= 0x7A; // a - 0x61 and z - 0x7A
-        }
-
-    } // namespace ascii
 
     namespace rgb {
 
@@ -193,8 +171,8 @@ namespace utilities {
         // for implementation details, refer https://lxp32.github.io/docs/a-simple-example-crc32-calculation/
         // IEEE (0xEDB88320) is by far the most common CRC-32 polynomial, used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
 
-        // computed and stored using the IEEE variant of the polynomial
         static constexpr std::array<unsigned, 256> IEEE_LOOKUPTABLE {
+            // computed and stored using the IEEE variant of the polynomial
             { 0,          1996959894, 3993919788, 2567524794, 124634137,  1886057615, 3915621685, 2657392035, 249268274,  2044508324, 3772115230, 2547177864,
              162941995,  2125561021, 3887607047, 2428444049, 498536548,  1789927666, 4089016648, 2227061214, 450548861,  1843258603, 4107580753, 2211677639,
              325883990,  1684777152, 4251122042, 2321926636, 335633487,  1661365465, 4195302755, 2366115317, 997073096,  1281953886, 3579855332, 2724688242,
@@ -220,7 +198,7 @@ namespace utilities {
         };
 
         // works great, tested and produces the same results as Python's binascii module's crc32() function
-        [[nodiscard]] static constexpr inline unsigned __attribute__((__always_inline__)) calculate(
+        [[nodiscard]] static inline unsigned __attribute__((__always_inline__)) calculate(
             const unsigned char* const bytestream, const unsigned long& length
         ) noexcept {
             if (!bytestream) {
@@ -234,89 +212,7 @@ namespace utilities {
 
     } // namespace crc
 
-    namespace endian {
-
-        [[maybe_unused]] static constexpr inline unsigned short __attribute__((__always_inline__)) u16_from_be_bytes(
-            const unsigned char* const bytestream
-        ) noexcept {
-            static_assert(sizeof(unsigned short) == 2);
-            if (!bytestream) {
-                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
-                return 0;
-            }
-            return static_cast<unsigned short>(bytestream[0]) << 8 | bytestream[1];
-        }
-
-        // WARNING :: WITH LLVM, DO NOT PASS BUFFERS SHORTER THAN 8 BYTES IN LENGTH
-        [[maybe_unused]] static inline unsigned __attribute__((__always_inline__)) u32_from_be_bytes(const unsigned char* const bytestream) noexcept {
-            static_assert(sizeof(unsigned) == 4);
-            if (!bytestream) {
-                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
-                return 0;
-            }
-
-#ifdef __llvm__ // LLVM defines __m64 as typedef __attribute__((__vector_size__(1 * sizeof(long long)))) long long __m64
-            static constexpr __m64 mask_pi8 { 0x0405060700010203LL };
-#elif defined(__GNUG__) // in GCC __m64 is typedef __attribute((vector_size(8))) int __m64
-            // g++ bitches about a narrowing conversion here, "from long long int to int" but __m64 is in fact an 8 byte aligned vector BUT also an int???
-            static const __m64 mask_pi8 {
-                ::_mm_set_pi64x(0x0405060700010203LL) // ::_mm_set_pi64x() just does a simple type cast to __m64
-            };
-            // cannot constexpr this because ::_mm_set_pi64x() is not constexpr
-#endif
-            // move the first four bytes to the last four byte slot
-            // even though only the first 4 bytes matter to this function, when reading in the stream of bytes as __m64, it'll dereference a sequence of 8 contiguous bytes
-
-            return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
-        }
-
-        [[maybe_unused]] static inline unsigned long long __attribute__((__always_inline__)) u64_from_be_bytes(const unsigned char* const bytestream) noexcept {
-            static_assert(sizeof(unsigned long long) == 8);
-            if (!bytestream) {
-                ::fprintf(stderr, "Error in %s, received an empty buffer\n", __PRETTY_FUNCTION__);
-                return 0;
-            }
-
-#ifdef __llvm__
-            static constexpr __m64 mask_pi8 { 0x01020304050607LL };
-#elif defined(__GNUG__)
-            static const __m64 mask_pi8 { ::_mm_set_pi64x(0x01020304050607LL) };
-#endif
-            return ::_mm_shuffle_pi8(*reinterpret_cast<const __m64*>(bytestream), mask_pi8)[0];
-        }
-
-    } // namespace endian
-
-    // std::complex<>'s real() and imag() methods return a const reference even when the object is non const
-    // and it uses a 2 member array as the internal storage, so to update individual elements we need to expose the array and manually subscript into it
-    // opting for a handrolled complex alternative, fucking STL heh???
-    template<typename _Ty> requires std::is_arithmetic_v<_Ty> class complex final { // doesn't provide the arithmetic functionalities like std::complex<> though
-        private:
-            _Ty __x;
-            _Ty __y;
-
-        public:
-            constexpr complex() noexcept : __x {}, __y {} { }
-
-            constexpr explicit inline complex(const _Ty& v) noexcept : __x { v }, __y { v } { }
-
-            constexpr inline complex(const _Ty& x, const _Ty& y) noexcept : __x { x }, __y { y } { }
-
-            constexpr complex(const complex&) noexcept            = default;
-            constexpr complex(complex&&) noexcept                 = default;
-            constexpr complex& operator=(const complex&) noexcept = default;
-            constexpr complex& operator=(complex&&) noexcept      = default;
-            constexpr ~complex() noexcept                         = default;
-
-            constexpr inline _Ty& __attribute__((__always_inline__)) x() noexcept { return __x; }
-
-            constexpr inline _Ty __attribute__((__always_inline__)) x() const noexcept { return __x; }
-
-            constexpr inline _Ty& __attribute__((__always_inline__)) y() noexcept { return __y; }
-
-            constexpr inline _Ty __attribute__((__always_inline__)) y() const noexcept { return __y; }
-    };
-
 } // namespace utilities
 
 #undef __INTERNAL
+#undef __UTILITIES_HPP // important here as we don't want the headers that leverage this to get included elsewhere
