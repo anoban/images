@@ -1,12 +1,10 @@
-# Makefile for tests
-
 COMPILER = /usr/bin/clang++
 
 DEBUG = -D_DEBUG -DDEBUG -O0 -g3
 
 NODEBUG = -D_NDEBUG -DNDEBUG -O3 -g0
 
-CFLAGS = -Wall -Wextra -D__TEST__ -I../include -I./googletest/include -I./googletest -std=c++20 -march=tigerlake -mavx512f
+CFLAGS = -Wall -Wextra -D__TEST__ -I../include -I./googletest/include -I./googletest -std=c++20 -march=tigerlake -mavx512f -ffast-math -mprefer-vector-width=512
 
 GTEST_ALL = ./googletest/src/gtest-all.cc
 

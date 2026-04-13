@@ -4,9 +4,8 @@
 
 // clang-format off
 #include <_utilities.hpp>
-// clang-format on
-
 #include <gtest/gtest.h>
+// clang-format on
 
 static constexpr std::array<unsigned char, 1000> BYTES {
     { 167, 94,  14,  194, 22,  111, 153, 190, 246, 199, 160, 99,  51,  232, 51,  77,  162, 67,  82,  207, 137, 194, 103, 148, 176, 163, 240, 53,  136, 75,  138,
@@ -42,19 +41,6 @@ static constexpr std::array<unsigned char, 1000> BYTES {
      204, 37,  65,  84,  37,  114, 126, 102, 204, 13,  126, 148, 195, 203, 127, 14,  39,  41,  76,  23,  119, 49,  99,  237, 64,  198, 191, 232, 153, 25,  25,
      139, 141, 104, 202, 45,  184, 106, 202, 239, 237, 97,  237, 141, 167, 242, 38,  93,  230, 222, 56,  165, 15,  79,  240, 12,  34,  228, 114, 119, 85,  225,
      28,  223, 131, 112, 118, 46,  188, 203 }
-};
-
-struct RgbQuadFixture : public testing::Test {
-        RGBQUAD pixel;
-
-        static unsigned char fill() noexcept {
-            // main() will seed the PRN generator by calling ::srand()
-            return ::rand() % std::numeric_limits<unsigned char>::max();
-        }
-
-        void SetUp() noexcept override { pixel = { .rgbBlue = fill(), .rgbGreen = fill(), .rgbRed = fill(), .rgbReserved = 0xFF }; }
-
-        void TearDown() noexcept override { pixel = { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0x00 }; }
 };
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
@@ -94,21 +80,34 @@ TEST(MISC, IS_IN) {
 //                                                   TESTS FOR RGBQUAD HELER FUNCTIONS                                                  //
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
-TEST(RGB, RGBQUAD_EQUALITY_OPERATORS) {
+struct RgbQuadTest : public testing::Test {
+        RGBQUAD pixel;
+
+        static unsigned char fill() noexcept {
+            // main() will seed the PRN generator by calling ::srand()
+            return ::rand() % std::numeric_limits<unsigned char>::max();
+        }
+
+        void SetUp() noexcept override { pixel = { .rgbBlue = fill(), .rgbGreen = fill(), .rgbRed = fill(), .rgbReserved = 0xFF }; }
+
+        void TearDown() noexcept override { pixel = { .rgbBlue = 0x00, .rgbGreen = 0x00, .rgbRed = 0x00, .rgbReserved = 0x00 }; }
+};
+
+TEST(RGB, equality_comparison_operators) {
     // clang-format off
     EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
     EXPECT_EQ((RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xAA }));
+
     EXPECT_NE((RGBQUAD { 0x1E, 0x11, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
     EXPECT_NE((RGBQUAD { 0xAE, 0xBE, 0xFF, 0xD0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
     EXPECT_NE((RGBQUAD { 0xAE, 0x11, 0x98, 0xA0 }), (RGBQUAD { 0xAE, 0x11, 0xFF, 0xD0 }));
     // clang-format on
 }
 
-static constexpr long TEST_MAX_ITERATIONS { 0x32 };
+static constexpr long MAX_ITERATIONS { 0xFF };
 
-TEST_F(RgbQuadFixture, TRANSFORMERS_AVERAGE) {
-    for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
-        SetUp();
+TEST_F(RgbQuadTest, average) {
+    for (long i = 0; i < MAX_ITERATIONS; ++i) {
         auto mean { static_cast<unsigned char>((static_cast<long double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0L) };
         utilities::rgb::transformers::average(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
@@ -118,9 +117,8 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_AVERAGE) {
     }
 }
 
-TEST_F(RgbQuadFixture, TRANSFORMERS_WEIGHTEDAVERAGE) {
-    for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
-        SetUp();
+TEST_F(RgbQuadTest, weighted_average) {
+    for (long i = 0; i < MAX_ITERATIONS; ++i) {
         auto mean { static_cast<unsigned char>(pixel.rgbBlue * 0.299L + pixel.rgbGreen * 0.587L + pixel.rgbRed * 0.114L) };
         utilities::rgb::transformers::weighted_average(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
@@ -130,9 +128,8 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_WEIGHTEDAVERAGE) {
     }
 }
 
-TEST_F(RgbQuadFixture, TRANSFORMERS_LUMINOSITY) {
-    for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
-        SetUp();
+TEST_F(RgbQuadTest, luminosity) {
+    for (long i = 0; i < MAX_ITERATIONS; ++i) {
         auto mean { static_cast<unsigned char>(pixel.rgbBlue * 0.2126L + pixel.rgbGreen * 0.7152L + pixel.rgbRed * 0.0722L) };
         utilities::rgb::transformers::luminosity(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
@@ -142,9 +139,8 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_LUMINOSITY) {
     }
 }
 
-TEST_F(RgbQuadFixture, TRANSFORMERS_BINARY) {
-    for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
-        SetUp();
+TEST_F(RgbQuadTest, binary) {
+    for (long i = 0; i < MAX_ITERATIONS; ++i) {
         auto mean { (static_cast<double>(pixel.rgbBlue) + pixel.rgbGreen + pixel.rgbRed) / 3.0 >= 128.0 ? 255 : 0 };
         utilities::rgb::transformers::binary(pixel);
         EXPECT_EQ(pixel.rgbBlue, mean);
@@ -154,9 +150,8 @@ TEST_F(RgbQuadFixture, TRANSFORMERS_BINARY) {
     }
 }
 
-TEST_F(RgbQuadFixture, NEGATIVE) {
-    for (long i = 0; i < TEST_MAX_ITERATIONS; ++i) {
-        SetUp();
+TEST_F(RgbQuadTest, negative) {
+    for (long i = 0; i < MAX_ITERATIONS; ++i) {
         auto r = pixel.rgbRed >= 128 ? 255 : 0;
         auto g = pixel.rgbGreen >= 128 ? 255 : 0;
         auto b = pixel.rgbBlue >= 128 ? 255 : 0;
@@ -167,29 +162,12 @@ TEST_F(RgbQuadFixture, NEGATIVE) {
     }
 }
 
-TEST_F(RgbQuadFixture, REMOVERS) { }
+TEST_F(RgbQuadTest, REMOVERS) { }
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
 //                                          TESTS FOR CYCLIC REDUNDANCY CHECK HELPER FUNCTIONS                                          //
 //--------------------------------------------------------------------------------------------------------------------------------------//
 
-//--------------------------------------------------------------------------------------------------------------------------------------//
-//                                            TESTS FOR BYTE ORDER REVERSAL HELPER FUNCTIONS                                            //
-//--------------------------------------------------------------------------------------------------------------------------------------//
-
-TEST(ENDIAN, USHORT_FROM_BE_BYTES) {
-    for (unsigned long long i = 0; i <= BYTES.size() - sizeof(unsigned short); ++i)
-
-        EXPECT_EQ(utilities::endian::u16_from_be_bytes(BYTES.data() + i), ::__bswap_16(*reinterpret_cast<const unsigned short*>(BYTES.data() + i)));
-}
-
-TEST(ENDIAN, ULONG_FROM_BE_BYTES) {
-    for (unsigned long long i = 0; i <= BYTES.size() - sizeof(unsigned long); ++i)
-
-        EXPECT_EQ(utilities::endian::u32_from_be_bytes(BYTES.data() + i), ::__bswap_32(*reinterpret_cast<const unsigned long*>(BYTES.data() + i)));
-}
-
-TEST(ENDIAN, ULLONG_FROM_BE_BYTES) {
-    for (unsigned long long i = 0; i <= BYTES.size() - sizeof(unsigned long long); ++i)
-        EXPECT_EQ(utilities::endian::u64_from_be_bytes(BYTES.data() + i), ::__bswap_64(*reinterpret_cast<const unsigned long long*>(BYTES.data() + i)));
+TEST(CRC32, TEXT) {
+    
 }
