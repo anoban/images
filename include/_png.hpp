@@ -109,13 +109,13 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
     public:
         explicit inline basic_chunk(const unsigned char* const bytestream) noexcept :
             // this needs to be manually offsetted to beginnings of chunks in the png file buffer for the parsing to correctly take place
-            length { internal::endian::u32_from_be_bytes(bytestream) },
-            checksum { internal::endian::u32_from_be_bytes(internal::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH + length)) },
-            checksum_buffer_beginning { internal::safe_offset(bytestream, sizeof(unsigned)) },
+            length { utilities::endian::u32_from_be_bytes(bytestream) },
+            checksum { utilities::endian::u32_from_be_bytes(utilities::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH + length)) },
+            checksum_buffer_beginning { utilities::safe_offset(bytestream, sizeof(unsigned)) },
             data {
-                length ?                                                               // if the length is non-zero
-                    internal::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH) : // starts with the byte after the chunk name
-                    nullptr                                                            // for zero length chunks
+                length ?                                                                // if the length is non-zero
+                    utilities::safe_offset(bytestream, sizeof(unsigned) + NAMELENGTH) : // starts with the byte after the chunk name
+                    nullptr                                                             // for zero length chunks
             },
             name {} {
             // copy the chunk name (second 4 bytes) into the local buffer
@@ -135,7 +135,7 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         // compute the chunk's crc32 checksum and check whether it is same as the one stored in the chunk
         inline constexpr bool __attribute((__always_inline__)) is_checksum_valid() const noexcept {
             // for the crc32 checksum computation, we use the chunk's name and the bytes in the data segment
-            return checksum == internal::crc::calculate(checksum_buffer_beginning, NAMELENGTH + length);
+            return checksum == utilities::crc::calculate(checksum_buffer_beginning, NAMELENGTH + length);
         }
 
         inline bool __attribute((__always_inline__)) is_name(const char* const str) const noexcept {
@@ -176,11 +176,11 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
                 // Greyscale with alpha 	4 	        8, 16 	                Each pixel is a greyscale sample followed by an alpha sample.
                 // Truecolor with alpha 	6 	        8, 16 	                Each pixel is an R,G,B triple followed by an alpha sample.
                 switch (ctype) {
-                    case COLOUR_TYPE::GREYSCALE             : return internal::is_in(bitdepth, 1, 2, 4, 8, 16);
-                    case COLOUR_TYPE::INDEXED_COLOUR        : return internal::is_in(bitdepth, 1, 2, 4, 8);
+                    case COLOUR_TYPE::GREYSCALE             : return utilities::is_in(bitdepth, 1, 2, 4, 8, 16);
+                    case COLOUR_TYPE::INDEXED_COLOUR        : return utilities::is_in(bitdepth, 1, 2, 4, 8);
                     case COLOUR_TYPE::TRUECOLOUR            : [[fallthrough]]; // the following three require the same criterion for validity
                     case COLOUR_TYPE::GREYSCALE_WITH_ALPHA  : [[fallthrough]];
-                    case COLOUR_TYPE::TRUECOLOUR_WITH_ALPHA : return internal::is_in(bitdepth, 8, 16);
+                    case COLOUR_TYPE::TRUECOLOUR_WITH_ALPHA : return utilities::is_in(bitdepth, 8, 16);
                     default                                 : [[unlikely]] return false;
                 }
             }
@@ -188,13 +188,13 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
         public:
             explicit inline ihdr(const unsigned char* const bytestream) noexcept :
                 basic_chunk { bytestream },
-                imwidth { internal::endian::u32_from_be_bytes(data) },                            // first 4 bytes of the data segment
-                imheight { internal::endian::u32_from_be_bytes(internal::safe_offset(data, 4)) }, // second 4 bytes of data
-                bitdepth { internal::safe_deref<unsigned char>(data, 8) },
-                ctype { internal::safe_deref<unsigned char>(data, 9) },
-                compression_method { internal::safe_deref<unsigned char>(data, 10) },
-                filter_method { internal::safe_deref<unsigned char>(data, 11) },
-                interlace_method { internal::safe_deref<unsigned char>(data, 12) } {
+                imwidth { utilities::endian::u32_from_be_bytes(data) },                             // first 4 bytes of the data segment
+                imheight { utilities::endian::u32_from_be_bytes(utilities::safe_offset(data, 4)) }, // second 4 bytes of data
+                bitdepth { utilities::safe_deref<unsigned char>(data, 8) },
+                ctype { utilities::safe_deref<unsigned char>(data, 9) },
+                compression_method { utilities::safe_deref<unsigned char>(data, 10) },
+                filter_method { utilities::safe_deref<unsigned char>(data, 11) },
+                interlace_method { utilities::safe_deref<unsigned char>(data, 12) } {
                 //
             }
 
@@ -246,7 +246,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
             inline constexpr bool __attribute((__always_inline__)) is_valid(const COLOUR_TYPE& ctype) const noexcept {
                 // length member stores the size of the palette entry array in bytes, an length not divisible by 3 without remainders is invalid
                 return basic_chunk::is_checksum_valid() && basic_chunk::is_name("PLTE") && !(size_in_bytes % 3) &&
-                       internal::is_in(internal::to_underlying(ctype), 2, 3, 6);
+                       utilities::is_in(utilities::to_underlying(ctype), 2, 3, 6);
                 // PLTE chunk shall appear for color type 3, and may appear for color types 2 and 6;
                 // it shall not appear for color types 0 and 4.
                 // there shall not be more than one PLTE chunk.
@@ -337,19 +337,19 @@ namespace ancillary {
         public:
             explicit inline time(const unsigned char* const chunkstream) noexcept :
                 basic_chunk(chunkstream),
-                year { internal::endian::u16_from_be_bytes(data) /* first 2 bytes */ },
-                month { internal::safe_deref<unsigned char>(data, 2) },
-                day { internal::safe_deref<unsigned char>(data, 3) },
-                hour { internal::safe_deref<unsigned char>(data, 4) },
-                minute { internal::safe_deref<unsigned char>(data, 5) },
-                second { internal::safe_deref<unsigned char>(data, 6) } {
+                year { utilities::endian::u16_from_be_bytes(data) /* first 2 bytes */ },
+                month { utilities::safe_deref<unsigned char>(data, 2) },
+                day { utilities::safe_deref<unsigned char>(data, 3) },
+                hour { utilities::safe_deref<unsigned char>(data, 4) },
+                minute { utilities::safe_deref<unsigned char>(data, 5) },
+                second { utilities::safe_deref<unsigned char>(data, 6) } {
                     //
                 };
 
             inline bool is_valid() const noexcept {
-                return basic_chunk::is_name("tIME") && (length == 7) && internal::is_within_inclusive_range(month, 1, 12) &&
-                       internal::is_within_inclusive_range(day, 1, 31) && internal::is_within_inclusive_range(hour, 0, 23) &&
-                       internal::is_within_inclusive_range(minute, 0, 59) && internal::is_within_inclusive_range(second, 0, 60);
+                return basic_chunk::is_name("tIME") && (length == 7) && utilities::is_within_inclusive_range(month, 1, 12) &&
+                       utilities::is_within_inclusive_range(day, 1, 31) && utilities::is_within_inclusive_range(hour, 0, 23) &&
+                       utilities::is_within_inclusive_range(minute, 0, 59) && utilities::is_within_inclusive_range(second, 0, 60);
             }
 
             friend std::ostream& operator<<(std::ostream& ostr, const time& chunk) noexcept {

@@ -4,10 +4,6 @@
 #include <_internal.hpp>
 // clang-format on
 
-#ifndef __DUMMY_WINGDI_HPP
-    #define __DUMMY_WINGDI_HPP 1
-#endif
-
 extern "C" {
 
     // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-rgbquad
@@ -33,10 +29,9 @@ extern "C" {
             unsigned       biClrImportant;
     };
 
-    // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapfileheader
-
 #pragma pack(push, 2) // this is critical here as this struct is supposed to be 14 bytes in size
 
+    // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapfileheader
     struct BITMAPFILEHEADER final {
             unsigned short bfType;
             unsigned       bfSize;
@@ -59,6 +54,10 @@ extern "C" {
         BI_CMYKRLE4  = 0xD,
     };
 
+#pragma pack(push, 2)
+
+    // https://learn.microsoft.com/en-us/previous-versions/ms997538(v=msdn.10)?redirectedfrom=MSDN
+    // https://devblogs.microsoft.com/oldnewthing/20101018-00/?p=12513
     struct ICONDIRENTRY final {
             unsigned char  bWidth;      // width of the associated image in pixels (must be in the range of 0 to 256)
             unsigned char  bHeight;     // height of the associated image in pixels (must be in the range of 0 to 256)
@@ -73,20 +72,32 @@ extern "C" {
             unsigned       dwImageOffset; // offset of the associated image data, from the beginning of the .ico or .cur file
     };
 
+#pragma pack(pop)
+
+#pragma pack(push, 2)
+
+    // https://learn.microsoft.com/en-us/previous-versions/ms997538(v=msdn.10)?redirectedfrom=MSDN
     struct ICONDIR final {
             unsigned short idReserved; // reserved, must always be 0
             unsigned short idType;     // specifies the type of the resources contained, values other than 1 and 2 are invalid
             // an ICONDIR can store one or more of either icon or cursor type resources, heterogeneous mixtures of icons and cursors aren't permitted
-            unsigned short idCount;      // number of resources (images) stored in the given .ico file
-            ICONDIRENTRY   idEntries[1]; // NOLINT(modernize-avoid-c-arrays)
+            unsigned short idCount; // number of resources (images) stored in the given .ico file
+            ICONDIRENTRY   idEntries[1];
     };
 
+#pragma pack(pop)
+
+#pragma pack(push, 2)
+
+    // https://learn.microsoft.com/en-us/previous-versions/ms997538(v=msdn.10)?redirectedfrom=MSDN
     struct ICONIMAGE final {
             BITMAPINFOHEADER icHeader;
-            RGBQUAD          icColors[1]; // NOLINT(modernize-avoid-c-arrays)
-            unsigned char    icXOR[1];    // NOLINT(modernize-avoid-c-arrays)
-            unsigned char    icAND[1];    // NOLINT(modernize-avoid-c-arrays)
+            RGBQUAD          icColors[1];
+            unsigned char    icXOR[1];
+            unsigned char    icAND[1];
     };
+
+#pragma pack(pop)
 
 } // end extern "C"
 
