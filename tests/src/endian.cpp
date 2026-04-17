@@ -24,7 +24,7 @@ TEST_F(EndianTest, u16_from_be_bytes) {
 
 TEST_F(EndianTest, u32_from_be_bytes) {
     for (unsigned long long i = 0; i <= RANDOM_NUMBER_BUFFER_LENGTH - sizeof(unsigned); ++i)
-        EXPECT_EQ(utilities::endian::u32_from_be_bytes(buffer.data() + i), ::__bswap_32(*reinterpret_cast<const unsigned long*>(buffer.data() + i)));
+        EXPECT_EQ(utilities::endian::u32_from_be_bytes(buffer.data() + i), ::__bswap_32(*reinterpret_cast<const unsigned*>(buffer.data() + i)));
 }
 
 TEST_F(EndianTest, u64_from_be_bytes) {

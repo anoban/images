@@ -1,4 +1,4 @@
-COMPILER = /usr/bin/clang++
+COMPILER = /usr/bin/g++
 
 DEBUG = -D_DEBUG -DDEBUG -O0 -g3
 
