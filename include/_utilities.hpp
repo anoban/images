@@ -27,9 +27,9 @@
 
 // clang-format off
 #ifdef __TEST__
-    #define __TEST_ONLY(access_specifier) access_specifier:
+    #define __TEST_ACCESS(access_specifier) access_specifier:
 #else
-    #define __TEST_ONLY(access_specifier)
+    #define __TEST_ACCESS(access_specifier)
 #endif
 // clang-format on
 

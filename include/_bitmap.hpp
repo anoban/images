@@ -49,7 +49,7 @@ class bitmap { // this class is designed to represent what Windows calls as DIBs
         static constexpr unsigned short SOI { 'B' | 'M' << 8 }; // Start Of Image
 
     protected:
-        __TEST_ONLY(public)
+        __TEST_ACCESS(public)
         unsigned char*   buffer; // this will point to the original file buffer, this is the one that needs deallocation!
         RGBQUAD*         pixels; // this points to the start of pixels in the file buffer i.e offset buffer + 54
         BITMAPFILEHEADER file_header;

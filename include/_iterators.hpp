@@ -22,10 +22,10 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
         using iterator_category = std::random_access_iterator_tag;
 
         // clang-format off
-#ifndef __TEST__    // for testing purposes make the data members public!
-    private:
-#endif
+
         // clang-format on
+
+        __TEST_ACCESS(public)
 
         // using an unqualified pointer here will raise errors with const iterables!
         pointer   rsrc {};   // pointer to the iterable resource
@@ -50,18 +50,15 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
             assert(_len);
         }
 
-        constexpr random_access_iterator(_Ty* const _res, const size_type& _len, const size_type& _pos) noexcept :
-            rsrc(_res), length(_len), offset(_pos) {
+        constexpr random_access_iterator(_Ty* const _res, const size_type& _len, const size_type& _pos) noexcept : rsrc(_res), length(_len), offset(_pos) {
             assert(_res);
             assert(_len);
             assert(_len >= _pos);
         }
 
-        constexpr random_access_iterator(const random_access_iterator& other) noexcept :
-            rsrc(other.rsrc), length(other.length), offset(other.offset) { }
+        constexpr random_access_iterator(const random_access_iterator& other) noexcept : rsrc(other.rsrc), length(other.length), offset(other.offset) { }
 
-        constexpr random_access_iterator(random_access_iterator&& other) noexcept :
-            rsrc(other.rsrc), length(other.length), offset(other.offset) {
+        constexpr random_access_iterator(random_access_iterator&& other) noexcept : rsrc(other.rsrc), length(other.length), offset(other.offset) {
             cleanup(other); // cleanup the stolen from resource
         }
 
@@ -118,38 +115,26 @@ template<typename _Ty> class random_access_iterator final { // unchecked random 
             return { rsrc, length, offset + 1 };
         }
 
-        constexpr bool operator==(const random_access_iterator& other) const noexcept {
-            return rsrc == other.rsrc && offset == other.offset;
-        }
+        constexpr bool operator==(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset == other.offset; }
 
-        constexpr bool operator!=(const random_access_iterator& other) const noexcept {
-            return rsrc != other.rsrc || offset != other.offset;
-        }
+        constexpr bool operator!=(const random_access_iterator& other) const noexcept { return rsrc != other.rsrc || offset != other.offset; }
 
         constexpr bool operator<(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset < other.offset; }
 
-        constexpr bool operator<=(const random_access_iterator& other) const noexcept {
-            return rsrc == other.rsrc && offset <= other.offset;
-        }
+        constexpr bool operator<=(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset <= other.offset; }
 
         constexpr bool operator>(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset > other.offset; }
 
-        constexpr bool operator>=(const random_access_iterator& other) const noexcept {
-            return rsrc == other.rsrc && offset >= other.offset;
-        }
+        constexpr bool operator>=(const random_access_iterator& other) const noexcept { return rsrc == other.rsrc && offset >= other.offset; }
 
         template<typename _TyInt> // NOLINTNEXTLINE(modernize-use-constraints)
-        constexpr typename std::enable_if<std::is_integral_v<_TyInt>, random_access_iterator>::type operator+(
-            const _TyInt& stride
-        ) const noexcept {
+        constexpr typename std::enable_if<std::is_integral_v<_TyInt>, random_access_iterator>::type operator+(const _TyInt& stride) const noexcept {
             assert(length >= offset + stride);
             return { rsrc, length, offset + stride };
         }
 
         template<typename _TyInt> // NOLINTNEXTLINE(modernize-use-constraints)
-        constexpr typename std::enable_if<std::is_integral<_TyInt>::value, random_access_iterator>::type operator-(
-            const _TyInt& stride
-        ) const noexcept {
+        constexpr typename std::enable_if<std::is_integral<_TyInt>::value, random_access_iterator>::type operator-(const _TyInt& stride) const noexcept {
             assert(length >= offset - stride);
             return { rsrc, length, offset - stride };
         }

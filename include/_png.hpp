@@ -85,7 +85,7 @@ class basic_chunk { // an opaque base class for all the implementations of PNG s
         // can simply just call that method on all the chunk types to validate its construction
 
     protected:
-        __TEST_ONLY(public)
+        __TEST_ACCESS(public)
 
         unsigned             length; // first four bytes of a PNG chunk, documents the number of bytes in the data segment of the chunk
         // length accounts only for the bytes in the data segment and excludes itself, chunk name and the crc checksum
@@ -155,7 +155,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
             // Filter method 	    1 byte
             // Interlace method 	1 byte
 
-            __TEST_ONLY(public)
+            __TEST_ACCESS(public)
 
             unsigned           imwidth;  // width of a PNG image in pixels, 0 is an invalid value
             unsigned           imheight; // height of a PNG image in pixels, 0 is an invalid value
@@ -234,7 +234,7 @@ namespace critical { // IHDR, PLTE, IDAT & IEND are critical PNG chunks that mus
 
     class plte final : public basic_chunk { // stands for PaLeTtE, contains an array of colour entries (RGB)
 
-            __TEST_ONLY(public)
+            __TEST_ACCESS(public)
             // a PNG stream can only contain 1 PLTE chunk & the number of palette entries can range from 0 to 256
             // https://www.w3.org/TR/2025/REC-png-3-20250624/#11PLTE
             rgba     palette[MAX_PLTE_ENTRIES]; // each palette entry must be a 3 byte object (RGB)
@@ -312,7 +312,7 @@ namespace ancillary {
 
     class time final : public basic_chunk {
             // time stamp of the PNG image - gives the time of the last image modification (not the time of initial image creation)
-            __TEST_ONLY(public)
+            __TEST_ACCESS(public)
 
             // tm tstamp; // using C's tm struct for convenience, but it's memory layout is not identical to PNG's tIME chunk's time encoding
             // the above turned out to be stupid idea as <stdio> functions operating on the tm struct expect it to be fully populated, PNG only encodes
@@ -378,7 +378,7 @@ namespace ancillary {
 } // namespace ancillary
 
 class png final {
-        __TEST_ONLY(public)
+        __TEST_ACCESS(public)
         // critical chunks
         critical::ihdr header;
         critical::plte palette;
