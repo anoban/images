@@ -199,14 +199,14 @@ namespace utilities {
 
         // works great, tested and produces the same results as Python's binascii module's crc32() function
         [[nodiscard]] static inline unsigned __attribute__((__always_inline__)) calculate(
-            const unsigned char* const bytestream, const unsigned long& length
+            const unsigned char* const bytestream, const unsigned long long& length
         ) noexcept {
             if (!bytestream) {
                 ::fprintf(stderr, "Error in %s, received a null buffer\n", __PRETTY_FUNCTION__);
                 return 0;
             }
             unsigned checksum { 0xFFFFFFFF };
-            for (size_t i = 0; i < length; ++i) checksum = (checksum >> 8) ^ IEEE_LOOKUPTABLE.at((bytestream[i] ^ checksum) & 0xFF);
+            for (unsigned long long i = 0; i < length; ++i) checksum = (checksum >> 8) ^ IEEE_LOOKUPTABLE.at((bytestream[i] ^ checksum) & 0xFF);
             return ~checksum;
         }
 

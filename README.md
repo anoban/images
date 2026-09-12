@@ -3,10 +3,8 @@ Caution: `Images in this README.md are JPEG converts of the bitmap files used in
 ### _Usage:_
 ---------
 
-Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap`, `png` & `ico`) support reading, parsing and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which
-can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for `canvas`). Class `canvas` provides converting functions to classes `bitmap`, `png` & `ico` so the transformations can be serialized to disk in the desired file format.
+Only the class `canvas` provides predefined image transformations routines. Other classes (`bitmap` and `png`) support reading, parsing and serializing their respective file formats. These classes do provide a converting constructor to class `canvas` which can be used to manipulate these images (internally, the converting constructor will create a `bitmap` from these types which is the base class for `canvas`). Class `canvas` provides converting functions to classes `bitmap` and `png` so the transformations can be serialized to disk in the desired file format.
 
-<img src="./readme/class-architecture.jpg" width=%80>
 
 ---------
 ```C++

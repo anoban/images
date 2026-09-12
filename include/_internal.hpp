@@ -1,5 +1,5 @@
 #pragma once
-#define __INTERNAL 1
+#define __INTERNAL             1
 #define __STDC_WANT_LIB_EXT1__ 1
 
 #include <endian.h>
